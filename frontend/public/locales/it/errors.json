@@ -1,0 +1,62 @@
+{
+  "generic": {
+    "unknown": "Si è verificato un errore sconosciuto",
+    "network": "Errore di connessione. Controlla la tua connessione internet.",
+    "timeout": "La richiesta ha superato il tempo massimo. Riprova.",
+    "serverError": "Errore interno del server. Riprova più tardi.",
+    "notFound": "Risorsa non trovata",
+    "unauthorized": "Non hai i permessi per accedere a questa risorsa",
+    "forbidden": "Accesso negato",
+    "validation": "Errore di validazione",
+    "rateLimited": "Troppe richieste. Riprova più tardi.",
+    "sessionExpired": "Sessione scaduta. Effettua nuovamente il login."
+  },
+  "auth": {
+    "invalidCredentials": "Email o password non validi",
+    "emailAlreadyExists": "Questa email è già registrata",
+    "weakPassword": "Password troppo debole",
+    "passwordsDontMatch": "Le password non corrispondono",
+    "invalidToken": "Token non valido o scaduto",
+    "mfaRequired": "Autenticazione a due fattori richiesta",
+    "mfaInvalid": "Codice MFA non valido",
+    "mfaSetupRequired": "Configurazione MFA richiesta",
+    "accountNotApproved": "Il tuo account è in attesa di approvazione",
+    "accountSuspended": "Account sospeso",
+    "mustChangePassword": "Devi cambiare la password"
+  },
+  "campaign": {
+    "notFound": "Campagna non trovata",
+    "noPermission": "Non hai i permessi per questa campagna",
+    "alreadyMember": "Sei già membro di questa campagna",
+    "invitationExpired": "Invito scaduto",
+    "invitationInvalid": "Invito non valido",
+    "maxMembers": "Numero massimo di membri raggiunto",
+    "deleteFailed": "Impossibile eliminare la campagna"
+  },
+  "character": {
+    "notFound": "Personaggio non trovato",
+    "noPermission": "Non hai i permessi per modificare questo personaggio",
+    "deleteFailed": "Impossibile eliminare il personaggio",
+    "saveFailed": "Impossibile salvare il personaggio",
+    "invalidData": "Dati del personaggio non validi"
+  },
+  "map": {
+    "notFound": "Mappa non trovata",
+    "noPermission": "Non hai i permessi per modificare questa mappa",
+    "deleteFailed": "Impossibile eliminare la mappa",
+    "saveFailed": "Impossibile salvare la mappa"
+  },
+  "asset": {
+    "notFound": "Risorsa non trovata",
+    "uploadFailed": "Caricamento fallito",
+    "tooLarge": "Il file supera il limite massimo di dimensione",
+    "invalidType": "Tipo di file non supportato",
+    "deleteFailed": "Impossibile eliminare la risorsa",
+    "noPermission": "Non hai i permessi per questa risorsa"
+  },
+  "websocket": {
+    "disconnected": "Connessione persa. Riconnessione in corso...",
+    "reconnected": "Riconnesso al server",
+    "error": "Errore di connessione WebSocket"
+  }
+}
