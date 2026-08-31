@@ -10,6 +10,8 @@ import { ToastProvider } from '@/contexts/ToastContext';
 import { ThemeProvider, useTheme } from '@/contexts/ThemeContext';
 import ThemeSyncBridge from '@/contexts/ThemeSyncBridge';
 import { I18nProvider } from '@/i18n/I18nProvider';
+import { useTranslation } from 'react-i18next';
+import i18n from '@/i18n/i18n';
 import { PlatformRole } from '@/types/user.types';
 import ProtectedRoute from '@/components/ProtectedRoute';
 import ErrorBoundary from '@/components/common/ErrorBoundary';
@@ -46,7 +48,7 @@ function PageLoader() {
     <div
       className="min-h-screen flex items-center justify-center bg-gradient-to-br from-soft-cream via-parchment to-warm-amber/20"
       aria-live="polite"
-      aria-label="Loading page"
+      aria-label={i18n.t('common.loading')}
     >
       <Loader2 className="w-8 h-8 text-brand-ink animate-spin" aria-hidden="true" />
     </div>
@@ -74,7 +76,7 @@ function App() {
                        focus:px-4 focus:py-2 focus:bg-moss-green focus:text-white focus:rounded-lg
                        focus:shadow-lg focus:outline-none focus:ring-2 focus:ring-warm-amber"
           >
-            Skip to main content
+            {i18n.t('common.skipToContent')}
           </a>
           {/* Global toast notifications */}
           <ToastContainer />
@@ -179,6 +181,7 @@ function App() {
 }
 
 function WelcomePage() {
+  const { t } = useTranslation();
   const { authenticated } = useAuth();
   const navigate = useNavigate();
   const [registrationAllowed, setRegistrationAllowed] = useState(false);
@@ -228,16 +231,16 @@ function WelcomePage() {
             CozyVTT
           </h1>
           <p className="mt-2 text-warm-gray">
-            A self-hosted Virtual Tabletop for cozy, narrative-driven campaigns
+            {t('app.tagline')}
           </p>
         </div>
         <div className="flex flex-col gap-3">
           <Button className="w-full" onClick={() => navigate('/auth/login')}>
-            Sign In
+            {t('common.signIn')}
           </Button>
           {registrationAllowed && (
             <Button variant="secondary" className="w-full" onClick={() => navigate('/auth/register')}>
-              Create Account
+              {t('common.createAccount')}
             </Button>
           )}
         </div>

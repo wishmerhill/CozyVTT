@@ -6,6 +6,7 @@
 
 import { useState, FormEvent } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
+import { useTranslation } from 'react-i18next';
 import { useAuth } from '@/contexts/AuthContext';
 import {
   isValidEmail,
@@ -15,6 +16,7 @@ import {
 import Button from '@/components/ui/Button';
 
 export default function RegisterPage() {
+  const { t } = useTranslation();
   const navigate = useNavigate();
   const { register, authenticated } = useAuth();
 
@@ -58,33 +60,32 @@ export default function RegisterPage() {
 
     // Validate display name
     if (!displayName) {
-      errors.displayName = 'Display name is required';
+      errors.displayName = t('common.displayNameRequired');
     } else if (displayName.length < 2) {
-      errors.displayName = 'Display name must be at least 2 characters';
+      errors.displayName = t('common.displayNameMinLength');
     } else if (displayName.length > 50) {
-      errors.displayName = 'Display name must be less than 50 characters';
+      errors.displayName = t('common.displayNameMaxLength');
     }
 
     // Validate email
     if (!email) {
-      errors.email = 'Email is required';
+      errors.email = t('common.emailRequired');
     } else if (!isValidEmail(email)) {
-      errors.email = 'Please enter a valid email address';
+      errors.email = t('common.validEmailRequired');
     }
 
     // Validate password
     if (!password) {
-      errors.password = 'Password is required';
+      errors.password = t('common.passwordRequired');
     } else if (!isStrongPassword(password)) {
-      errors.password =
-        'Password must be at least 12 characters with uppercase, lowercase, number, and special character';
+      errors.password = t('common.passwordMinLength');
     }
 
     // Validate confirm password
     if (!confirmPassword) {
-      errors.confirmPassword = 'Please confirm your password';
+      errors.confirmPassword = t('common.confirmPasswordRequired');
     } else if (password !== confirmPassword) {
-      errors.confirmPassword = 'Passwords do not match';
+      errors.confirmPassword = t('common.passwordsDoNotMatch');
     }
 
     setFieldErrors(errors);
@@ -117,15 +118,15 @@ export default function RegisterPage() {
     } catch (err: any) {
       // Handle specific error messages
       if (err.response?.status === 403) {
-        setError(err.response.data.message || 'Registration is currently disabled.');
+        setError(err.response.data.message || t('common.registrationDisabled'));
       } else if (err.response?.data?.error) {
         setError(err.response.data.error);
       } else if (err.response?.status === 409) {
-        setError('An account with this email already exists');
+        setError(t('common.accountExists'));
       } else if (err.response?.status === 429) {
-        setError('Too many registration attempts. Please try again later.');
+        setError(t('common.tooManyAttempts'));
       } else {
-        setError('An error occurred during registration. Please try again.');
+        setError(t('common.anErrorOccurred'));
       }
     } finally {
       setLoading(false);
@@ -139,12 +140,10 @@ export default function RegisterPage() {
           <div className="w-16 h-16 rounded-full bg-warning/10 flex items-center justify-center mx-auto">
             <span className="text-3xl">&#9203;</span>
           </div>
-          <h1 className="text-2xl font-bold text-brand-ink font-heading">Registration Submitted</h1>
-          <p className="text-warm-gray text-sm">
-            Your account has been created and is <strong>pending admin approval</strong>. You will be able to log in once an administrator approves your account.
-          </p>
+          <h1 className="text-2xl font-bold text-brand-ink font-heading">{t('common.registrationSubmitted')}</h1>
+          <p className="text-warm-gray text-sm" dangerouslySetInnerHTML={{ __html: t('common.pendingApprovalMessage') }} />
           <Link to="/auth/login" className="btn-primary inline-block mt-4">
-            Back to Login
+            {t('common.backToLogin')}
           </Link>
         </div>
       </div>
@@ -157,10 +156,10 @@ export default function RegisterPage() {
         {/* Header */}
         <div className="text-center">
           <h1 className="text-3xl font-bold text-brand-ink font-heading">
-            Create Account
+            {t('common.createAccount')}
           </h1>
           <p className="mt-2 text-sm text-warm-gray">
-            Join CozyVTT and start your adventure
+            {t('common.joinCozyVTT')}
           </p>
         </div>
 
@@ -179,7 +178,7 @@ export default function RegisterPage() {
               htmlFor="displayName"
               className="block text-sm font-medium text-brand-ink mb-1"
             >
-              Display Name
+              {t('common.displayName')}
             </label>
             <input
               id="displayName"
@@ -215,7 +214,7 @@ export default function RegisterPage() {
               htmlFor="email"
               className="block text-sm font-medium text-brand-ink mb-1"
             >
-              Email
+              {t('common.email')}
             </label>
             <input
               id="email"
@@ -246,7 +245,7 @@ export default function RegisterPage() {
               htmlFor="password"
               className="block text-sm font-medium text-brand-ink mb-1"
             >
-              Password
+              {t('common.password')}
             </label>
             <input
               id="password"
@@ -282,7 +281,7 @@ export default function RegisterPage() {
               <div id="password-strength" className="mt-2" aria-live="polite">
                 <div className="flex items-center justify-between mb-1">
                   <span className="text-xs text-warm-gray">
-                    Password Strength:
+                    {t('common.passwordStrength')}
                   </span>
                   <span
                     className={`text-xs font-medium ${
@@ -318,7 +317,7 @@ export default function RegisterPage() {
               htmlFor="confirmPassword"
               className="block text-sm font-medium text-brand-ink mb-1"
             >
-              Confirm Password
+              {t('common.confirmPassword')}
             </label>
             <input
               id="confirmPassword"
@@ -375,10 +374,10 @@ export default function RegisterPage() {
                     d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"
                   ></path>
                 </svg>
-                Creating account...
+                {t('common.creating')}
               </span>
             ) : (
-              'Create Account'
+              t('common.createAccount')
             )}
           </Button>
         </form>
@@ -386,13 +385,13 @@ export default function RegisterPage() {
         {/* Login Link */}
         <div className="text-center">
           <p className="text-sm text-warm-gray">
-            Already have an account?{' '}
-            <Link
-              to="/auth/login"
-              className="text-brand-ink hover:text-brand-ink/80 font-medium transition-colors"
-            >
-              Sign in
-            </Link>
+            {t('common.alreadyHaveAccount')}{' '}
+              <Link
+                to="/auth/login"
+                className="text-brand-ink hover:text-brand-ink/80 font-medium transition-colors"
+              >
+                {t('common.signInLink')}
+              </Link>
           </p>
         </div>
       </div>

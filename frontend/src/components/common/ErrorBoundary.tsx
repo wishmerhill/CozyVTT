@@ -6,6 +6,7 @@
 import React, { Component, ReactNode } from 'react';
 import { AlertTriangle, RefreshCcw, ExternalLink } from 'lucide-react';
 import Button from '@/components/ui/Button';
+import i18n from '@/i18n/i18n';
 
 interface Props {
   children: ReactNode;
@@ -61,10 +62,10 @@ export default class ErrorBoundary extends Component<Props, State> {
           {/* Heading */}
           <div>
             <h1 className="text-2xl font-bold text-brand-ink font-heading mb-2">
-              Something went wrong
+              {i18n.t('common.somethingWentWrong')}
             </h1>
             <p className="text-sm text-warm-gray">
-              CozyVTT encountered an unexpected error. Your data is safe — this is a display problem only.
+              {i18n.t('common.errorDescription')}
             </p>
           </div>
 
@@ -72,7 +73,7 @@ export default class ErrorBoundary extends Component<Props, State> {
           {this.state.error && (
             <details className="text-left bg-danger/10 border border-danger/30 rounded-lg p-4">
               <summary className="text-sm font-medium text-danger-ink cursor-pointer select-none">
-                Error details
+                {i18n.t('common.errorDetails')}
               </summary>
               <pre className="mt-2 text-xs text-danger-ink overflow-x-auto whitespace-pre-wrap break-words">
                 {this.state.error.message}
@@ -90,7 +91,7 @@ export default class ErrorBoundary extends Component<Props, State> {
               variant="secondary" className="flex items-center justify-center gap-2"
             >
               <RefreshCcw className="w-4 h-4" aria-hidden="true" />
-              Try Again
+              {i18n.t('common.tryAgain')}
             </Button>
 
             <Button
@@ -98,7 +99,7 @@ export default class ErrorBoundary extends Component<Props, State> {
               className="flex items-center justify-center gap-2"
             >
               <RefreshCcw className="w-4 h-4" aria-hidden="true" />
-              Reload Page
+              {i18n.t('common.reloadPage')}
             </Button>
 
             <a
@@ -109,7 +110,7 @@ export default class ErrorBoundary extends Component<Props, State> {
               aria-label="Report this issue on GitHub (opens in new tab)"
             >
               <ExternalLink className="w-4 h-4" aria-hidden="true" />
-              Report Issue
+              {i18n.t('common.reportIssue')}
             </a>
           </div>
         </div>

@@ -5,6 +5,7 @@
 
 import { useState, FormEvent } from 'react';
 import { Link, Navigate } from 'react-router-dom';
+import { useTranslation } from 'react-i18next';
 import { Mail, ArrowLeft, CheckCircle } from 'lucide-react';
 import { useAuth } from '@/contexts/AuthContext';
 import { isValidEmail } from '@/utils/validation';
@@ -12,6 +13,7 @@ import authService from '@/services/auth.service';
 import Button from '@/components/ui/Button';
 
 export default function ForgotPasswordPage() {
+  const { t } = useTranslation();
   const { authenticated } = useAuth();
 
   const [email, setEmail] = useState('');
@@ -26,11 +28,11 @@ export default function ForgotPasswordPage() {
 
   const validate = (): boolean => {
     if (!email) {
-      setEmailError('Email is required');
+      setEmailError(t('common.emailRequired'));
       return false;
     }
     if (!isValidEmail(email)) {
-      setEmailError('Please enter a valid email address');
+      setEmailError(t('common.validEmailRequired'));
       return false;
     }
     setEmailError('');
@@ -67,19 +69,19 @@ export default function ForgotPasswordPage() {
           /* Success state */
           <div className="text-center space-y-4">
             <CheckCircle className="w-14 h-14 text-brand-ink mx-auto" aria-hidden="true" />
-            <h1 className="text-2xl font-bold text-brand-ink font-heading">Check your inbox</h1>
+            <h1 className="text-2xl font-bold text-brand-ink font-heading">{t('common.checkYourInbox')}</h1>
             <p className="text-sm text-warm-gray leading-relaxed">
-              {serverMessage || 'If an account with that email address exists, we\'ve sent a password reset link. The link expires in 1 hour.'}
+              {serverMessage || t('common.resetLinkSent')}
             </p>
             <p className="text-xs text-stone-gray/70">
-              Didn't receive it? Check your spam folder, or contact your administrator.
+              {t('common.didntReceiveIt')}
             </p>
             <Link
               to="/auth/login"
               className="inline-flex items-center gap-2 text-sm text-brand-ink hover:text-brand-ink/80 font-medium transition-colors"
             >
               <ArrowLeft className="w-4 h-4" aria-hidden="true" />
-              Back to Sign In
+              {t('common.backToSignIn')}
             </Link>
           </div>
         ) : (
@@ -89,16 +91,16 @@ export default function ForgotPasswordPage() {
               <div className="flex justify-center mb-3">
                 <Mail className="w-10 h-10 text-brand-ink/70" aria-hidden="true" />
               </div>
-              <h1 className="text-2xl font-bold text-brand-ink font-heading">Forgot your password?</h1>
+              <h1 className="text-2xl font-bold text-brand-ink font-heading">{t('common.forgotPasswordTitle')}</h1>
               <p className="mt-2 text-sm text-warm-gray">
-                Enter your email address and we'll send you a link to reset your password.
+                {t('common.forgotPasswordInstructions')}
               </p>
             </div>
 
             <form onSubmit={handleSubmit} className="space-y-4" noValidate>
               <div>
                 <label htmlFor="email" className="block text-sm font-medium text-brand-ink mb-1">
-                  Email address
+                  {t('common.emailAddress')}
                 </label>
                 <input
                   id="email"
@@ -133,10 +135,10 @@ export default function ForgotPasswordPage() {
                       <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4" />
                       <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z" />
                     </svg>
-                    Sending...
+                    {t('common.sending')}
                   </span>
                 ) : (
-                  'Send Reset Link'
+                  t('common.sendResetLink')
                 )}
               </Button>
             </form>
@@ -147,7 +149,7 @@ export default function ForgotPasswordPage() {
                 className="inline-flex items-center gap-1.5 text-sm text-brand-ink hover:text-brand-ink/80 transition-colors"
               >
                 <ArrowLeft className="w-4 h-4" aria-hidden="true" />
-                Back to Sign In
+                {t('common.backToSignIn')}
               </Link>
             </div>
           </>

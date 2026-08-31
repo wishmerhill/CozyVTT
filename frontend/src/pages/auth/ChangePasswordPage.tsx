@@ -8,12 +8,14 @@
 
 import { useState, FormEvent } from 'react';
 import { useNavigate } from 'react-router-dom';
+import { useTranslation } from 'react-i18next';
 import { KeyRound, AlertCircle, LogOut } from 'lucide-react';
 import { useAuth } from '@/contexts/AuthContext';
 import Button from '@/components/ui/Button';
 import { PASSWORD_REQUIREMENTS } from '@/utils/validation';
 
 export default function ChangePasswordPage() {
+  const { t } = useTranslation();
   const navigate = useNavigate();
   const { changePassword, logout, user } = useAuth();
 
@@ -34,19 +36,19 @@ export default function ChangePasswordPage() {
   const validate = (): boolean => {
     const errors: typeof fieldErrors = {};
     if (!currentPassword) {
-      errors.current = 'Enter the password you just signed in with';
+      errors.current = t('common.currentPasswordRequired');
     }
     if (!password) {
-      errors.password = 'Password is required';
+      errors.password = t('common.passwordRequired');
     } else if (!allRequirementsMet) {
-      errors.password = 'Password does not meet requirements';
+      errors.password = t('common.doesNotMeetRequirements');
     } else if (password === currentPassword) {
-      errors.password = 'New password must differ from your current one';
+      errors.password = t('common.newPasswordMustDiffer');
     }
     if (!confirmPassword) {
-      errors.confirm = 'Please confirm your password';
+      errors.confirm = t('common.confirmPasswordRequired');
     } else if (password !== confirmPassword) {
-      errors.confirm = 'Passwords do not match';
+      errors.confirm = t('common.passwordsDoNotMatch');
     }
     setFieldErrors(errors);
     return Object.keys(errors).length === 0;
@@ -63,7 +65,7 @@ export default function ChangePasswordPage() {
       navigate('/dashboard', { replace: true });
     } catch (err: unknown) {
       const msg = (err as { response?: { data?: { message?: string } } }).response?.data?.message;
-      setError(msg || 'Failed to change password. Please try again.');
+      setError(msg || t('common.failedToChangePassword'));
     } finally {
       setLoading(false);
     }
@@ -81,11 +83,10 @@ export default function ChangePasswordPage() {
           <div className="flex justify-center mb-3">
             <KeyRound className="w-10 h-10 text-brand-ink/70" aria-hidden="true" />
           </div>
-          <h1 className="text-2xl font-bold text-brand-ink font-heading">Choose your password</h1>
+          <h1 className="text-2xl font-bold text-brand-ink font-heading">{t('common.choosePassword')}</h1>
           <p className="mt-2 text-sm text-warm-gray">
-            {user?.displayName ? `Welcome, ${user.displayName}. ` : ''}
-            Your account was set up with a temporary password. Pick your own to continue — whoever
-            created the account can&apos;t see this one.
+            {user?.displayName ? t('common.welcomeUser', { name: user.displayName }) + ' ' : ''}
+            {t('common.temporaryPasswordDesc')}
           </p>
         </div>
 
@@ -100,7 +101,7 @@ export default function ChangePasswordPage() {
           {/* Current (temporary) password */}
           <div>
             <label htmlFor="current-password" className="block text-sm font-medium text-brand-ink mb-1">
-              Temporary password
+              {t('common.temporaryPassword')}
             </label>
             <input
               id="current-password"
@@ -125,7 +126,7 @@ export default function ChangePasswordPage() {
           {/* New password */}
           <div>
             <label htmlFor="new-password" className="block text-sm font-medium text-brand-ink mb-1">
-              New password
+              {t('common.newPassword')}
             </label>
             <input
               id="new-password"
@@ -165,7 +166,7 @@ export default function ChangePasswordPage() {
           {/* Confirm */}
           <div>
             <label htmlFor="confirm-password" className="block text-sm font-medium text-brand-ink mb-1">
-              Confirm new password
+              {t('common.confirmNewPassword')}
             </label>
             <input
               id="confirm-password"
@@ -192,7 +193,7 @@ export default function ChangePasswordPage() {
             disabled={loading || !allRequirementsMet || password !== confirmPassword}
             className="w-full"
           >
-            {loading ? 'Saving...' : 'Set Password and Continue'}
+            {loading ? t('common.saving') : t('common.setPasswordAndContinue')}
           </Button>
         </form>
 
@@ -202,7 +203,7 @@ export default function ChangePasswordPage() {
           className="w-full inline-flex items-center justify-center gap-1.5 text-sm text-warm-gray hover:text-brand-ink transition-colors"
         >
           <LogOut className="w-3.5 h-3.5" aria-hidden="true" />
-          Sign out instead
+          {t('common.signOutInstead')}
         </button>
       </main>
     </div>

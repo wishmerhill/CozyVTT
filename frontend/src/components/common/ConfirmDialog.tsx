@@ -8,6 +8,7 @@
 import { useCallback } from 'react';
 import { AlertTriangle, AlertCircle, HelpCircle, Loader2 } from 'lucide-react';
 import { Button, Modal } from '@/components/ui';
+import { useTranslation } from 'react-i18next';
 
 export type ConfirmVariant = 'danger' | 'warning' | 'info';
 
@@ -53,8 +54,8 @@ export default function ConfirmDialog({
   isOpen,
   title,
   message,
-  confirmLabel = 'Confirm',
-  cancelLabel = 'Cancel',
+  confirmLabel,
+  cancelLabel,
   variant = 'danger',
   isLoading = false,
   onConfirm,
@@ -64,6 +65,9 @@ export default function ConfirmDialog({
     if (!isLoading) onCancel();
   }, [isLoading, onCancel]);
 
+  const { t } = useTranslation();
+  const resolvedConfirm = confirmLabel ?? t('common.confirm');
+  const resolvedCancel = cancelLabel ?? t('common.cancel');
   const { icon, iconBg, confirmClass } = VARIANT_CONFIG[variant];
 
   return (
@@ -82,7 +86,7 @@ export default function ConfirmDialog({
             onClick={handleCancel}
             disabled={isLoading}
           >
-            {cancelLabel}
+            {resolvedCancel}
           </Button>
           <button
             type="button"
@@ -97,7 +101,7 @@ export default function ConfirmDialog({
             {isLoading && (
               <Loader2 className="w-4 h-4 animate-spin" aria-hidden="true" />
             )}
-            {confirmLabel}
+            {resolvedConfirm}
           </button>
         </>
       }
