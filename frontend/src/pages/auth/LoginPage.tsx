@@ -6,12 +6,14 @@
 
 import { useState, useEffect, FormEvent } from 'react';
 import { Link, Navigate } from 'react-router-dom';
+import { useTranslation } from 'react-i18next';
 import { useAuth } from '@/contexts/AuthContext';
 import { isValidEmail } from '@/utils/validation';
 import { api } from '@/services/api';
 import Button from '@/components/ui/Button';
 
 export default function LoginPage() {
+  const { t } = useTranslation();
   const { login, authenticated, mfaPending } = useAuth();
 
   // Form state
@@ -54,14 +56,14 @@ export default function LoginPage() {
 
     // Validate email
     if (!email) {
-      errors.email = 'Email is required';
+      errors.email = t('common.emailRequired');
     } else if (!isValidEmail(email)) {
-      errors.email = 'Please enter a valid email address';
+      errors.email = t('common.validEmailRequired');
     }
 
     // Validate password
     if (!password) {
-      errors.password = 'Password is required';
+      errors.password = t('common.passwordRequired');
     }
 
     setFieldErrors(errors);
@@ -92,11 +94,11 @@ export default function LoginPage() {
       if (err.response?.data?.error) {
         setError(err.response.data.error);
       } else if (err.response?.status === 401) {
-        setError('Invalid email or password');
+        setError(t('common.invalidEmailPassword'));
       } else if (err.response?.status === 429) {
-        setError('Too many login attempts. Please try again later.');
+        setError(t('common.tooManyLoginAttempts'));
       } else {
-        setError('An error occurred during login. Please try again.');
+        setError(t('common.loginError'));
       }
     } finally {
       setLoading(false);
@@ -109,10 +111,10 @@ export default function LoginPage() {
         {/* Header */}
         <div className="text-center">
           <h1 className="text-3xl font-bold text-brand-ink font-heading">
-            Welcome Back
+            {t('common.welcomeBack')}
           </h1>
           <p className="mt-2 text-sm text-warm-gray">
-            Sign in to your CozyVTT account
+            {t('common.signInTo')}
           </p>
         </div>
 
@@ -131,7 +133,7 @@ export default function LoginPage() {
               htmlFor="email"
               className="block text-sm font-medium text-brand-ink mb-1"
             >
-              Email
+              {t('common.email')}
             </label>
             <input
               id="email"
@@ -162,7 +164,7 @@ export default function LoginPage() {
               htmlFor="password"
               className="block text-sm font-medium text-brand-ink mb-1"
             >
-              Password
+              {t('common.password')}
             </label>
             <input
               id="password"
@@ -202,7 +204,7 @@ export default function LoginPage() {
                 htmlFor="remember-me"
                 className="ml-2 block text-sm text-warm-gray"
               >
-                Remember me
+                {t('common.rememberMe')}
               </label>
             </div>
 
@@ -210,7 +212,7 @@ export default function LoginPage() {
               to="/auth/forgot-password"
               className="text-sm text-brand-ink hover:text-brand-ink/80 transition-colors"
             >
-              Forgot password?
+              {t('common.forgotPassword')}
             </Link>
           </div>
 
@@ -242,10 +244,10 @@ export default function LoginPage() {
                     d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"
                   ></path>
                 </svg>
-                Signing in...
+                {t('common.signingIn')}
               </span>
             ) : (
-              'Sign In'
+              t('common.signIn')
             )}
           </Button>
         </form>
@@ -254,12 +256,12 @@ export default function LoginPage() {
         {registrationAllowed && (
           <div className="text-center">
             <p className="text-sm text-warm-gray">
-              Don't have an account?{' '}
+              {t('common.dontHaveAccount')}{' '}
               <Link
                 to="/auth/register"
                 className="text-brand-ink hover:text-brand-ink/80 font-medium transition-colors"
               >
-                Create one
+                {t('common.createOne')}
               </Link>
             </p>
           </div>

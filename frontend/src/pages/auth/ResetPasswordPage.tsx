@@ -10,6 +10,7 @@
 
 import { useState, FormEvent, useEffect } from 'react';
 import { Link, useSearchParams } from 'react-router-dom';
+import { useTranslation } from 'react-i18next';
 import { KeyRound, ArrowLeft, CheckCircle, AlertCircle } from 'lucide-react';
 import authService from '@/services/auth.service';
 import Button from '@/components/ui/Button';
@@ -21,6 +22,7 @@ interface ResetPasswordPageProps {
 }
 
 export default function ResetPasswordPage({ invite = false }: ResetPasswordPageProps) {
+  const { t } = useTranslation();
   const [searchParams] = useSearchParams();
   const token = searchParams.get('token');
 
@@ -35,8 +37,8 @@ export default function ResetPasswordPage({ invite = false }: ResetPasswordPageP
     if (!token) {
       setError(
         invite
-          ? 'This invitation link is invalid. Ask your administrator to send a new one.'
-          : 'This password reset link is invalid. Please request a new one.'
+          ? t('common.invalidInviteLink')
+          : t('common.invalidResetLink')
       );
     }
   }, [token, invite]);
@@ -47,14 +49,14 @@ export default function ResetPasswordPage({ invite = false }: ResetPasswordPageP
   const validate = (): boolean => {
     const errors: typeof fieldErrors = {};
     if (!password) {
-      errors.password = 'Password is required';
+      errors.password = t('common.passwordRequired');
     } else if (!allRequirementsMet) {
-      errors.password = 'Password does not meet requirements';
+      errors.password = t('common.doesNotMeetRequirements');
     }
     if (!confirmPassword) {
-      errors.confirm = 'Please confirm your password';
+      errors.confirm = t('common.confirmPasswordRequired');
     } else if (password !== confirmPassword) {
-      errors.confirm = 'Passwords do not match';
+      errors.confirm = t('common.passwordsDoNotMatch');
     }
     setFieldErrors(errors);
     return Object.keys(errors).length === 0;
@@ -75,8 +77,8 @@ export default function ResetPasswordPage({ invite = false }: ResetPasswordPageP
       setError(
         msg ||
           (invite
-            ? 'Failed to set your password. This invitation may have expired.'
-            : 'Failed to reset password. This link may have expired.')
+            ? t('common.failedToSetPassword')
+            : t('common.failedToResetPassword'))
       );
     } finally {
       setLoading(false);
@@ -92,29 +94,27 @@ export default function ResetPasswordPage({ invite = false }: ResetPasswordPageP
           <div className="text-center space-y-4">
             <CheckCircle className="w-14 h-14 text-brand-ink mx-auto" aria-hidden="true" />
             <h1 className="text-2xl font-bold text-brand-ink font-heading">
-              {invite ? "You're all set!" : 'Password updated!'}
+              {invite ? t('common.youreAllSet') : t('common.passwordUpdated')}
             </h1>
             <p className="text-sm text-warm-gray">
-              {invite
-                ? 'Your account is ready. Sign in with the password you just chose.'
-                : 'Your password has been reset successfully. You can now sign in with your new password.'}
+              {invite ? t('common.accountReady') : t('common.passwordUpdatedDesc')}
             </p>
             <Link to="/auth/login" className="btn-primary inline-block px-6 py-2">
-              Sign In
+              {t('common.signIn')}
             </Link>
           </div>
         ) : !token ? (
           /* Invalid / missing token */
           <div className="text-center space-y-4">
             <AlertCircle className="w-14 h-14 text-danger-ink mx-auto" aria-hidden="true" />
-            <h1 className="text-2xl font-bold text-brand-ink font-heading">Invalid link</h1>
+            <h1 className="text-2xl font-bold text-brand-ink font-heading">{t('common.invalidLink')}</h1>
             <p className="text-sm text-warm-gray">{error}</p>
             {!invite && (
               <Link
                 to="/auth/forgot-password"
                 className="inline-flex items-center gap-1.5 text-sm text-brand-ink hover:text-brand-ink/80 font-medium transition-colors"
               >
-                Request a new reset link
+                {t('common.requestNewLink')}
               </Link>
             )}
           </div>
@@ -126,12 +126,10 @@ export default function ResetPasswordPage({ invite = false }: ResetPasswordPageP
                 <KeyRound className="w-10 h-10 text-brand-ink/70" aria-hidden="true" />
               </div>
               <h1 className="text-2xl font-bold text-brand-ink font-heading">
-                {invite ? 'Welcome to CozyVTT' : 'Set new password'}
+                {invite ? t('common.welcomeToCozy') : t('common.setNewPassword')}
               </h1>
               <p className="mt-2 text-sm text-warm-gray">
-                {invite
-                  ? 'Choose a password to finish setting up your account.'
-                  : 'Choose a strong password for your account.'}
+                {invite ? t('common.choosePasswordForAccount') : t('common.chooseStrongPassword')}
               </p>
             </div>
 
@@ -146,7 +144,7 @@ export default function ResetPasswordPage({ invite = false }: ResetPasswordPageP
               {/* New password */}
               <div>
                 <label htmlFor="password" className="block text-sm font-medium text-brand-ink mb-1">
-                  New password
+                  {t('common.newPassword')}
                 </label>
                 <input
                   id="password"
@@ -184,7 +182,7 @@ export default function ResetPasswordPage({ invite = false }: ResetPasswordPageP
               {/* Confirm password */}
               <div>
                 <label htmlFor="confirm-password" className="block text-sm font-medium text-brand-ink mb-1">
-                  Confirm new password
+                  {t('common.confirmNewPassword')}
                 </label>
                 <input
                   id="confirm-password"
@@ -217,10 +215,10 @@ export default function ResetPasswordPage({ invite = false }: ResetPasswordPageP
                       <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4" />
                       <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z" />
                     </svg>
-                    Updating...
+                    {t('common.updating')}
                   </span>
                 ) : (
-                  invite ? 'Create My Account' : 'Set New Password'
+                  invite ? t('common.createMyAccount') : t('common.setNewPassword')
                 )}
               </Button>
             </form>
@@ -231,7 +229,7 @@ export default function ResetPasswordPage({ invite = false }: ResetPasswordPageP
                 className="inline-flex items-center gap-1.5 text-sm text-brand-ink hover:text-brand-ink/80 transition-colors"
               >
                 <ArrowLeft className="w-4 h-4" aria-hidden="true" />
-                Back to Sign In
+                {t('common.backToSignIn')}
               </Link>
             </div>
           </>
