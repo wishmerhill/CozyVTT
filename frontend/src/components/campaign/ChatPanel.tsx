@@ -6,6 +6,7 @@
 import { useState, useEffect, useRef, FormEvent, KeyboardEvent } from 'react';
 import { MessageCircle, Send, Loader, AlertCircle, Eraser } from 'lucide-react';
 import { useParams } from 'react-router-dom';
+import { useTranslation } from 'react-i18next';
 import { useWebSocket } from '@/contexts/WebSocketContext';
 import { useAuth } from '@/contexts/AuthContext';
 import { useCampaign } from '@/contexts/CampaignContext';
@@ -19,6 +20,7 @@ import type { Message, ChatMessageBroadcast } from '@/types';
 import Button from '@/components/ui/Button';
 
 export default function ChatPanel() {
+  const { t } = useTranslation(['campaign', 'common']);
   const { id: campaignId } = useParams<{ id: string }>();
   const { socket, reconnectCount } = useWebSocket();
   const { user } = useAuth();
@@ -132,7 +134,7 @@ export default function ChatPanel() {
         setTimeout(() => scrollToBottom(false), 100);
       } catch (err: any) {
         console.error('[ChatPanel] Failed to load messages:', err);
-        setError(err.message || 'Failed to load messages');
+        setError(err.message || t('chat.failedToLoad'));
       } finally {
         setIsLoading(false);
       }
@@ -211,7 +213,7 @@ export default function ChatPanel() {
       setHasMore(fetchedMessages.length === 50);
     } catch (err: any) {
       console.error('[ChatPanel] Failed to load more messages:', err);
-      setError(err.message || 'Failed to load more messages');
+      setError(err.message || t('chat.failedToLoad'));
     } finally {
       setIsLoadingMore(false);
     }
@@ -422,7 +424,7 @@ export default function ChatPanel() {
       startCooldown();
     } catch (err) {
       console.error('[ChatPanel] Failed to send message:', err);
-      setError('Failed to send message');
+      setError(t('chat.failedToLoad'));
     }
   };
 
@@ -459,18 +461,18 @@ export default function ChatPanel() {
       {/* Chat Header */}
       <div className="flex items-center gap-2 p-4 border-b border-moss-green/20">
         <MessageCircle className="w-5 h-5 text-brand-ink" />
-        <h3 className="text-lg font-semibold text-brand-ink">Chat</h3>
+        <h3 className="text-lg font-semibold text-brand-ink">{t('chat.title')}</h3>
         {messages.length > 0 && (
           <span className="text-xs text-stone-gray/70 ml-auto">
-            {messages.length} {messages.length === 1 ? 'message' : 'messages'}
+            {t('chat.messageCount', { count: messages.length })}
           </span>
         )}
         {userRole === 'DM' && (
           <button
             onClick={() => setConfirmClearJoins(true)}
             disabled={clearingJoins}
-            aria-label="Clear old join and leave messages"
-            title="Clear old join and leave messages"
+            aria-label={t('chat.clearJoinLeave')}
+            title={t('chat.clearJoinLeave')}
             className={`p-1.5 rounded-lg text-stone-gray hover:text-brand-ink hover:bg-moss-green/10 transition-colors disabled:opacity-50 ${
               messages.length > 0 ? '' : 'ml-auto'
             }`}
@@ -482,10 +484,10 @@ export default function ChatPanel() {
 
       <ConfirmDialog
         isOpen={confirmClearJoins}
-        title="Clear join and leave messages?"
-        message="Removes the old “has joined” and “has left” notices from this campaign's chat for everyone. The rest of the conversation is untouched, and no new ones are created."
-        confirmLabel="Clear"
-        cancelLabel="Keep"
+        title={t('chat.clearJoinLeaveTitle')}
+        message={t('chat.clearJoinLeaveMessage')}
+        confirmLabel={t('chat.clear')}
+        cancelLabel={t('chat.keep')}
         variant="warning"
         onConfirm={handleClearJoinLeave}
         onCancel={() => setConfirmClearJoins(false)}
@@ -505,7 +507,7 @@ export default function ChatPanel() {
         onScroll={handleScroll}
         role="log"
         aria-live="polite"
-        aria-label="Chat messages"
+        aria-label={t('chat.messages')}
         aria-relevant="additions"
         className="flex-1 overflow-y-auto p-4 space-y-3"
       >
@@ -520,10 +522,10 @@ export default function ChatPanel() {
               {isLoadingMore ? (
                 <>
                   <Loader className="w-3 h-3 animate-spin mr-2" />
-                  Loading...
+                  {t('chat.loading')}
                 </>
               ) : (
-                'Load More'
+                t('chat.loadMore')
               )}
             </Button>
           </div>
@@ -533,9 +535,9 @@ export default function ChatPanel() {
         {messages.length === 0 ? (
           <div className="text-center py-8">
             <MessageCircle className="w-12 h-12 text-brand-ink/30 mx-auto mb-3" />
-            <p className="text-sm text-warm-gray mb-2">No messages yet</p>
+            <p className="text-sm text-warm-gray mb-2">{t('chat.noMessages')}</p>
             <p className="text-xs text-stone-gray/70">
-              Start a conversation with your party
+              {t('chat.startConversation')}
             </p>
           </div>
         ) : (
@@ -561,8 +563,8 @@ export default function ChatPanel() {
               value={messageInput}
               onChange={(e) => setMessageInput(e.target.value)}
               onKeyDown={handleKeyDown}
-              placeholder="Type a message... (Enter to send, Shift+Enter for new line)"
-              aria-label="Chat message"
+              placeholder={t('chat.typeMessage')}
+              aria-label={t('chat.message')}
               aria-describedby="chat-hint"
               className="input-cozy flex-1 text-sm resize-none min-h-[60px] max-h-[120px]"
               rows={2}
@@ -572,7 +574,7 @@ export default function ChatPanel() {
               type="submit"
               className="px-4 py-2 flex items-center gap-2"
               disabled={!messageInput.trim() || !canSend}
-              aria-label={!canSend ? `Rate limited — wait ${cooldownSeconds} seconds` : 'Send message'}
+              aria-label={!canSend ? t('chat.rateLimited', { seconds: cooldownSeconds }) : t('chat.send')}
             >
               {!canSend && cooldownSeconds > 0 ? (
                 <span className="text-sm font-mono" aria-hidden="true">{cooldownSeconds}s</span>
@@ -585,12 +587,12 @@ export default function ChatPanel() {
           {/* Rate Limiting Feedback */}
           {!canSend && cooldownSeconds > 0 && (
             <p className="text-xs text-warning-ink text-center">
-              Wait {cooldownSeconds}s before sending another message
+              {t('chat.waitCooldown', { seconds: cooldownSeconds })}
             </p>
           )}
           {canSend && (
             <p id="chat-hint" className="text-xs text-stone-gray/70 text-center">
-              Press Enter to send, Shift+Enter for new line
+              {t('chat.pressEnter')}
             </p>
           )}
         </form>

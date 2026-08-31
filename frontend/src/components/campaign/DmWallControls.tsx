@@ -7,17 +7,18 @@
  */
 
 import { useState } from 'react';
+import { useTranslation } from 'react-i18next';
 import type { WallType } from '@/types/walls';
 
 export type WallToolMode = 'wall-draw' | 'wall-select' | 'wall-split' | 'wall-erase' | 'wall-polygon' | 'wall-brush' | null;
 
 export const WALL_PRESET_COLORS = [
-  { label: 'Orange (default)', value: '#f97316' },
-  { label: 'White', value: '#ffffff' },
-  { label: 'Yellow', value: '#facc15' },
-  { label: 'Cyan', value: '#22d3ee' },
-  { label: 'Red', value: '#ef4444' },
-  { label: 'Green', value: '#4ade80' },
+  { labelKey: 'walls.orange', value: '#f97316' },
+  { labelKey: 'walls.white', value: '#ffffff' },
+  { labelKey: 'walls.yellow', value: '#facc15' },
+  { labelKey: 'walls.cyan', value: '#22d3ee' },
+  { labelKey: 'walls.red', value: '#ef4444' },
+  { labelKey: 'walls.green', value: '#4ade80' },
 ];
 
 interface DmWallControlsProps {
@@ -55,14 +56,6 @@ const WALL_TYPE_COLORS: Record<WallType, string> = {
   'window':      'bg-blue-400/20 text-blue-300 border-blue-400/50',
 };
 
-const WALL_TYPE_LABELS: Record<WallType, string> = {
-  'wall':        'Wall',
-  'door-closed': 'Door',
-  'door-open':   'Open Door',
-  'door-locked': 'Locked',
-  'window':      'Window',
-};
-
 const ALL_WALL_TYPES: WallType[] = ['wall', 'door-closed', 'door-open', 'door-locked', 'window'];
 
 export default function DmWallControls({
@@ -91,6 +84,7 @@ export default function DmWallControls({
   onBrushSizeChange,
   onCollapse,
 }: DmWallControlsProps) {
+  const { t } = useTranslation('campaign');
   const [confirmClear, setConfirmClear] = useState(false);
   const [collapsed, setCollapsed] = useState(false);
 
@@ -116,7 +110,7 @@ export default function DmWallControls({
         }}
       >
         <span className="text-xs text-warm-amber/70 font-medium uppercase tracking-wide">
-          Walls
+          {t('walls.title')}
           {wallCount > 0 && (
             <span className="ml-1 text-stone-400 normal-case">({wallCount})</span>
           )}
@@ -135,10 +129,10 @@ export default function DmWallControls({
                   ? 'bg-orange-600/30 text-orange-400 border-orange-500/50'
                   : 'bg-stone-700/50 text-stone-300 border-stone-600/50 hover:bg-stone-700'
               }`}
-              title="Draw walls — click to place points, double-click to finish"
-              aria-label="Wall draw mode"
+              title={t('walls.drawTool')}
+              aria-label={t('walls.drawTool')}
             >
-              ✏️ Draw
+              ✏️ {t('walls.drawTool')}
             </button>
             <button
               onClick={() => toggleMode('wall-select')}
@@ -147,10 +141,10 @@ export default function DmWallControls({
                   ? 'bg-sky-600/30 text-sky-400 border-sky-500/50'
                   : 'bg-stone-700/50 text-stone-300 border-stone-600/50 hover:bg-stone-700'
               }`}
-              title="Select a wall segment to change its type or delete it"
-              aria-label="Wall select mode"
+              title={t('walls.selectTool')}
+              aria-label={t('walls.selectTool')}
             >
-              ↗ Select
+              ↗ {t('walls.selectTool')}
             </button>
             <button
               onClick={() => toggleMode('wall-split')}
@@ -159,10 +153,10 @@ export default function DmWallControls({
                   ? 'bg-yellow-600/30 text-yellow-400 border-yellow-500/50'
                   : 'bg-stone-700/50 text-stone-300 border-stone-600/50 hover:bg-stone-700'
               }`}
-              title="Split a wall segment — hover over a wall to preview the split point, click to split"
-              aria-label="Wall split mode"
+              title={t('walls.splitTool')}
+              aria-label={t('walls.splitTool')}
             >
-              ✂ Split
+              ✂ {t('walls.splitTool')}
             </button>
             <button
               onClick={() => toggleMode('wall-erase')}
@@ -171,10 +165,10 @@ export default function DmWallControls({
                   ? 'bg-red-600/30 text-red-400 border-red-500/50'
                   : 'bg-stone-700/50 text-stone-300 border-stone-600/50 hover:bg-stone-700'
               }`}
-              title="Erase walls — drag to brush-erase multiple segments"
-              aria-label="Wall erase mode"
+              title={t('walls.eraseTool')}
+              aria-label={t('walls.eraseTool')}
             >
-              🗑 Erase
+              🗑 {t('walls.eraseTool')}
             </button>
           </div>
           {/* Polygon + Brush mode */}
@@ -186,10 +180,10 @@ export default function DmWallControls({
                   ? 'bg-emerald-600/30 text-emerald-400 border-emerald-500/50'
                   : 'bg-stone-700/50 text-stone-300 border-stone-600/50 hover:bg-stone-700'
               }`}
-              title="Polygon mode — click corners to draw a closed room perimeter"
-              aria-label="Polygon wall mode"
+              title={t('walls.polygonTool')}
+              aria-label={t('walls.polygonTool')}
             >
-              ⬡ Polygon
+              ⬡ {t('walls.polygonTool')}
             </button>
             <button
               onClick={() => toggleMode('wall-brush')}
@@ -198,10 +192,10 @@ export default function DmWallControls({
                   ? 'bg-teal-600/30 text-teal-400 border-teal-500/50'
                   : 'bg-stone-700/50 text-stone-300 border-stone-600/50 hover:bg-stone-700'
               }`}
-              title="Brush mode — paint over walls to trace them. Use snap-to-grid for straight walls."
-              aria-label="Brush wall mode"
+              title={t('walls.brushTool')}
+              aria-label={t('walls.brushTool')}
             >
-              🖌 Brush
+              🖌 {t('walls.brushTool')}
             </button>
           </div>
 
@@ -209,7 +203,7 @@ export default function DmWallControls({
           {wallMode === 'wall-brush' && onBrushSizeChange && (
             <div className="flex flex-col gap-0.5">
               <div className="flex justify-between text-xs text-stone-400 px-1">
-                <span>Brush size</span>
+                <span>{t('walls.brushSize')}</span>
                 <span>{brushSize}px</span>
               </div>
               <input
@@ -220,7 +214,7 @@ export default function DmWallControls({
                 value={brushSize}
                 onChange={(e) => onBrushSizeChange(Number(e.target.value))}
                 className="w-full accent-teal-500"
-                aria-label="Brush size for wall painting"
+                aria-label={t('walls.brushSize')}
               />
             </div>
           )}
@@ -228,29 +222,29 @@ export default function DmWallControls({
           {/* Selected segment type picker (wall-select mode with a segment chosen) */}
           {wallMode === 'wall-select' && selectedSegmentType != null && (
             <div className="flex flex-col gap-1 pt-1 border-t border-sky-500/30">
-              <span className="text-xs text-sky-300 px-1">Change type</span>
+              <span className="text-xs text-sky-300 px-1">{t('walls.changeType')}</span>
               <div className="grid grid-cols-2 gap-1">
-                {ALL_WALL_TYPES.map((t) => (
+                {ALL_WALL_TYPES.map((wt) => (
                   <button
-                    key={t}
-                    onClick={() => onSelectedTypeChange?.(t)}
+                    key={wt}
+                    onClick={() => onSelectedTypeChange?.(wt)}
                     className={`px-2 py-1 rounded text-xs font-medium transition-colors border ${
-                      selectedSegmentType === t
-                        ? WALL_TYPE_COLORS[t]
+                      selectedSegmentType === wt
+                        ? WALL_TYPE_COLORS[wt]
                         : 'bg-stone-700/50 text-stone-400 border-stone-600/50 hover:bg-stone-700'
                     }`}
-                    aria-label={`Set type: ${WALL_TYPE_LABELS[t]}`}
+                    aria-label={`${t('walls.changeType')}: ${t(`walls.${wt}`)}`}
                   >
-                    {WALL_TYPE_LABELS[t]}
+                    {t(`walls.${wt}`)}
                   </button>
                 ))}
               </div>
               <button
                 onClick={onDeleteSelected}
                 className="w-full px-2 py-1 mt-0.5 rounded text-xs font-medium bg-red-700/30 text-red-400 border border-red-500/40 hover:bg-red-700/50 transition-colors"
-                aria-label="Delete selected wall segment"
+                aria-label={t('walls.deleteSegment')}
               >
-                Delete segment
+                {t('walls.deleteSegment')}
               </button>
             </div>
           )}
@@ -258,35 +252,35 @@ export default function DmWallControls({
           {/* Selected endpoint — merge option (wall-select mode, endpoint clicked) */}
           {wallMode === 'wall-select' && selectedEndpoint != null && selectedSegmentType == null && (
             <div className="flex flex-col gap-1 pt-1 border-t border-sky-500/30">
-              <span className="text-xs text-sky-300 px-1">Selected point</span>
+              <span className="text-xs text-sky-300 px-1">{t('walls.selectedPoint')}</span>
               <button
                 onClick={onMergeEndpoint}
                 className="w-full px-2 py-1 rounded text-xs font-medium bg-sky-700/30 text-sky-300 border border-sky-500/40 hover:bg-sky-700/50 transition-colors"
-                aria-label="Merge wall segments at this point"
+                aria-label={t('walls.mergePoint')}
               >
-                Merge point
+                {t('walls.mergePoint')}
               </button>
-              <span className="text-[10px] text-stone-300 px-1">Remove this point and join the two segments into one straight wall</span>
+              <span className="text-[10px] text-stone-300 px-1">{t('walls.mergePointDesc')}</span>
             </div>
           )}
 
           {/* Wall type selector (draw, polygon, brush modes) */}
           {(wallMode === 'wall-draw' || wallMode === 'wall-polygon' || wallMode === 'wall-brush') && (
             <div className="flex flex-col gap-1">
-              <span className="text-xs text-stone-400 px-1">Draw type</span>
+              <span className="text-xs text-stone-400 px-1">{t('walls.drawType')}</span>
               <div className="grid grid-cols-2 gap-1">
-                {ALL_WALL_TYPES.map((t) => (
+                {ALL_WALL_TYPES.map((wt) => (
                   <button
-                    key={t}
-                    onClick={() => onWallTypeChange(t)}
+                    key={wt}
+                    onClick={() => onWallTypeChange(wt)}
                     className={`px-2 py-1 rounded text-xs font-medium transition-colors border ${
-                      wallType === t
-                        ? WALL_TYPE_COLORS[t]
+                      wallType === wt
+                        ? WALL_TYPE_COLORS[wt]
                         : 'bg-stone-700/50 text-stone-400 border-stone-600/50 hover:bg-stone-700'
                     }`}
-                    aria-label={`Wall type: ${WALL_TYPE_LABELS[t]}`}
+                    aria-label={`${t('walls.drawType')}: ${t(`walls.${wt}`)}`}
                   >
-                    {WALL_TYPE_LABELS[t]}
+                    {t(`walls.${wt}`)}
                   </button>
                 ))}
               </div>
@@ -300,38 +294,38 @@ export default function DmWallControls({
                 onClick={onUndo}
                 disabled={!canUndo}
                 className="flex-1 px-2 py-1 rounded text-xs font-medium bg-stone-700/50 text-stone-300 border border-stone-600/50 hover:bg-stone-700 transition-colors disabled:opacity-40 disabled:cursor-not-allowed"
-                title="Undo last wall change (Ctrl+Z)"
-                aria-label="Undo wall edit"
+                title={t('walls.undo')}
+                aria-label={t('walls.undo')}
               >
-                ↩ Undo
+                ↩ {t('walls.undo')}
               </button>
               <button
                 onClick={onRedo}
                 disabled={!canRedo}
                 className="flex-1 px-2 py-1 rounded text-xs font-medium bg-stone-700/50 text-stone-300 border border-stone-600/50 hover:bg-stone-700 transition-colors disabled:opacity-40 disabled:cursor-not-allowed"
-                title="Redo wall change (Ctrl+Y)"
-                aria-label="Redo wall edit"
+                title={t('walls.redo')}
+                aria-label={t('walls.redo')}
               >
-                ↪ Redo
+                ↪ {t('walls.redo')}
               </button>
             </div>
           )}
 
           {/* Wall color picker */}
           <div className="flex flex-col gap-1">
-            <span className="text-xs text-stone-400 px-1">Wall color</span>
+            <span className="text-xs text-stone-400 px-1">{t('walls.wallColor')}</span>
             <div className="flex gap-1 flex-wrap px-1">
               {WALL_PRESET_COLORS.map((c) => (
                 <button
                   key={c.value}
                   onClick={() => onWallColorChange(c.value)}
-                  title={c.label}
+                  title={t(c.labelKey)}
                   className="w-5 h-5 rounded-full border-2 transition-transform hover:scale-110"
                   style={{
                     backgroundColor: c.value,
                     borderColor: wallColor === c.value ? '#fff' : 'transparent',
                   }}
-                  aria-label={`Wall color: ${c.label}`}
+                  aria-label={t(c.labelKey)}
                 />
               ))}
               <input
@@ -339,8 +333,8 @@ export default function DmWallControls({
                 value={wallColor}
                 onChange={(e) => onWallColorChange(e.target.value)}
                 className="w-5 h-5 rounded cursor-pointer border-0 bg-transparent p-0"
-                title="Custom wall color"
-                aria-label="Custom wall color picker"
+                title={t('walls.customColor')}
+                aria-label={t('walls.customColor')}
               />
             </div>
           </div>
@@ -355,9 +349,9 @@ export default function DmWallControls({
                 if (e.target.checked) onSnapToEndpointChange(false);
               }}
               className="accent-warm-amber"
-              aria-label="Snap wall points to grid"
+              aria-label={t('walls.snapToGrid')}
             />
-            <span className="text-xs text-stone-300">Snap to grid</span>
+            <span className="text-xs text-stone-300">{t('walls.snapToGrid')}</span>
           </label>
 
           {/* Snap to nearest endpoint — only available when grid snap is off */}
@@ -368,9 +362,9 @@ export default function DmWallControls({
               disabled={snapToGrid}
               onChange={(e) => onSnapToEndpointChange(e.target.checked)}
               className="accent-warm-amber"
-              aria-label="Snap wall points to nearest existing endpoint"
+              aria-label={t('walls.snapToEndpoint')}
             />
-            <span className="text-xs text-stone-300">Snap to endpoint</span>
+            <span className="text-xs text-stone-300">{t('walls.snapToEndpoint')}</span>
           </label>
 
           {/* Clear all */}
@@ -383,11 +377,11 @@ export default function DmWallControls({
                     ? 'bg-red-500 text-white animate-pulse'
                     : 'bg-stone-700/50 text-stone-300 border border-stone-600/50 hover:bg-red-700/30 hover:text-red-400'
                 }`}
-                title={confirmClear ? 'Click again to confirm: delete all walls' : 'Delete all wall segments'}
-                aria-label="Clear all wall segments"
+                title={confirmClear ? t('walls.confirmClearAll') : t('walls.clearAllDesc')}
+                aria-label={t('walls.clearAllDesc')}
                 onBlur={() => setConfirmClear(false)}
               >
-                {confirmClear ? 'Confirm clear all?' : `Clear all (${wallCount})`}
+                {confirmClear ? t('walls.confirmClearAll') : t('walls.clearAll', { count: wallCount })}
               </button>
             </div>
           )}

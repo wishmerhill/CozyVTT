@@ -6,6 +6,7 @@
  */
 
 import { useState } from 'react';
+import { useTranslation } from 'react-i18next';
 import { Eye, EyeOff } from 'lucide-react';
 
 export type FogToolMode = 'fog-reveal' | 'fog-hide' | null;
@@ -23,6 +24,7 @@ export default function DmFogControls({
   onRevealAll,
   onHideAll,
 }: DmFogControlsProps) {
+  const { t } = useTranslation('campaign');
   const [confirmRevealAll, setConfirmRevealAll] = useState(false);
   const [confirmHideAll, setConfirmHideAll] = useState(false);
   const [collapsed, setCollapsed] = useState(false);
@@ -46,7 +48,7 @@ export default function DmFogControls({
         className="flex items-center justify-between px-2 py-1.5 cursor-pointer hover:bg-stone-700/50 select-none"
         onClick={() => setCollapsed((c) => !c)}
       >
-        <span className="text-xs text-warm-amber/70 font-medium uppercase tracking-wide">Fog of War</span>
+        <span className="text-xs text-warm-amber/70 font-medium uppercase tracking-wide">{t('fog.title')}</span>
         <span className="text-stone-400 text-xs">{collapsed ? '▶' : '▼'}</span>
       </div>
     {!collapsed && (
@@ -61,11 +63,11 @@ export default function DmFogControls({
               ? 'bg-lime-600/30 text-lime-400 border border-lime-500/50'
               : 'bg-stone-700/50 text-stone-300 border border-stone-600/50 hover:bg-stone-700'
           }`}
-          title="Reveal — drag a box over the map to reveal it to players"
-          aria-label="Fog reveal box"
+          title={t('fog.revealTool')}
+          aria-label={t('fog.revealTool')}
         >
           <Eye className="w-3.5 h-3.5" />
-          Reveal
+          {t('fog.reveal')}
         </button>
         <button
           onClick={() => onFogModeChange(fogMode === 'fog-hide' ? null : 'fog-hide')}
@@ -74,20 +76,19 @@ export default function DmFogControls({
               ? 'bg-warning/30 text-warning-ink border border-warning/50'
               : 'bg-stone-700/50 text-stone-300 border border-stone-600/50 hover:bg-stone-700'
           }`}
-          title="Hide — drag a box over the map to hide it from players"
-          aria-label="Fog hide box"
+          title={t('fog.hideTool')}
+          aria-label={t('fog.hideTool')}
         >
           <EyeOff className="w-3.5 h-3.5" />
-          Hide
+          {t('fog.hide')}
         </button>
       </div>
 
       {/* How-to hint — only while a mode is armed */}
       {fogMode && (
         <p className="px-1 text-[11px] leading-snug text-stone-400">
-          Drag a box over the map. The selection snaps to whole squares —
-          click a single square to {fogMode === 'fog-reveal' ? 'reveal' : 'hide'} just that one.
-          <span className="block mt-0.5 text-stone-500">Esc or right-drag cancels.</span>
+          {t('fog.dragHint', { mode: fogMode === 'fog-reveal' ? t('fog.reveal').toLowerCase() : t('fog.hide').toLowerCase() })}
+          <span className="block mt-0.5 text-stone-500">{t('fog.escHint')}</span>
         </p>
       )}
 
@@ -100,11 +101,11 @@ export default function DmFogControls({
               ? 'bg-lime-500 text-white animate-pulse'
               : 'bg-stone-700/50 text-stone-300 border border-stone-600/50 hover:bg-lime-700/30 hover:text-lime-400'
           }`}
-          title={confirmRevealAll ? 'Click again to confirm: reveal entire map' : 'Reveal all — show entire map to players'}
-          aria-label="Reveal entire map"
+          title={confirmRevealAll ? t('fog.confirmRevealAll') : t('fog.revealAllDesc')}
+          aria-label={t('fog.revealAll')}
           onBlur={() => setConfirmRevealAll(false)}
         >
-          {confirmRevealAll ? 'Confirm?' : 'Reveal all'}
+          {confirmRevealAll ? t('fog.confirmQuestion') : t('fog.revealAll')}
         </button>
         <button
           onClick={handleHideAll}
@@ -113,11 +114,11 @@ export default function DmFogControls({
               ? 'bg-warning text-white animate-pulse'
               : 'bg-stone-700/50 text-stone-300 border border-stone-600/50 hover:bg-warning/30 hover:text-warning-ink'
           }`}
-          title={confirmHideAll ? 'Click again to confirm: hide entire map' : 'Hide all — cover entire map with fog'}
-          aria-label="Hide entire map"
+          title={confirmHideAll ? t('fog.confirmHideAll') : t('fog.hideAllDesc')}
+          aria-label={t('fog.hideAll')}
           onBlur={() => setConfirmHideAll(false)}
         >
-          {confirmHideAll ? 'Confirm?' : 'Hide all'}
+          {confirmHideAll ? t('fog.confirmQuestion') : t('fog.hideAll')}
         </button>
       </div>
     </div>
