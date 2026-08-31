@@ -1,0 +1,13 @@
+/**
+ * Type augmentation for i18next.
+ *
+ * We intentionally keep this minimal to avoid conflicts with namespace-prefixed
+ * keys (e.g. "character:sheet.edit"). The `t()` function accepts any string key
+ * at runtime; type safety is maintained through convention and testing.
+ */
+
+declare module 'i18next' {
+  interface CustomTypeOptions {
+    defaultNS: 'common';
+  }
+}

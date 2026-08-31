@@ -6,6 +6,7 @@
  */
 
 import React, { useState, useEffect, useRef } from 'react';
+import { useTranslation } from 'react-i18next';
 import {
   Heart,
   Shield,
@@ -53,12 +54,12 @@ interface Tab {
 }
 
 const TABS: Tab[] = [
-  { id: 'stats', label: 'Stats & Skills', icon: Target },
-  { id: 'combat', label: 'Combat', icon: Swords },
-  { id: 'spells', label: 'Spells', icon: Sparkles },
-  { id: 'inventory', label: 'Inventory', icon: Package },
-  { id: 'features', label: 'Features', icon: BookOpen },
-  { id: 'bio', label: 'Biography', icon: User },
+  { id: 'stats', label: 'character:sheet.statsAndSkills', icon: Target },
+  { id: 'combat', label: 'character:sheet.combat', icon: Swords },
+  { id: 'spells', label: 'character:sheet.spells', icon: Sparkles },
+  { id: 'inventory', label: 'character:sheet.inventory', icon: Package },
+  { id: 'features', label: 'character:sheet.features', icon: BookOpen },
+  { id: 'bio', label: 'character:sheet.bio', icon: User },
 ];
 
 // D&D 5e color presets for character sheets (same as editor)
@@ -81,6 +82,7 @@ const COLOR_PRESETS = [
  * DnD5eCharacterView - Read-only D&D 5e character sheet
  */
 export const DnD5eCharacterView: React.FC<DnD5eCharacterViewProps> = ({ character, onEdit, onRoll }) => {
+  const { t } = useTranslation(['character', 'game-systems']);
   const [activeTab, setActiveTab] = useState<TabId>('stats');
   const data = character.data as any; // Type will be DnD5eCharacterData
   const [themeColor, setThemeColor] = useState(COLOR_PRESETS[0]);
@@ -149,10 +151,10 @@ export const DnD5eCharacterView: React.FC<DnD5eCharacterViewProps> = ({ characte
           <button
             onClick={onEdit}
             className="absolute top-4 right-4 px-4 py-2 bg-white/20 hover:bg-white/30 rounded-lg transition-colors flex items-center space-x-2 font-medium"
-            title="Edit character"
+            title={t('sheet.edit')}
           >
             <Edit className="w-4 h-4" />
-            <span>Edit</span>
+            <span>{t('sheet.edit')}</span>
           </button>
         )}
 
@@ -175,10 +177,10 @@ export const DnD5eCharacterView: React.FC<DnD5eCharacterViewProps> = ({ characte
 
           {/* Character Info */}
           <div>
-            <h2 className="text-3xl font-bold mb-1">{data.characterName || 'Unnamed Character'}</h2>
+            <h2 className="text-3xl font-bold mb-1">{data.characterName || t('sheet.unnamedCharacter')}</h2>
             <div className="flex items-center space-x-4 text-red-100">
               <span>
-                Level {data.level} {data.race} {data.class}
+                {t('sheet.level')} {data.level} {data.race} {data.class}
               </span>
               {data.alignment && <span>• {data.alignment}</span>}
               {data.background && <span>• {data.background}</span>}
@@ -188,7 +190,7 @@ export const DnD5eCharacterView: React.FC<DnD5eCharacterViewProps> = ({ characte
 
         {data.experiencePoints !== undefined && (
           <div className="text-right">
-            <div className="text-xs text-red-200">Experience</div>
+            <div className="text-xs text-red-200">{t('sheet.experience')}</div>
             <div className="text-xl font-bold">{data.experiencePoints.toLocaleString()}</div>
           </div>
         )}
@@ -216,7 +218,7 @@ export const DnD5eCharacterView: React.FC<DnD5eCharacterViewProps> = ({ characte
             `}
           >
             <Icon className="w-4 h-4" />
-            <span>{tab.label}</span>
+            <span>{t(tab.label)}</span>
           </button>
         );
       })}
@@ -228,16 +230,16 @@ export const DnD5eCharacterView: React.FC<DnD5eCharacterViewProps> = ({ characte
     <div className="space-y-6">
       {/* Ability Scores */}
       <div>
-        <h3 className="text-lg font-semibold text-stone-800 mb-3">Ability Scores</h3>
+        <h3 className="text-lg font-semibold text-stone-800 mb-3">{t('sheet.abilityScores')}</h3>
         <div className="grid grid-cols-3 md:grid-cols-6 gap-4">
           {data.stats && (() => {
             const statEntries: Array<[string, string, keyof typeof data.stats]> = [
-              ['STR', 'Strength', 'strength'],
-              ['DEX', 'Dexterity', 'dexterity'],
-              ['CON', 'Constitution', 'constitution'],
-              ['INT', 'Intelligence', 'intelligence'],
-              ['WIS', 'Wisdom', 'wisdom'],
-              ['CHA', 'Charisma', 'charisma'],
+              ['STR', t('game-systems:dnd5e.abilities.str'), 'strength'],
+              ['DEX', t('game-systems:dnd5e.abilities.dex'), 'dexterity'],
+              ['CON', t('game-systems:dnd5e.abilities.con'), 'constitution'],
+              ['INT', t('game-systems:dnd5e.abilities.int'), 'intelligence'],
+              ['WIS', t('game-systems:dnd5e.abilities.wis'), 'wisdom'],
+              ['CHA', t('game-systems:dnd5e.abilities.cha'), 'charisma'],
             ];
             return statEntries.map(([label, fullName, key]) => {
               const stat = data.stats[key];
@@ -265,18 +267,18 @@ export const DnD5eCharacterView: React.FC<DnD5eCharacterViewProps> = ({ characte
       {/* Saving Throws */}
       {data.savingThrows && (
         <div>
-          <h3 className="text-lg font-semibold text-stone-800 mb-3">Saving Throws</h3>
+          <h3 className="text-lg font-semibold text-stone-800 mb-3">{t('sheet.savingThrows')}</h3>
           <div className="grid grid-cols-2 md:grid-cols-3 gap-2 bg-stone-50 border border-stone-200 rounded-lg p-4">
             {Object.entries(data.savingThrows).map(([key, save]: [string, any]) => {
               const expr = save.bonus >= 0 ? `1d20+${save.bonus}` : `1d20${save.bonus}`;
-              const purpose = `${key.charAt(0).toUpperCase() + key.slice(1)} Save`;
+              const purpose = `${key.charAt(0).toUpperCase() + key.slice(1)} ${t('sheet.save')}`;
               return (
                 <div
                   key={key}
                   className={`flex items-center justify-between py-1 px-2 rounded group ${onRoll ? 'cursor-pointer hover:bg-red-50 select-none' : ''}`}
                   onClick={onRoll ? () => handleRoll(expr, purpose) : undefined}
                   onContextMenu={onRoll ? (e) => showRollPopup(e, expr, purpose) : undefined}
-                  title={onRoll ? `Left-click: roll  |  Right-click: Advantage / Disadvantage` : undefined}
+                  title={onRoll ? `${t('sheet.leftClickRoll')}  |  ${t('sheet.rightClickAdvantage')}` : undefined}
                 >
                   <div className="flex items-center gap-1">
                     {onRoll && <Dices className="w-3 h-3 text-red-700 opacity-0 group-hover:opacity-60 transition-opacity" />}
@@ -296,7 +298,7 @@ export const DnD5eCharacterView: React.FC<DnD5eCharacterViewProps> = ({ characte
       {/* Skills */}
       {data.skills && (
         <div>
-          <h3 className="text-lg font-semibold text-stone-800 mb-3">Skills</h3>
+          <h3 className="text-lg font-semibold text-stone-800 mb-3">{t('sheet.skills')}</h3>
           <div className="bg-stone-50 border border-stone-200 rounded-lg p-4">
             <SkillsList
               skills={data.skills}
@@ -321,16 +323,16 @@ export const DnD5eCharacterView: React.FC<DnD5eCharacterViewProps> = ({ characte
       {/* Proficiency Bonus & Inspiration */}
       <div className="grid grid-cols-2 gap-4">
         <div className="bg-red-50 border-2 border-red-200 rounded-lg p-4 text-center">
-          <div className="text-sm text-stone-600 mb-1">Proficiency Bonus</div>
+          <div className="text-sm text-stone-600 mb-1">{t('sheet.proficiencyBonus')}</div>
           <div className="text-2xl font-bold text-red-700">
             {formatModifier(data.proficiencyBonus)}
           </div>
         </div>
         {data.inspiration !== undefined && (
           <div className="bg-yellow-50 border-2 border-yellow-200 rounded-lg p-4 text-center">
-            <div className="text-sm text-stone-600 mb-1">Inspiration</div>
+            <div className="text-sm text-stone-600 mb-1">{t('sheet.inspiration')}</div>
             <div className="text-2xl font-bold text-yellow-700">
-              {data.inspiration ? 'Yes' : 'No'}
+              {data.inspiration ? t('sheet.yes') : t('sheet.no')}
             </div>
           </div>
         )}
@@ -346,14 +348,14 @@ export const DnD5eCharacterView: React.FC<DnD5eCharacterViewProps> = ({ characte
         {data.armorClass !== undefined && (
           <div className="bg-stone-50 border-2 border-stone-300 rounded-lg p-4 text-center">
             <Shield className="w-6 h-6 mx-auto mb-2 text-stone-600" />
-            <div className="text-xs text-stone-500 mb-1">Armor Class</div>
+            <div className="text-xs text-stone-500 mb-1">{t('sheet.armorClass')}</div>
             <div className="text-2xl font-bold text-stone-800">{data.armorClass}</div>
           </div>
         )}
         {data.stats?.dexterity !== undefined && (
           <div className="bg-stone-50 border-2 border-stone-300 rounded-lg p-4 text-center">
             <Zap className="w-6 h-6 mx-auto mb-2 text-yellow-600" />
-            <div className="text-xs text-stone-500 mb-1">Initiative</div>
+            <div className="text-xs text-stone-500 mb-1">{t('sheet.initiative')}</div>
             {/* Derived from Dexterity and the sheet's other-bonus field rather
                 than read from the stored total, so this matches the editor and
                 matches what is actually rolled. */}
@@ -365,19 +367,19 @@ export const DnD5eCharacterView: React.FC<DnD5eCharacterViewProps> = ({ characte
         {data.speed !== undefined && (
           <div className="bg-stone-50 border-2 border-stone-300 rounded-lg p-4 text-center">
             <Footprints className="w-6 h-6 mx-auto mb-2 text-blue-600" />
-            <div className="text-xs text-stone-500 mb-1">Speed</div>
+            <div className="text-xs text-stone-500 mb-1">{t('sheet.speed')}</div>
             <div className="text-2xl font-bold text-stone-800">{data.speed} ft</div>
           </div>
         )}
         {data.hp && (
           <div className="bg-red-50 border-2 border-red-300 rounded-lg p-4 text-center">
             <Heart className="w-6 h-6 mx-auto mb-2 text-red-600" />
-            <div className="text-xs text-stone-500 mb-1">Hit Points</div>
+            <div className="text-xs text-stone-500 mb-1">{t('sheet.hitPoints')}</div>
             <div className="text-2xl font-bold text-red-700">
               {data.hp.current}/{data.hp.maximum}
             </div>
             {data.hp.temporary > 0 && (
-              <div className="text-xs text-blue-600 mt-1">+{data.hp.temporary} temp</div>
+              <div className="text-xs text-blue-600 mt-1">+{data.hp.temporary} {t('sheet.temporary')}</div>
             )}
           </div>
         )}
@@ -386,7 +388,7 @@ export const DnD5eCharacterView: React.FC<DnD5eCharacterViewProps> = ({ characte
       {/* Hit Dice */}
       {data.hitDice && data.hitDice.length > 0 && (
         <div className="bg-stone-50 border border-stone-200 rounded-lg p-4">
-          <h3 className="text-lg font-semibold text-stone-800 mb-3">Hit Dice</h3>
+          <h3 className="text-lg font-semibold text-stone-800 mb-3">{t('sheet.hitDice')}</h3>
           <div className="flex flex-wrap gap-3">
             {data.hitDice.map((hd: any, idx: number) => (
               <div key={idx} className="px-4 py-2 bg-white border border-stone-300 rounded-lg">
@@ -403,10 +405,10 @@ export const DnD5eCharacterView: React.FC<DnD5eCharacterViewProps> = ({ characte
       {/* Death Saves */}
       {data.deathSaves && (
         <div className="bg-stone-50 border border-stone-200 rounded-lg p-4">
-          <h3 className="text-lg font-semibold text-stone-800 mb-3">Death Saves</h3>
+          <h3 className="text-lg font-semibold text-stone-800 mb-3">{t('sheet.deathSaves')}</h3>
           <div className="grid grid-cols-2 gap-4">
             <div>
-              <div className="text-sm text-green-700 font-medium mb-2">Successes</div>
+              <div className="text-sm text-green-700 font-medium mb-2">{t('sheet.successes')}</div>
               <div className="flex space-x-2">
                 {[1, 2, 3].map((i) => (
                   <div
@@ -421,7 +423,7 @@ export const DnD5eCharacterView: React.FC<DnD5eCharacterViewProps> = ({ characte
               </div>
             </div>
             <div>
-              <div className="text-sm text-red-700 font-medium mb-2">Failures</div>
+              <div className="text-sm text-red-700 font-medium mb-2">{t('sheet.failures')}</div>
               <div className="flex space-x-2">
                 {[1, 2, 3].map((i) => (
                   <div
@@ -442,7 +444,7 @@ export const DnD5eCharacterView: React.FC<DnD5eCharacterViewProps> = ({ characte
       {/* Conditions */}
       {data.conditions && data.conditions.length > 0 && (
         <div className="bg-orange-50 border border-orange-200 rounded-lg p-4">
-          <h3 className="text-lg font-semibold text-stone-800 mb-3">Conditions</h3>
+          <h3 className="text-lg font-semibold text-stone-800 mb-3">{t('sheet.conditions')}</h3>
           <div className="flex flex-wrap gap-2">
             {data.conditions.map((condition: string, idx: number) => (
               <span
@@ -459,7 +461,7 @@ export const DnD5eCharacterView: React.FC<DnD5eCharacterViewProps> = ({ characte
       {/* Attacks */}
       {data.attacks && (
         <div>
-          <h3 className="text-lg font-semibold text-stone-800 mb-3">Attacks & Weapons</h3>
+          <h3 className="text-lg font-semibold text-stone-800 mb-3">{t('sheet.attacksAndWeapons')}</h3>
           <AttacksList
             attacks={data.attacks}
             onRoll={onRoll ? (expr, purpose) => handleRoll(expr, purpose) : undefined}
@@ -478,7 +480,7 @@ export const DnD5eCharacterView: React.FC<DnD5eCharacterViewProps> = ({ characte
       ) : (
         <div className="text-center py-12 text-stone-500">
           <Sparkles className="w-12 h-12 mx-auto mb-3 text-stone-500" />
-          <p>This character is not a spellcaster</p>
+          <p>{t('sheet.notSpellcaster')}</p>
         </div>
       )}
     </div>
@@ -547,7 +549,7 @@ export const DnD5eCharacterView: React.FC<DnD5eCharacterViewProps> = ({ characte
           <div className="bg-stone-50 border-2 border-stone-300 rounded-lg p-4">
             <h3 className="text-lg font-semibold text-stone-800 mb-4 flex items-center">
               <Shield className="w-5 h-5 mr-2 text-red-700" />
-              Proficiencies & Training
+              {t('sheet.proficienciesAndTraining')}
             </h3>
 
             <div className="space-y-4">
@@ -555,7 +557,7 @@ export const DnD5eCharacterView: React.FC<DnD5eCharacterViewProps> = ({ characte
               {proficiencies.armor.length > 0 && (
                 <div>
                   <div className="text-sm font-semibold text-stone-700 mb-2 uppercase tracking-wide">
-                    Armor
+                    {t('sheet.armor')}
                   </div>
                   <div className="text-stone-800">
                     {proficiencies.armor.join(', ')}
@@ -567,7 +569,7 @@ export const DnD5eCharacterView: React.FC<DnD5eCharacterViewProps> = ({ characte
               {proficiencies.weapons.length > 0 && (
                 <div>
                   <div className="text-sm font-semibold text-stone-700 mb-2 uppercase tracking-wide">
-                    Weapons
+                    {t('sheet.weapons')}
                   </div>
                   <div className="text-stone-800">
                     {proficiencies.weapons.join(', ')}
@@ -579,7 +581,7 @@ export const DnD5eCharacterView: React.FC<DnD5eCharacterViewProps> = ({ characte
               {proficiencies.tools.length > 0 && (
                 <div>
                   <div className="text-sm font-semibold text-stone-700 mb-2 uppercase tracking-wide">
-                    Tools
+                    {t('sheet.tools')}
                   </div>
                   <div className="text-stone-800">
                     {proficiencies.tools.join(', ')}
@@ -591,7 +593,7 @@ export const DnD5eCharacterView: React.FC<DnD5eCharacterViewProps> = ({ characte
               {proficiencies.languages.length > 0 && (
                 <div>
                   <div className="text-sm font-semibold text-stone-700 mb-2 uppercase tracking-wide">
-                    Languages
+                    {t('sheet.languages')}
                   </div>
                   <div className="text-stone-800">
                     {proficiencies.languages.join(', ')}
@@ -605,7 +607,7 @@ export const DnD5eCharacterView: React.FC<DnD5eCharacterViewProps> = ({ characte
       {/* Features & Traits */}
       {data.featuresAndTraits && data.featuresAndTraits.length > 0 && (
         <div className="bg-stone-50 border border-stone-200 rounded-lg p-4">
-          <h3 className="text-lg font-semibold text-stone-800 mb-3">Features & Traits</h3>
+          <h3 className="text-lg font-semibold text-stone-800 mb-3">{t('sheet.featuresAndTraits')}</h3>
           <ul className="space-y-2">
             {data.featuresAndTraits.map((feature: string, idx: number) => (
               <li key={idx} className="flex items-start space-x-2">
@@ -620,7 +622,7 @@ export const DnD5eCharacterView: React.FC<DnD5eCharacterViewProps> = ({ characte
       {/* Additional Features */}
       {data.additionalFeaturesAndTraits && (
         <div className="bg-stone-50 border border-stone-200 rounded-lg p-4">
-          <h3 className="text-lg font-semibold text-stone-800 mb-3">Additional Features</h3>
+          <h3 className="text-lg font-semibold text-stone-800 mb-3">{t('sheet.additionalFeatures')}</h3>
           <p className="text-stone-700 whitespace-pre-wrap">{data.additionalFeaturesAndTraits}</p>
         </div>
       )}
@@ -634,30 +636,30 @@ export const DnD5eCharacterView: React.FC<DnD5eCharacterViewProps> = ({ characte
       {/* Appearance */}
       {data.appearance && (
         <div className="bg-stone-50 border border-stone-200 rounded-lg p-4">
-          <h3 className="text-lg font-semibold text-stone-800 mb-3">Appearance</h3>
+          <h3 className="text-lg font-semibold text-stone-800 mb-3">{t('sheet.appearance')}</h3>
           <div className="grid grid-cols-2 md:grid-cols-3 gap-3">
             <div>
-              <div className="text-xs text-stone-500">Age</div>
+              <div className="text-xs text-stone-500">{t('sheet.age')}</div>
               <div className="text-stone-800">{data.appearance.age}</div>
             </div>
             <div>
-              <div className="text-xs text-stone-500">Height</div>
+              <div className="text-xs text-stone-500">{t('sheet.height')}</div>
               <div className="text-stone-800">{data.appearance.height}</div>
             </div>
             <div>
-              <div className="text-xs text-stone-500">Weight</div>
+              <div className="text-xs text-stone-500">{t('sheet.weight')}</div>
               <div className="text-stone-800">{data.appearance.weight}</div>
             </div>
             <div>
-              <div className="text-xs text-stone-500">Eyes</div>
+              <div className="text-xs text-stone-500">{t('sheet.eyes')}</div>
               <div className="text-stone-800">{data.appearance.eyes}</div>
             </div>
             <div>
-              <div className="text-xs text-stone-500">Skin</div>
+              <div className="text-xs text-stone-500">{t('sheet.skin')}</div>
               <div className="text-stone-800">{data.appearance.skin}</div>
             </div>
             <div>
-              <div className="text-xs text-stone-500">Hair</div>
+              <div className="text-xs text-stone-500">{t('sheet.hair')}</div>
               <div className="text-stone-800">{data.appearance.hair}</div>
             </div>
           </div>
@@ -667,29 +669,29 @@ export const DnD5eCharacterView: React.FC<DnD5eCharacterViewProps> = ({ characte
       {/* Personality */}
       {data.personality && (
         <div className="bg-stone-50 border border-stone-200 rounded-lg p-4">
-          <h3 className="text-lg font-semibold text-stone-800 mb-3">Personality</h3>
+          <h3 className="text-lg font-semibold text-stone-800 mb-3">{t('sheet.personality')}</h3>
           <div className="space-y-3">
             {data.personality.traits && (
               <div>
-                <div className="text-sm font-medium text-stone-600 mb-1">Traits</div>
+                <div className="text-sm font-medium text-stone-600 mb-1">{t('sheet.traits')}</div>
                 <p className="text-stone-700">{data.personality.traits}</p>
               </div>
             )}
             {data.personality.ideals && (
               <div>
-                <div className="text-sm font-medium text-stone-600 mb-1">Ideals</div>
+                <div className="text-sm font-medium text-stone-600 mb-1">{t('sheet.ideals')}</div>
                 <p className="text-stone-700">{data.personality.ideals}</p>
               </div>
             )}
             {data.personality.bonds && (
               <div>
-                <div className="text-sm font-medium text-stone-600 mb-1">Bonds</div>
+                <div className="text-sm font-medium text-stone-600 mb-1">{t('sheet.bonds')}</div>
                 <p className="text-stone-700">{data.personality.bonds}</p>
               </div>
             )}
             {data.personality.flaws && (
               <div>
-                <div className="text-sm font-medium text-stone-600 mb-1">Flaws</div>
+                <div className="text-sm font-medium text-stone-600 mb-1">{t('sheet.flaws')}</div>
                 <p className="text-stone-700">{data.personality.flaws}</p>
               </div>
             )}
@@ -700,7 +702,7 @@ export const DnD5eCharacterView: React.FC<DnD5eCharacterViewProps> = ({ characte
       {/* Backstory */}
       {data.backstory && (
         <div className="bg-stone-50 border border-stone-200 rounded-lg p-4">
-          <h3 className="text-lg font-semibold text-stone-800 mb-3">Backstory</h3>
+          <h3 className="text-lg font-semibold text-stone-800 mb-3">{t('sheet.backstory')}</h3>
           <p className="text-stone-700 whitespace-pre-wrap">{data.backstory}</p>
         </div>
       )}
@@ -708,7 +710,7 @@ export const DnD5eCharacterView: React.FC<DnD5eCharacterViewProps> = ({ characte
       {/* Allies & Organizations */}
       {data.alliesAndOrganizations && (
         <div className="bg-stone-50 border border-stone-200 rounded-lg p-4">
-          <h3 className="text-lg font-semibold text-stone-800 mb-3">Allies & Organizations</h3>
+          <h3 className="text-lg font-semibold text-stone-800 mb-3">{t('sheet.alliesAndOrganizations')}</h3>
           <div className="space-y-2">
             <div className="font-medium text-stone-800">{data.alliesAndOrganizations.name}</div>
             <p className="text-stone-700">{data.alliesAndOrganizations.description}</p>
@@ -719,7 +721,7 @@ export const DnD5eCharacterView: React.FC<DnD5eCharacterViewProps> = ({ characte
       {/* Treasure */}
       {data.treasure && (
         <div className="bg-stone-50 border border-stone-200 rounded-lg p-4">
-          <h3 className="text-lg font-semibold text-stone-800 mb-3">Treasure</h3>
+          <h3 className="text-lg font-semibold text-stone-800 mb-3">{t('sheet.treasure')}</h3>
           <p className="text-stone-700 whitespace-pre-wrap">{data.treasure}</p>
         </div>
       )}
@@ -763,9 +765,9 @@ export const DnD5eCharacterView: React.FC<DnD5eCharacterViewProps> = ({ characte
             {rollPopup.purpose}
           </div>
           {[
-            { label: 'Normal', expr: rollPopup.expression, suffix: '' },
-            { label: 'Advantage', expr: withAdvantage(rollPopup.expression), suffix: ' (Advantage)' },
-            { label: 'Disadvantage', expr: withDisadvantage(rollPopup.expression), suffix: ' (Disadvantage)' },
+            { label: t('sheet.normal'), expr: rollPopup.expression, suffix: '' },
+            { label: t('sheet.advantage'), expr: withAdvantage(rollPopup.expression), suffix: ` (${t('sheet.advantage')})` },
+            { label: t('sheet.disadvantage'), expr: withDisadvantage(rollPopup.expression), suffix: ` (${t('sheet.disadvantage')})` },
           ].map(({ label, expr, suffix }) => (
             <button
               key={label}
