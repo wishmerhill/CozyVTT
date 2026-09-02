@@ -4,6 +4,7 @@
 // ============================================
 
 import { useState, useEffect, useCallback, useRef } from 'react';
+import { useTranslation } from 'react-i18next';
 import { motion, AnimatePresence } from 'framer-motion';
 import {
   X,
@@ -57,6 +58,7 @@ function TokenTransferConfirmation({
   onCancel,
   isSwitching,
 }: TokenTransferProps) {
+  const { t } = useTranslation('campaign');
   const [selected, setSelected] = useState<Set<string>>(new Set());
 
   const toggleToken = (id: string) => {
@@ -77,21 +79,21 @@ function TokenTransferConfirmation({
         <AlertTriangle className="w-4 h-4 text-warm-amber flex-shrink-0 mt-0.5" />
         <div>
           <p className="text-sm font-medium text-stone-gray">
-            Current map has {tokens.length} token{tokens.length !== 1 ? 's' : ''}
+            {t('map.currentHasTokens', { count: tokens.length })}
           </p>
           <p className="text-xs text-stone-gray/70">
-            Select which to transfer to <span className="font-medium">{targetMap.name}</span>
+            {t('map.selectTokensToTransfer')} <span className="font-medium">{targetMap.name}</span>
           </p>
         </div>
       </div>
 
       <div className="flex gap-2 text-xs">
         <button type="button" onClick={selectAll} className="text-brand-ink hover:underline">
-          Select all
+          {t('map.selectAll')}
         </button>
         <span className="text-stone-gray/40">·</span>
         <button type="button" onClick={selectNone} className="text-stone-gray hover:underline">
-          Select none
+          {t('map.selectNone')}
         </button>
       </div>
 
@@ -109,7 +111,7 @@ function TokenTransferConfirmation({
             />
             <span className="text-sm text-stone-gray truncate">{token.name}</span>
             {token.layer === 'spirit' && (
-              <span className="text-xs text-spirit-purple bg-spirit-purple/10 px-1 rounded">spirit</span>
+              <span className="text-xs text-spirit-purple bg-spirit-purple/10 px-1 rounded">{t('token.spiritRealm')}</span>
             )}
           </label>
         ))}
@@ -122,7 +124,7 @@ function TokenTransferConfirmation({
           disabled={isSwitching}
           variant="secondary" className="text-xs py-1 px-3"
         >
-          Cancel
+          {t('common:cancel')}
         </Button>
         <Button
           type="button"
@@ -133,12 +135,12 @@ function TokenTransferConfirmation({
           {isSwitching ? (
             <>
               <Loader2 className="w-3 h-3 animate-spin" />
-              Switching...
+              {t('map.switching')}
             </>
           ) : (
             <>
               <ChevronRight className="w-3 h-3" />
-              Switch Map
+              {t('map.switchMap')}
             </>
           )}
         </Button>
@@ -176,6 +178,7 @@ function MapCard({
   tokens: _tokens,
   currentMap: _currentMap,
 }: MapCardProps) {
+  const { t } = useTranslation('campaign');
   const thumbnailId = extractAssetId(map.imageUrl);
   const isSwitchingToThis = switchingToId === map.id;
 
@@ -212,7 +215,7 @@ function MapCard({
         {isActive && (
           <div className="absolute top-2 left-2 flex items-center gap-1 px-2 py-0.5 bg-moss-green text-white text-xs font-semibold rounded-full shadow">
             <CheckCircle className="w-3 h-3" />
-            Active
+            {t('map.active')}
           </div>
         )}
       </div>
@@ -230,7 +233,7 @@ function MapCard({
             type="button"
             onClick={() => onSetActive(map)}
             disabled={isActive || isSwitchingToThis}
-            title={isActive ? 'Already active' : 'Set as active map'}
+            title={isActive ? t('map.alreadyActive') : t('map.setAsActive')}
             className={`flex-1 text-xs py-1.5 px-2 rounded-lg transition-colors flex items-center justify-center gap-1 ${
               isActive
                 ? 'bg-moss-green/10 text-brand-ink/50 cursor-not-allowed'
@@ -242,13 +245,13 @@ function MapCard({
             ) : (
               <CheckCircle className="w-3 h-3" />
             )}
-            {isActive ? 'Active' : 'Set Active'}
+            {isActive ? t('map.active') : t('map.setActive')}
           </button>
 
           <button
             type="button"
             onClick={() => onEdit(map)}
-            title="Edit map"
+            title={t('map.edit')}
             className="p-1.5 rounded-lg bg-warm-amber/10 hover:bg-warm-amber/20 text-warm-amber transition-colors"
           >
             <Pencil className="w-3.5 h-3.5" />
@@ -257,7 +260,7 @@ function MapCard({
           <button
             type="button"
             onClick={() => onExport(map)}
-            title="Export as .uvtt file"
+            title={t('map.exportUVTT')}
             className="p-1.5 rounded-lg bg-moss-green/10 hover:bg-moss-green/20 text-brand-ink transition-colors"
           >
             <Download className="w-3.5 h-3.5" />
@@ -267,7 +270,7 @@ function MapCard({
             type="button"
             onClick={() => onDelete(map)}
             disabled={isActive}
-            title={isActive ? 'Cannot delete the active map' : 'Delete map'}
+            title={isActive ? t('map.cannotDeleteActive') : t('map.delete')}
             className={`p-1.5 rounded-lg transition-colors ${
               isActive
                 ? 'bg-danger/5 text-danger-ink/40 cursor-not-allowed'
@@ -287,6 +290,7 @@ function MapCard({
 // ============================================
 
 export default function MapManager({ isOpen, onClose }: MapManagerProps) {
+  const { t } = useTranslation('campaign');
   const { campaign, currentMap, setCurrentMap } = useCampaign();
   const { socket } = useWebSocket();
 
@@ -326,7 +330,7 @@ export default function MapManager({ isOpen, onClose }: MapManagerProps) {
       const fetched = await mapService.getMaps(campaign.id);
       setMaps(fetched);
     } catch {
-      setError('Failed to load maps.');
+      setError(t('map.errors.loadFailed'));
     } finally {
       setIsLoading(false);
     }
@@ -366,7 +370,7 @@ export default function MapManager({ isOpen, onClose }: MapManagerProps) {
       link.click();
       document.body.removeChild(link);
     } catch (err: any) {
-      setError(err.response?.data?.message || 'Failed to export map.');
+      setError(err.response?.data?.message || t('map.errors.exportFailed'));
     }
   };
 
@@ -382,7 +386,7 @@ export default function MapManager({ isOpen, onClose }: MapManagerProps) {
       await mapService.deleteMap(campaign.id, map.id);
       setMaps((prev) => prev.filter((m) => m.id !== map.id));
     } catch (err: any) {
-      setError(err.response?.data?.message || 'Failed to delete map.');
+      setError(err.response?.data?.message || t('map.errors.deleteFailed'));
     }
   };
 
@@ -407,7 +411,7 @@ export default function MapManager({ isOpen, onClose }: MapManagerProps) {
       // Auto-clear success message after 5 seconds
       setTimeout(() => setImportSuccess(null), 5000);
     } catch (err: any) {
-      const msg = err.response?.data?.message || 'Failed to import UVTT file.';
+      const msg = err.response?.data?.message || t('map.errors.importFailed');
       setError(msg);
     } finally {
       setIsImportingUVTT(false);
@@ -510,7 +514,7 @@ export default function MapManager({ isOpen, onClose }: MapManagerProps) {
         socket.emitMapChange(targetMap.id);
       }
     } catch (err: any) {
-      setError(err.response?.data?.message || 'Failed to switch map. Please try again.');
+      setError(err.response?.data?.message || t('map.errors.switchFailed'));
     } finally {
       setIsSwitching(false);
     }
@@ -543,7 +547,7 @@ export default function MapManager({ isOpen, onClose }: MapManagerProps) {
                   <div className="flex items-center gap-3">
                     <MapPin className="w-6 h-6 text-brand-ink" />
                     <div>
-                      <h2 className="text-xl font-bold text-brand-ink">Map Library</h2>
+                      <h2 className="text-xl font-bold text-brand-ink">{t('map.library')}</h2>
                       <p className="text-xs text-stone-gray">{campaign.name}</p>
                     </div>
                   </div>
@@ -553,14 +557,14 @@ export default function MapManager({ isOpen, onClose }: MapManagerProps) {
                       onClick={() => uvttInputRef.current?.click()}
                       disabled={isImportingUVTT}
                       variant="secondary" className="flex items-center gap-2 text-sm"
-                      title="Import a .uvtt or .dd2vtt file (Dungeondraft, DunGen, Dungeon Alchemist, etc.)"
+                      title={t('map.importUVTTHint')}
                     >
                       {isImportingUVTT ? (
                         <Loader2 className="w-4 h-4 animate-spin" />
                       ) : (
                         <Upload className="w-4 h-4" />
                       )}
-                      Import UVTT
+                      {t('map.importUVTT')}
                     </Button>
                     <input
                       ref={uvttInputRef}
@@ -575,7 +579,7 @@ export default function MapManager({ isOpen, onClose }: MapManagerProps) {
                       className="flex items-center gap-2 text-sm"
                     >
                       <Plus className="w-4 h-4" />
-                      Create Map
+                      {t('map.create')}
                     </Button>
                     <button
                       onClick={onClose}
@@ -610,9 +614,9 @@ export default function MapManager({ isOpen, onClose }: MapManagerProps) {
                 ) : maps.length === 0 ? (
                   <div className="text-center py-16 space-y-3">
                     <MapPin className="w-14 h-14 mx-auto text-stone-gray/25" />
-                    <p className="text-stone-gray font-medium">No maps yet</p>
+                    <p className="text-stone-gray font-medium">{t('map.noMapsYet')}</p>
                     <p className="text-sm text-stone-gray/60">
-                      Create your first map to start your adventure.
+                      {t('map.createFirstMap')}
                     </p>
                     <Button
                       type="button"
@@ -620,7 +624,7 @@ export default function MapManager({ isOpen, onClose }: MapManagerProps) {
                       className="inline-flex items-center gap-2"
                     >
                       <Plus className="w-4 h-4" />
-                      Create Map
+                      {t('map.create')}
                     </Button>
                   </div>
                 ) : (
@@ -681,9 +685,9 @@ export default function MapManager({ isOpen, onClose }: MapManagerProps) {
       )}
       <ConfirmDialog
         isOpen={!!mapToDelete}
-        title="Delete Map"
-        message={`Delete "${mapToDelete?.name}"? This cannot be undone.`}
-        confirmLabel="Delete"
+        title={t('map.delete')}
+        message={t('map.deleteConfirm', { name: mapToDelete?.name })}
+        confirmLabel={t('common:delete')}
         variant="danger"
         onConfirm={handleConfirmDelete}
         onCancel={() => setMapToDelete(null)}

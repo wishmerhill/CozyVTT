@@ -4,6 +4,7 @@
  */
 
 import { useState, FormEvent, useEffect, useRef } from 'react';
+import { useTranslation } from 'react-i18next';
 import { Loader2, User, Sparkles } from 'lucide-react';
 import { Modal } from '@/components/ui';
 import { Character, GameSystem, Campaign } from '@/types';
@@ -85,6 +86,7 @@ export default function NewCharacterModal({
   campaign,
   preselectedGameSystem,
 }: NewCharacterModalProps) {
+  const { t } = useTranslation('character');
   const [name, setName] = useState('');
   const [selectedCampaignId, setSelectedCampaignId] = useState<string | null>(
     campaign?.id || null
@@ -179,12 +181,12 @@ export default function NewCharacterModal({
 
     // Validation
     if (name.trim().length < 2) {
-      setError('Character name must be at least 2 characters');
+      setError(t('modal.new.errors.nameTooShort'));
       return;
     }
 
     if (name.trim().length > 100) {
-      setError('Character name must be less than 100 characters');
+      setError(t('modal.new.errors.nameTooLong'));
       return;
     }
 

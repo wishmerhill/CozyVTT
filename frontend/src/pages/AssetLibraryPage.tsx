@@ -1,5 +1,6 @@
 import { useState, useEffect, useMemo } from 'react';
 import { useQueryClient } from '@tanstack/react-query';
+import { useTranslation } from 'react-i18next';
 import { useDebounce } from '@/hooks/useDebounce';
 import { useNavigate } from 'react-router-dom';
 import { motion, AnimatePresence } from 'framer-motion';
@@ -36,6 +37,7 @@ type FolderScope = 'all' | 'global' | 'user' | 'campaign';
  * Asset Library Refactor — three-scope model, tag filtering, search UX
  */
 export default function AssetLibraryPage() {
+  const { t } = useTranslation(['assets', 'common']);
   const { user } = useAuth();
   const navigate = useNavigate();
   const [viewMode, setViewMode] = useState<ViewMode>('grid');
@@ -78,7 +80,7 @@ export default function AssetLibraryPage() {
 
   useEffect(() => {
     if (assetsQuery.isError) {
-      setToast({ message: 'Failed to load assets', type: 'error' });
+      setToast({ message: t('assets:failedToLoad'), type: 'error' });
     }
   }, [assetsQuery.isError]);
 
@@ -134,7 +136,7 @@ export default function AssetLibraryPage() {
   const handleUploadSuccess = (_newAsset: Asset) => {
     queryClient.invalidateQueries({ queryKey: ['assets'] });
     setIsUploadModalOpen(false);
-    setToast({ message: 'Asset uploaded successfully!', type: 'success' });
+    setToast({ message: t('assets:uploadSuccess'), type: 'success' });
   };
 
   const handleDeleteAsset = async (assetId: string) => {
@@ -142,9 +144,9 @@ export default function AssetLibraryPage() {
       await api.deleteAsset(assetId);
       queryClient.invalidateQueries({ queryKey: ['assets'] });
       setSelectedAsset(null);
-      setToast({ message: 'Asset deleted successfully', type: 'success' });
+      setToast({ message: t('assets:deleteSuccess'), type: 'success' });
     } catch (error) {
-      setToast({ message: 'Failed to delete asset', type: 'error' });
+      setToast({ message: t('assets:deleteFailed'), type: 'error' });
     }
   };
 
@@ -158,10 +160,10 @@ export default function AssetLibraryPage() {
   const showUploadButton = folderScope !== 'global' || canUploadGlobal;
 
   const folderButtons: { key: FolderScope; label: string; icon: React.ReactNode }[] = [
-    { key: 'all', label: 'All Assets', icon: <FolderOpen className="w-4 h-4" /> },
-    { key: 'global', label: 'Global', icon: <Globe className="w-4 h-4" /> },
-    { key: 'user', label: 'Personal', icon: <User className="w-4 h-4" /> },
-    { key: 'campaign', label: 'Campaign', icon: <Users className="w-4 h-4" /> },
+    { key: 'all', label: t('assets:allAssets'), icon: <FolderOpen className="w-4 h-4" /> },
+    { key: 'global', label: t('assets:global'), icon: <Globe className="w-4 h-4" /> },
+    { key: 'user', label: t('assets:personal'), icon: <User className="w-4 h-4" /> },
+    { key: 'campaign', label: t('assets:campaign'), icon: <Users className="w-4 h-4" /> },
   ];
 
   return (
@@ -174,14 +176,14 @@ export default function AssetLibraryPage() {
               <Button
                 onClick={() => navigate('/dashboard')}
                 variant="secondary" className="flex items-center gap-2"
-                title="Back to Dashboard"
+                title={t('assets:backToDashboard')}
               >
                 <Home className="w-5 h-5" />
-                <span className="hidden sm:inline">Dashboard</span>
+                <span className="hidden sm:inline">{t('assets:dashboard')}</span>
               </Button>
               <div>
-                <h1 className="text-3xl font-bold text-brand-ink mb-2">Asset Library</h1>
-                <p className="text-stone-gray">Manage your maps, tokens, audio, and avatars</p>
+                <h1 className="text-3xl font-bold text-brand-ink mb-2">{t('assets:title')}</h1>
+                <p className="text-stone-gray">{t('assets:subtitle')}</p>
               </div>
             </div>
 
@@ -192,11 +194,11 @@ export default function AssetLibraryPage() {
                 className="flex items-center gap-2"
               >
                 <Upload className="w-5 h-5" />
-                <span className="hidden sm:inline">Upload Asset</span>
+                <span className="hidden sm:inline">{t('assets:upload')}</span>
               </Button>
             ) : (
               <div className="px-4 py-2 text-sm text-stone-gray/60 italic hidden sm:block">
-                Managed by administrators
+                {t('assets:managedByAdmins')}
               </div>
             )}
           </div>
@@ -212,7 +214,7 @@ export default function AssetLibraryPage() {
               <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-5 h-5 text-stone-gray/40" />
               <input
                 type="text"
-                placeholder="Search assets by name or tags..."
+                placeholder={t('assets:searchPlaceholder')}
                 value={searchQuery}
                 onChange={(e) => setSearchQuery(e.target.value)}
                 className="w-full pl-10 pr-9 py-2 bg-paper-white border border-moss-green/20 rounded-lg focus:outline-none focus:ring-2 focus:ring-moss-green text-stone-gray placeholder-stone-gray/50"
@@ -221,7 +223,7 @@ export default function AssetLibraryPage() {
                 <button
                   onClick={() => setSearchQuery('')}
                   className="absolute right-3 top-1/2 -translate-y-1/2 text-stone-gray/40 hover:text-stone-gray transition-colors"
-                  aria-label="Clear search"
+                  aria-label={t('assets:clearSearch')}
                 >
                   <X className="w-4 h-4" />
                 </button>
@@ -249,11 +251,11 @@ export default function AssetLibraryPage() {
               onChange={(e) => setSelectedType(e.target.value as AssetType | 'all')}
               className="px-4 py-2 bg-paper-white border border-moss-green/20 rounded-lg focus:outline-none focus:ring-2 focus:ring-moss-green text-stone-gray"
             >
-              <option value="all">All Types</option>
-              <option value={AssetType.MAP}>Maps</option>
-              <option value={AssetType.TOKEN}>Tokens</option>
-              <option value={AssetType.AUDIO}>Audio</option>
-              <option value={AssetType.AVATAR}>Avatars</option>
+              <option value="all">{t('assets:allTypes')}</option>
+              <option value={AssetType.MAP}>{t('assets:maps')}</option>
+              <option value={AssetType.TOKEN}>{t('assets:tokens')}</option>
+              <option value={AssetType.AUDIO}>{t('assets:audio')}</option>
+              <option value={AssetType.AVATAR}>{t('assets:avatars')}</option>
             </select>
 
             {/* Sort */}
@@ -262,13 +264,13 @@ export default function AssetLibraryPage() {
               onChange={(e) => setSortBy(e.target.value as 'name' | 'date' | 'size')}
               className="px-4 py-2 bg-paper-white border border-moss-green/20 rounded-lg focus:outline-none focus:ring-2 focus:ring-moss-green text-stone-gray"
             >
-              <option value="date">Sort by Date</option>
-              <option value="name">Sort by Name</option>
-              <option value="size">Sort by Size</option>
+              <option value="date">{t('assets:sortByDate')}</option>
+              <option value="name">{t('assets:sortByName')}</option>
+              <option value="size">{t('assets:sortBySize')}</option>
             </select>
 
             {/* View Mode Toggle */}
-            <div role="group" aria-label="View mode" className="flex gap-2">
+            <div role="group" aria-label={t('assets:viewMode')} className="flex gap-2">
               <button
                 onClick={() => setViewMode('grid')}
                 className={`p-2 rounded-lg transition-colors ${
@@ -276,7 +278,7 @@ export default function AssetLibraryPage() {
                     ? 'bg-moss-green text-white'
                     : 'bg-paper-white text-stone-gray hover:bg-moss-green/10 border border-moss-green/20'
                 }`}
-                aria-label="Grid view"
+                aria-label={t('assets:gridView')}
                 aria-pressed={viewMode === 'grid'}
               >
                 <Grid3x3 className="w-5 h-5" aria-hidden="true" />
@@ -288,7 +290,7 @@ export default function AssetLibraryPage() {
                     ? 'bg-moss-green text-white'
                     : 'bg-paper-white text-stone-gray hover:bg-moss-green/10 border border-moss-green/20'
                 }`}
-                aria-label="List view"
+                aria-label={t('assets:listView')}
                 aria-pressed={viewMode === 'list'}
               >
                 <List className="w-5 h-5" aria-hidden="true" />
@@ -303,10 +305,10 @@ export default function AssetLibraryPage() {
             {/* Result count */}
             <p className="text-sm text-stone-gray/60">
               {filteredAssets.length === 0
-                ? 'No assets found'
+                ? t('assets:noAssetsFound')
                 : filteredAssets.length === totalCount
-                ? `Showing ${filteredAssets.length} asset${filteredAssets.length !== 1 ? 's' : ''}`
-                : `Showing ${filteredAssets.length} of ${totalCount} assets`}
+                ? t('assets:showingCount', { count: filteredAssets.length, plural: filteredAssets.length !== 1 ? 'e' : '' })
+                : t('assets:showingOf', { count: filteredAssets.length, total: totalCount })}
             </p>
 
             {/* Tag chips */}
@@ -331,7 +333,7 @@ export default function AssetLibraryPage() {
                     onClick={() => setSelectedTags([])}
                     className="text-xs text-stone-gray/60 hover:text-stone-gray underline ml-1 transition-colors"
                   >
-                    Clear tags
+                    {t('assets:clearTags')}
                   </button>
                 )}
               </div>
@@ -355,26 +357,26 @@ export default function AssetLibraryPage() {
         ) : toast?.type === 'error' && filteredAssets.length === 0 ? (
           <div className="bg-parchment/50 border border-danger/20 rounded-xl p-12 text-center">
             <AlertCircle className="w-12 h-12 mx-auto mb-4 text-danger-ink" />
-            <h2 className="text-lg font-semibold text-brand-ink mb-2">Failed to load assets</h2>
-            <p className="text-stone-gray mb-6 text-sm">Check your connection and try again.</p>
+            <h2 className="text-lg font-semibold text-brand-ink mb-2">{t('assets:failedToLoad')}</h2>
+            <p className="text-stone-gray mb-6 text-sm">{t('assets:checkConnection')}</p>
             <Button onClick={() => assetsQuery.refetch()}>
-              Try Again
+              {t('assets:tryAgain')}
             </Button>
           </div>
         ) : filteredAssets.length === 0 ? (
           <div className="bg-parchment/50 border border-moss-green/20 rounded-xl p-12 text-center">
             <FolderOpen className="w-16 h-16 mx-auto mb-4 text-stone-gray/30" />
-            <h2 className="text-xl font-semibold text-brand-ink mb-2">No assets found</h2>
+            <h2 className="text-xl font-semibold text-brand-ink mb-2">{t('assets:noAssetsFound')}</h2>
             <p className="text-stone-gray mb-6">
               {searchQuery || selectedTags.length > 0
-                ? 'Try adjusting your search or filters'
+                ? t('assets:noAssetsMatching')
                 : folderScope === 'global' && !canUploadGlobal
-                ? 'No global assets have been uploaded yet'
-                : 'Upload your first asset to get started'}
+                ? t('assets:noGlobalAssets')
+                : t('assets:uploadFirst')}
             </p>
             {!searchQuery && selectedTags.length === 0 && showUploadButton && (
               <Button onClick={() => setIsUploadModalOpen(true)}>
-                Upload Asset
+                {t('assets:upload')}
               </Button>
             )}
           </div>
@@ -409,17 +411,17 @@ export default function AssetLibraryPage() {
                   disabled={currentPage === 1}
                   variant="secondary" className="disabled:opacity-50 disabled:cursor-not-allowed"
                 >
-                  Previous
+                  {t('assets:previous')}
                 </Button>
                 <span className="px-4 py-2 text-stone-gray">
-                  Page {currentPage} of {totalPages}
+                  {t('assets:pageOf', { current: currentPage, total: totalPages })}
                 </span>
                 <Button
                   onClick={() => setCurrentPage((p) => Math.min(totalPages, p + 1))}
                   disabled={currentPage === totalPages}
                   variant="secondary" className="disabled:opacity-50 disabled:cursor-not-allowed"
                 >
-                  Next
+                  {t('assets:next')}
                 </Button>
               </div>
             )}

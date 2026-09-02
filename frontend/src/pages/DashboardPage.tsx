@@ -7,6 +7,7 @@
 import { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useQueryClient } from '@tanstack/react-query';
+import { useTranslation } from 'react-i18next';
 import { useAuth } from '@/contexts/AuthContext';
 import { useToast } from '@/contexts/ToastContext';
 import { Plus, LogOut, RefreshCw, User, ArrowRight, Mail, FolderOpen, Shield, AlertCircle, Upload, FileText } from 'lucide-react';
@@ -22,6 +23,7 @@ import { CampaignRole, PlatformRole } from '@/types';
 import Button from '@/components/ui/Button';
 
 export default function DashboardPage() {
+  const { t } = useTranslation(['dashboard', 'common']);
   const { user, logout } = useAuth();
   const navigate = useNavigate();
   const { showToast } = useToast();
@@ -44,7 +46,7 @@ export default function DashboardPage() {
   const loading = campaignsQuery.isPending || charactersQuery.isPending || invitationsQuery.isPending;
   const queryError = campaignsQuery.error || charactersQuery.error || invitationsQuery.error;
   const error = queryError
-    ? ((queryError as any).response?.data?.message || 'Failed to load data')
+    ? ((queryError as any).response?.data?.message || t('dashboard:failedToLoad'))
     : '';
 
   // Refresh button + post-invitation-response resync
@@ -56,7 +58,7 @@ export default function DashboardPage() {
 
   const handleCampaignCreated = (newCampaign: Campaign) => {
     queryClient.setQueryData<Campaign[]>(queryKeys.campaigns, (prev) => [newCampaign, ...(prev ?? [])]);
-    showToast(`Campaign "${newCampaign.name}" created!`, 'success');
+    showToast(t('dashboard:campaignCreated', { name: newCampaign.name }), 'success');
   };
 
   const handleLogout = async () => {
@@ -82,10 +84,10 @@ export default function DashboardPage() {
               </div>
               <div>
                 <h1 className="text-3xl font-bold text-brand-ink font-heading">
-                  CozyVTT
+                  {t('common:app.name')}
                 </h1>
                 <p className="text-sm text-warm-gray">
-                  Welcome back, {user?.displayName}
+                  {t('dashboard:welcomeBack', { name: user?.displayName })}
                 </p>
               </div>
             </div>
@@ -96,37 +98,37 @@ export default function DashboardPage() {
                 onClick={loadData}
                 disabled={loading}
                 variant="secondary" className="flex items-center gap-2"
-                aria-label={loading ? 'Refreshing data' : 'Refresh data'}
+                aria-label={loading ? t('dashboard:refreshingAria') : t('dashboard:refreshAria')}
                 aria-busy={loading}
               >
                 <RefreshCw className={`w-4 h-4 ${loading ? 'animate-spin' : ''}`} aria-hidden="true" />
-                <span className="hidden sm:inline">Refresh</span>
+                <span className="hidden sm:inline">{t('dashboard:refresh')}</span>
               </Button>
 
               {user?.platformRole === PlatformRole.ADMIN && (
                 <Button
                   onClick={() => navigate('/admin')}
                   variant="secondary" className="flex items-center gap-2"
-                  aria-label="Go to Admin Panel"
+                  aria-label={t('dashboard:adminAria')}
                 >
                   <Shield className="w-4 h-4 text-brand-ink" aria-hidden="true" />
-                  <span className="hidden sm:inline">Admin</span>
+                  <span className="hidden sm:inline">{t('dashboard:admin')}</span>
                 </Button>
               )}
 
               <Button
                 onClick={handleLogout}
                 variant="danger" className="flex items-center gap-2"
-                aria-label="Log out of CozyVTT"
+                aria-label={t('dashboard:logoutAria')}
               >
                 <LogOut className="w-4 h-4" aria-hidden="true" />
-                <span className="hidden sm:inline">Logout</span>
+                <span className="hidden sm:inline">{t('dashboard:logout')}</span>
               </Button>
 
               {/* Profile Avatar Button */}
               <button
                 onClick={() => navigate('/profile')}
-                aria-label={`View profile for ${user?.displayName ?? 'your account'}`}
+                aria-label={t('dashboard:viewProfile', { name: user?.displayName ?? 'your account' })}
                 className="w-12 h-12 rounded-full border-2 border-moss-green/30 hover:border-moss-green/60 transition-colors overflow-hidden flex items-center justify-center bg-moss-green/10 flex-shrink-0"
               >
                 {user?.avatarUrl ? (
@@ -158,10 +160,12 @@ export default function DashboardPage() {
                   </div>
                   <div>
                     <h2 className="text-xl font-semibold text-brand-ink font-heading">
-                      Your Characters
+                      {t('dashboard:yourCharacters')}
                     </h2>
                     <p className="text-sm text-warm-gray">
-                      {loading ? 'Loading...' : `${characters.length} character${characters.length !== 1 ? 's' : ''}`}
+                      {loading
+                        ? t('dashboard:loading')
+                        : t('dashboard:characterCount', { count: characters.length, plural: characters.length !== 1 ? 'i' : '' })}
                     </p>
                   </div>
                 </div>
@@ -169,7 +173,7 @@ export default function DashboardPage() {
                   onClick={() => navigate('/characters')}
                   className="flex items-center gap-2"
                 >
-                  <span className="hidden sm:inline">Manage</span>
+                  <span className="hidden sm:inline">{t('dashboard:manage')}</span>
                   <ArrowRight className="w-4 h-4" />
                 </Button>
               </div>
@@ -218,7 +222,7 @@ export default function DashboardPage() {
                               {character.name}
                             </p>
                             <p className="text-xs text-warm-gray truncate">
-                              {character.gameSystem || 'Flexible'}
+                              {character.gameSystem || t('dashboard:flexible')}
                             </p>
                           </div>
                         </div>
@@ -227,7 +231,7 @@ export default function DashboardPage() {
                   </div>
                   {characters.length > 2 && (
                     <p className="text-sm text-warm-gray mt-3 text-center">
-                      And {characters.length - 2} more...
+                      {t('dashboard:andMore', { count: characters.length - 2 })}
                     </p>
                   )}
                 </div>
@@ -235,13 +239,13 @@ export default function DashboardPage() {
 
               {!loading && characters.length === 0 && (
                 <div className="text-center py-6">
-                  <p className="text-warm-gray mb-3 text-sm">No characters yet</p>
+                  <p className="text-warm-gray mb-3 text-sm">{t('dashboard:noCharactersYet')}</p>
                   <Button
                     onClick={() => navigate('/characters')}
                     variant="secondary" className="inline-flex items-center gap-2 text-sm"
                   >
                     <Plus className="w-4 h-4" />
-                    Create Character
+                    {t('dashboard:createCharacter')}
                   </Button>
                 </div>
               )}
@@ -256,10 +260,10 @@ export default function DashboardPage() {
                   </div>
                   <div>
                     <h2 className="text-xl font-semibold text-brand-ink font-heading">
-                      Asset Library
+                      {t('dashboard:assetLibrary')}
                     </h2>
                     <p className="text-sm text-warm-gray">
-                      Maps, tokens, and more
+                      {t('dashboard:assetLibraryDesc')}
                     </p>
                   </div>
                 </div>
@@ -267,7 +271,7 @@ export default function DashboardPage() {
                   onClick={() => navigate('/assets')}
                   className="flex items-center gap-2"
                 >
-                  <span className="hidden sm:inline">View Library</span>
+                  <span className="hidden sm:inline">{t('dashboard:viewLibrary')}</span>
                   <ArrowRight className="w-4 h-4" />
                 </Button>
               </div>
@@ -280,10 +284,10 @@ export default function DashboardPage() {
                 >
                   <FolderOpen className="w-8 h-8 mx-auto mb-2 text-warm-amber/60" />
                   <p className="text-sm font-medium text-brand-ink mb-1">
-                    Manage Your Assets
+                    {t('dashboard:manageAssets')}
                   </p>
                   <p className="text-xs text-warm-gray">
-                    Upload and organize maps, tokens, audio, and avatar images
+                    {t('dashboard:manageAssetsDesc')}
                   </p>
                 </div>
               </div>
@@ -298,16 +302,16 @@ export default function DashboardPage() {
                   </div>
                   <div>
                     <h2 className="text-xl font-semibold text-brand-ink font-heading">
-                      Character Templates
+                      {t('dashboard:characterTemplates')}
                     </h2>
-                    <p className="text-sm text-warm-gray">Shared starter sheets</p>
+                    <p className="text-sm text-warm-gray">{t('dashboard:characterTemplatesDesc')}</p>
                   </div>
                 </div>
                 <Button
                   onClick={() => navigate('/character-templates')}
                   className="flex items-center gap-2"
                 >
-                  <span className="hidden sm:inline">Browse</span>
+                  <span className="hidden sm:inline">{t('dashboard:browse')}</span>
                   <ArrowRight className="w-4 h-4" />
                 </Button>
               </div>
@@ -320,10 +324,10 @@ export default function DashboardPage() {
                 >
                   <FileText className="w-8 h-8 mx-auto mb-2 text-brand-ink/40" />
                   <p className="text-sm font-medium text-brand-ink mb-1">
-                    Start From a Template
+                    {t('dashboard:startFromTemplate')}
                   </p>
                   <p className="text-xs text-warm-gray">
-                    Copy a shared sheet into a character, or publish one for others
+                    {t('dashboard:startFromTemplateDesc')}
                   </p>
                 </div>
               </div>
@@ -339,10 +343,10 @@ export default function DashboardPage() {
                 </div>
                 <div>
                   <h2 className="text-xl font-semibold text-brand-ink font-heading">
-                    Pending Invitations
+                    {t('dashboard:pendingInvitations')}
                   </h2>
                   <p className="text-sm text-warm-gray">
-                    You have {invitations.length} pending campaign invitation{invitations.length !== 1 ? 's' : ''}
+                    {t('dashboard:pendingInvitationsCount', { count: invitations.length })}
                   </p>
                 </div>
               </div>
@@ -364,10 +368,10 @@ export default function DashboardPage() {
                     )}
                     <div className="flex items-center justify-between text-xs text-warm-gray">
                       <span>
-                        DM: {invitation.campaign?.owner?.displayName}
+                        {t('dashboard:dm', { name: invitation.campaign?.owner?.displayName })}
                       </span>
                       <button className="text-brand-ink hover:underline font-medium">
-                        View Invitation →
+                        {t('dashboard:viewInvitation')}
                       </button>
                     </div>
                   </div>
@@ -380,7 +384,7 @@ export default function DashboardPage() {
           <section>
             <div className="flex items-center justify-between mb-6">
               <h2 className="text-2xl font-semibold text-brand-ink font-heading">
-                Your Campaigns
+                {t('dashboard:yourCampaigns')}
               </h2>
               <div className="flex items-center gap-2">
                 <Button
@@ -388,14 +392,14 @@ export default function DashboardPage() {
                   variant="secondary" className="flex items-center gap-2"
                 >
                   <Upload className="w-4 h-4" />
-                  <span className="hidden sm:inline">Import</span>
+                  <span className="hidden sm:inline">{t('dashboard:import')}</span>
                 </Button>
                 <Button
                   onClick={() => setShowCreateModal(true)}
                   className="flex items-center gap-2"
                 >
                   <Plus className="w-5 h-5" />
-                  Create Campaign
+                  {t('dashboard:createCampaign')}
                 </Button>
               </div>
             </div>
@@ -411,7 +415,7 @@ export default function DashboardPage() {
                   onClick={loadData}
                   variant="secondary" className="text-xs py-1 px-3 flex-shrink-0"
                 >
-                  Try Again
+                  {t('dashboard:tryAgain')}
                 </Button>
               </div>
             )}
@@ -433,18 +437,17 @@ export default function DashboardPage() {
                     <img src={mascotUrl} alt="" className="w-12 h-12 object-contain" />
                   </div>
                   <h3 className="text-xl font-semibold text-brand-ink mb-2">
-                    No campaigns yet
+                    {t('dashboard:noCampaignsYet')}
                   </h3>
                   <p className="text-warm-gray mb-6">
-                    Create your first campaign to begin your adventure! As a DM, you'll be able
-                    to invite players, create maps, and manage game sessions.
+                    {t('dashboard:noCampaignsDesc')}
                   </p>
                   <Button
                     onClick={() => setShowCreateModal(true)}
                     className="inline-flex items-center gap-2"
                   >
                     <Plus className="w-5 h-5" />
-                    Create Your First Campaign
+                    {t('dashboard:createFirstCampaign')}
                   </Button>
                 </div>
               </div>
@@ -468,26 +471,26 @@ export default function DashboardPage() {
           {!loading && campaigns.length > 0 && (
             <section className="glass-panel p-6">
               <h3 className="text-lg font-semibold text-brand-ink mb-4">
-                Quick Stats
+                {t('dashboard:quickStats')}
               </h3>
               <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
                 <div className="text-center p-4 rounded-lg bg-moss-green/5">
                   <p className="text-3xl font-bold text-brand-ink">
                     {campaigns.filter(c => getUserRole(c) === CampaignRole.DM).length}
                   </p>
-                  <p className="text-sm text-warm-gray mt-1">Campaigns as DM</p>
+                  <p className="text-sm text-warm-gray mt-1">{t('dashboard:campaignsAsDm')}</p>
                 </div>
                 <div className="text-center p-4 rounded-lg bg-spirit-purple/5">
                   <p className="text-3xl font-bold text-spirit-purple">
                     {campaigns.filter(c => getUserRole(c) === CampaignRole.PLAYER).length}
                   </p>
-                  <p className="text-sm text-warm-gray mt-1">Campaigns as Player</p>
+                  <p className="text-sm text-warm-gray mt-1">{t('dashboard:campaignsAsPlayer')}</p>
                 </div>
                 <div className="text-center p-4 rounded-lg bg-warm-amber/5">
                   <p className="text-3xl font-bold text-warm-amber">
                     {campaigns.filter(c => c.status === 'ACTIVE').length}
                   </p>
-                  <p className="text-sm text-warm-gray mt-1">Active Campaigns</p>
+                  <p className="text-sm text-warm-gray mt-1">{t('dashboard:activeCampaigns')}</p>
                 </div>
               </div>
             </section>

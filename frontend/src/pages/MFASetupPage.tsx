@@ -8,6 +8,7 @@
 
 import { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
+import { useTranslation } from 'react-i18next';
 import { useAuth } from '@/contexts/AuthContext';
 import { Shield, Copy, CheckCircle, AlertTriangle, Loader2, ChevronRight } from 'lucide-react';
 import Button from '@/components/ui/Button';
@@ -15,15 +16,13 @@ import Button from '@/components/ui/Button';
 type Step = 'loading' | 'scan' | 'backup-codes' | 'error';
 
 export default function MFASetupPage() {
+  const { t } = useTranslation(['auth', 'common']);
   const navigate = useNavigate();
   const { authenticated, setupMFA, completeMFASetup } = useAuth();
 
-  // Setup data
   const [qrCodeUrl, setQrCodeUrl] = useState('');
   const [secret, setSecret] = useState('');
   const [backupCodes, setBackupCodes] = useState<string[]>([]);
-
-  // UI state
   const [step, setStep] = useState<Step>('loading');
   const [token, setToken] = useState('');
   const [verifying, setVerifying] = useState(false);
@@ -33,14 +32,12 @@ export default function MFASetupPage() {
   const [codesAcknowledged, setCodesAcknowledged] = useState(false);
   const [initError, setInitError] = useState('');
 
-  // Redirect if not authenticated
   useEffect(() => {
     if (!authenticated) {
       navigate('/auth/login', { replace: true });
     }
   }, [authenticated, navigate]);
 
-  // Kick off MFA setup on mount
   useEffect(() => {
     if (!authenticated) return;
 
@@ -57,18 +54,14 @@ export default function MFASetupPage() {
     };
 
     initSetup();
-  }, [authenticated]);  
-
-  // ============================================
-  // Handlers
-  // ============================================
+  }, [authenticated]);
 
   const handleVerify = async (e: React.FormEvent) => {
     e.preventDefault();
     setTokenError('');
 
     if (token.length !== 6) {
-      setTokenError('Code must be 6 digits');
+      setTokenError(t('auth:mfa.verifyTokenErrorInvalid'));
       return;
     }
 
@@ -78,7 +71,7 @@ export default function MFASetupPage() {
       setBackupCodes(result.backupCodes);
       setStep('backup-codes');
     } catch (err: any) {
-      setTokenError(err.response?.data?.message || 'Invalid code. Please try again.');
+      setTokenError(err.response?.data?.message || t('auth:mfa.verifyTokenErrorInvalidCode'));
     } finally {
       setVerifying(false);
     }
@@ -100,14 +93,9 @@ export default function MFASetupPage() {
     navigate('/profile');
   };
 
-  // ============================================
-  // Render
-  // ============================================
-
   return (
     <div className="min-h-screen flex items-center justify-center bg-gradient-to-br from-soft-cream via-parchment to-warm-amber/20 px-4 py-8">
       <div className="glass-panel max-w-lg w-full p-8 space-y-6">
-        {/* Header */}
         <div className="text-center">
           <div className="flex justify-center mb-4">
             <div className="bg-moss-green/10 rounded-full p-3">
@@ -115,23 +103,21 @@ export default function MFASetupPage() {
             </div>
           </div>
           <h1 className="text-2xl font-bold text-brand-ink font-heading">
-            Set Up Two-Factor Authentication
+            {t('auth:mfa.setupTitle')}
           </h1>
           <p className="mt-1 text-sm text-warm-gray">
             {step === 'backup-codes'
-              ? 'MFA enabled! Save your backup codes.'
-              : 'Add an extra layer of security to your account.'}
+              ? t('auth:mfa.enabled')
+              : t('auth:mfa.scanQR')}
           </p>
         </div>
 
-        {/* ── Loading ── */}
         {step === 'loading' && (
           <div className="flex items-center justify-center py-12">
             <Loader2 className="w-8 h-8 text-brand-ink animate-spin" />
           </div>
         )}
 
-        {/* ── Error ── */}
         {step === 'error' && (
           <div className="space-y-4">
             <div className="p-4 rounded-lg bg-danger/10 border border-danger/30 flex gap-3">
@@ -139,37 +125,33 @@ export default function MFASetupPage() {
               <p className="text-sm text-danger-ink">{initError}</p>
             </div>
             <Button onClick={() => navigate('/profile')} variant="secondary" className="w-full">
-              Back to Profile
+              {t('common:back')}
             </Button>
           </div>
         )}
 
-        {/* ── Step 1: Scan QR code ── */}
         {step === 'scan' && (
           <div className="space-y-6">
-            {/* Instructions */}
             <ol className="text-sm text-warm-gray space-y-2 list-decimal list-inside">
-              <li>Install an authenticator app (Google Authenticator, Authy, etc.)</li>
-              <li>Scan the QR code below, or enter the secret key manually</li>
-              <li>Enter the 6-digit code from your app to verify</li>
+              <li>{t('auth:mfa.scanQR')}</li>
+              <li>{t('auth:mfa.secretKey')}</li>
+              <li>{t('auth:mfa.verifyToken')}</li>
             </ol>
 
-            {/* QR Code */}
             <div className="flex justify-center">
               <div className="p-3 bg-white rounded-xl border border-moss-green/20 inline-block">
                 <img src={qrCodeUrl} alt="MFA QR Code" className="w-48 h-48" />
               </div>
             </div>
 
-            {/* Manual Secret Key */}
             <div>
-              <p className="text-xs font-medium text-stone-gray mb-1.5">Manual entry key</p>
+              <p className="text-xs font-medium text-stone-gray mb-1.5">{t('auth:mfa.secretKey')}</p>
               <div className="flex items-center gap-2 p-3 rounded-lg bg-parchment/60 border border-moss-green/15">
                 <code className="flex-1 text-sm font-mono text-brand-ink break-all">{secret}</code>
                 <button
                   onClick={copySecret}
                   className="flex-shrink-0 p-1.5 rounded hover:bg-moss-green/10 transition-colors"
-                  title="Copy secret"
+                  title={t('auth:mfa.secretKey')}
                 >
                   {secretCopied ? (
                     <CheckCircle className="w-4 h-4 text-brand-ink" />
@@ -180,11 +162,10 @@ export default function MFASetupPage() {
               </div>
             </div>
 
-            {/* Verification Form */}
             <form onSubmit={handleVerify} className="space-y-4">
               <div>
                 <label className="block text-sm font-medium text-stone-gray mb-1.5">
-                  Verification Code
+                  {t('auth:mfa.verifyToken')}
                 </label>
                 <input
                   type="text"
@@ -196,10 +177,8 @@ export default function MFASetupPage() {
                     setToken(e.target.value.replace(/[^0-9]/g, ''));
                     setTokenError('');
                   }}
-                  placeholder="000000"
-                  className={`input-cozy w-full text-center text-2xl tracking-widest font-mono ${
-                    tokenError ? 'border-danger/60 focus:ring-danger' : ''
-                  }`}
+                  placeholder={t('auth:mfa.verifyTokenPlaceholder')}
+                  className={`input-cozy w-full text-center text-2xl tracking-widest font-mono ${tokenError ? 'border-danger/60 focus:ring-danger' : ''}`}
                   autoFocus
                   autoComplete="one-time-code"
                 />
@@ -215,7 +194,7 @@ export default function MFASetupPage() {
                   disabled={verifying}
                   variant="secondary" className="flex-1"
                 >
-                  Cancel
+                  {t('common:cancel')}
                 </Button>
                 <Button
                   type="submit"
@@ -225,11 +204,11 @@ export default function MFASetupPage() {
                   {verifying ? (
                     <>
                       <Loader2 className="w-4 h-4 animate-spin" />
-                      Verifying...
+                      {t('auth:mfa.verifyTokenLoading')}
                     </>
                   ) : (
                     <>
-                      Verify & Enable
+                      {t('auth:mfa.verifySubmit')}
                       <ChevronRight className="w-4 h-4" />
                     </>
                   )}
@@ -239,35 +218,26 @@ export default function MFASetupPage() {
           </div>
         )}
 
-        {/* ── Step 2: Backup codes ── */}
         {step === 'backup-codes' && (
           <div className="space-y-5">
-            {/* Success banner */}
             <div className="flex items-center gap-3 p-4 rounded-lg bg-success/10 border border-success/30">
               <CheckCircle className="w-5 h-5 text-success-ink flex-shrink-0" />
               <div>
-                <p className="text-sm font-semibold text-success-ink">MFA Enabled Successfully</p>
-                <p className="text-xs text-success-ink mt-0.5">
-                  Your account is now protected with two-factor authentication.
-                </p>
+                <p className="text-sm font-semibold text-success-ink">{t('auth:mfa.enabled')}</p>
               </div>
             </div>
 
-            {/* Warning */}
             <div className="flex items-start gap-3 p-4 rounded-lg bg-warm-amber/10 border border-warm-amber/30">
               <AlertTriangle className="w-5 h-5 text-warm-amber flex-shrink-0 mt-0.5" />
               <p className="text-sm text-stone-gray">
-                <span className="font-semibold">Save these backup codes now.</span> They will not
-                be shown again. Each code can only be used once to access your account if you lose
-                your authenticator device.
+                <span className="font-semibold">{t('auth:mfa.backupCodesWarning')}</span>
               </p>
             </div>
 
-            {/* Backup code grid */}
             <div>
               <div className="flex items-center justify-between mb-2">
                 <p className="text-xs font-semibold text-stone-gray uppercase tracking-wide">
-                  Backup Codes (10 single-use)
+                  {t('auth:mfa.backupCodes')}
                 </p>
                 <button
                   onClick={copyBackupCodes}
@@ -298,7 +268,6 @@ export default function MFASetupPage() {
               </div>
             </div>
 
-            {/* Acknowledge + Done */}
             <label className="flex items-start gap-3 cursor-pointer">
               <input
                 type="checkbox"

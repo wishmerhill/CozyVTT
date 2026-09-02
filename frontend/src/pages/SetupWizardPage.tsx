@@ -6,6 +6,7 @@
 
 import { useState, useEffect, FormEvent } from 'react';
 import { useNavigate } from 'react-router-dom';
+import { useTranslation } from 'react-i18next';
 import { motion, AnimatePresence } from 'framer-motion';
 import { Shield, Settings, CheckCircle, ArrowRight, ArrowLeft, Loader2 } from 'lucide-react';
 import { useTheme } from '@/contexts/ThemeContext';
@@ -40,6 +41,7 @@ interface SystemConfigData {
 // ============================================
 
 export default function SetupWizardPage() {
+  const { t } = useTranslation(['setup', 'common']);
   const navigate = useNavigate();
   const { refreshUser } = useAuth();
   const { mascotUrl } = useTheme();
@@ -104,31 +106,30 @@ export default function SetupWizardPage() {
 
     // Display name
     if (!adminData.displayName) {
-      errors.displayName = 'Display name is required';
+      errors.displayName = t('common:displayNameRequired');
     } else if (adminData.displayName.length < 2) {
-      errors.displayName = 'Display name must be at least 2 characters';
+      errors.displayName = t('common:displayNameMinLength');
     }
 
     // Email
     if (!adminData.email) {
-      errors.email = 'Email is required';
+      errors.email = t('common:emailRequired');
     } else if (!isValidEmail(adminData.email)) {
-      errors.email = 'Please enter a valid email address';
+      errors.email = t('common:validEmailRequired');
     }
 
     // Password
     if (!adminData.password) {
-      errors.password = 'Password is required';
+      errors.password = t('common:passwordRequired');
     } else if (!isStrongPassword(adminData.password)) {
-      errors.password =
-        'Password must be at least 12 characters with uppercase, lowercase, number, and special character';
+      errors.password = t('common:passwordMinLength');
     }
 
     // Confirm password
     if (!adminData.confirmPassword) {
-      errors.confirmPassword = 'Please confirm your password';
+      errors.confirmPassword = t('common:confirmPasswordRequired');
     } else if (adminData.password !== adminData.confirmPassword) {
-      errors.confirmPassword = 'Passwords do not match';
+      errors.confirmPassword = t('common:passwordsDoNotMatch');
     }
 
     setFieldErrors(errors);
@@ -139,9 +140,9 @@ export default function SetupWizardPage() {
     const errors: Record<string, string> = {};
 
     if (!systemConfig.instanceName) {
-      errors.instanceName = 'Instance name is required';
+      errors.instanceName = t('common:required');
     } else if (systemConfig.instanceName.length < 2) {
-      errors.instanceName = 'Instance name must be at least 2 characters';
+      errors.instanceName = t('common:displayNameMinLength');
     }
 
     setFieldErrors(errors);
@@ -205,9 +206,9 @@ export default function SetupWizardPage() {
       if (err.response?.data?.error) {
         setError(err.response.data.message || err.response.data.error);
       } else if (err.response?.status === 400) {
-        setError('Setup has already been completed');
+        setError(t('setup:alreadyCompleted'));
       } else {
-        setError('An error occurred during setup. Please try again.');
+        setError(t('setup:errorOccurred'));
       }
     } finally {
       setLoading(false);
@@ -272,10 +273,10 @@ export default function SetupWizardPage() {
             <img src={mascotUrl} alt="CozyVTT" className="w-20 h-20 object-contain animate-pulse-soft" />
           </div>
           <h1 className="text-4xl font-bold text-brand-ink font-heading">
-            CozyVTT Setup
+            {t('setup:title')}
           </h1>
           <p className="mt-2 text-warm-gray">
-            Let's get your Virtual Tabletop ready
+            {t('setup:subtitle')}
           </p>
         </div>
 
@@ -326,7 +327,7 @@ export default function SetupWizardPage() {
             }`}
           >
             <ArrowLeft className="w-4 h-4" />
-            Back
+            {t('setup:back')}
           </Button>
 
           {currentStep < totalSteps ? (
@@ -336,7 +337,7 @@ export default function SetupWizardPage() {
               disabled={loading}
               className="flex items-center gap-2"
             >
-              Next
+              {t('setup:next')}
               <ArrowRight className="w-4 h-4" />
             </Button>
           ) : (
@@ -368,11 +369,11 @@ export default function SetupWizardPage() {
                         d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"
                       ></path>
                     </svg>
-                    Completing Setup...
+                    {t('setup:completing')}
                   </>
                 ) : (
                   <>
-                    Complete Setup
+                    {t('setup:completeSetup')}
                     <CheckCircle className="w-4 h-4" />
                   </>
                 )}
@@ -390,6 +391,8 @@ export default function SetupWizardPage() {
 // ============================================
 
 function Step1Welcome() {
+  const { t } = useTranslation('setup');
+
   return (
     <div className="space-y-6 text-center">
       <div className="flex justify-center gap-4">
@@ -399,34 +402,33 @@ function Step1Welcome() {
 
       <div>
         <h2 className="text-2xl font-bold text-brand-ink mb-3">
-          Welcome to CozyVTT!
+          {t('welcome.title')}
         </h2>
         <p className="text-stone-gray max-w-xl mx-auto">
-          This wizard will guide you through setting up your self-hosted Virtual
-          Tabletop for cozy, narrative-driven campaigns.
+          {t('welcome.description')}
         </p>
       </div>
 
       <div className="glass-panel p-6 text-left space-y-4 bg-warm-amber/5">
-        <h3 className="font-semibold text-brand-ink">What we'll set up:</h3>
+        <h3 className="font-semibold text-brand-ink">{t('welcome.whatWellSetup')}</h3>
         <ul className="space-y-2 text-sm text-stone-gray">
           <li className="flex items-start gap-2">
             <CheckCircle className="w-5 h-5 text-brand-ink flex-shrink-0 mt-0.5" />
-            <span>Create your administrator account</span>
+            <span>{t('welcome.createAdmin')}</span>
           </li>
           <li className="flex items-start gap-2">
             <CheckCircle className="w-5 h-5 text-brand-ink flex-shrink-0 mt-0.5" />
-            <span>Configure basic system settings</span>
+            <span>{t('welcome.configureSystem')}</span>
           </li>
           <li className="flex items-start gap-2">
             <CheckCircle className="w-5 h-5 text-brand-ink flex-shrink-0 mt-0.5" />
-            <span>Complete the installation process</span>
+            <span>{t('welcome.completeInstallation')}</span>
           </li>
         </ul>
       </div>
 
       <p className="text-sm text-warm-gray">
-        This process takes about 2 minutes. Click Next to begin.
+        {t('welcome.timeInfo')}
       </p>
     </div>
   );
@@ -444,14 +446,16 @@ interface Step2Props {
 }
 
 function Step2AdminAccount({ data, setData, fieldErrors, passwordStrength }: Step2Props) {
+  const { t } = useTranslation(['setup', 'common']);
+
   return (
     <div className="space-y-6">
       <div className="text-center">
         <h2 className="text-2xl font-bold text-brand-ink mb-2">
-          Create Admin Account
+          {t('setup:adminAccount.title')}
         </h2>
         <p className="text-sm text-stone-gray">
-          This account will have full system access
+          {t('setup:adminAccount.subtitle')}
         </p>
       </div>
 
@@ -459,7 +463,7 @@ function Step2AdminAccount({ data, setData, fieldErrors, passwordStrength }: Ste
         {/* Display Name */}
         <div>
           <label htmlFor="displayName" className="block text-sm font-medium text-brand-ink mb-1">
-            Display Name
+            {t('setup:adminAccount.displayName')}
           </label>
           <input
             id="displayName"
@@ -469,7 +473,7 @@ function Step2AdminAccount({ data, setData, fieldErrors, passwordStrength }: Ste
             className={`input-cozy w-full ${
               fieldErrors.displayName ? 'border-spirit-red' : ''
             }`}
-            placeholder="Your name"
+            placeholder={t('setup:adminAccount.displayNamePlaceholder')}
             maxLength={50}
           />
           {fieldErrors.displayName && (
@@ -480,7 +484,7 @@ function Step2AdminAccount({ data, setData, fieldErrors, passwordStrength }: Ste
         {/* Email */}
         <div>
           <label htmlFor="email" className="block text-sm font-medium text-brand-ink mb-1">
-            Email Address
+            {t('setup:adminAccount.email')}
           </label>
           <input
             id="email"
@@ -490,7 +494,7 @@ function Step2AdminAccount({ data, setData, fieldErrors, passwordStrength }: Ste
             className={`input-cozy w-full ${
               fieldErrors.email ? 'border-spirit-red' : ''
             }`}
-            placeholder="admin@example.com"
+            placeholder={t('setup:adminAccount.emailPlaceholder')}
           />
           {fieldErrors.email && (
             <p className="mt-1 text-xs text-spirit-red">{fieldErrors.email}</p>
@@ -500,7 +504,7 @@ function Step2AdminAccount({ data, setData, fieldErrors, passwordStrength }: Ste
         {/* Password */}
         <div>
           <label htmlFor="password" className="block text-sm font-medium text-brand-ink mb-1">
-            Password
+            {t('setup:adminAccount.password')}
           </label>
           <input
             id="password"
@@ -510,7 +514,7 @@ function Step2AdminAccount({ data, setData, fieldErrors, passwordStrength }: Ste
             className={`input-cozy w-full ${
               fieldErrors.password ? 'border-spirit-red' : ''
             }`}
-            placeholder="At least 12 characters"
+            placeholder={t('setup:adminAccount.passwordPlaceholder')}
           />
           {fieldErrors.password && (
             <p className="mt-1 text-xs text-spirit-red">{fieldErrors.password}</p>
@@ -520,7 +524,7 @@ function Step2AdminAccount({ data, setData, fieldErrors, passwordStrength }: Ste
           {data.password && passwordStrength && (
             <div className="mt-2">
               <div className="flex items-center justify-between mb-1">
-                <span className="text-xs text-warm-gray">Password Strength:</span>
+                <span className="text-xs text-warm-gray">{t('setup:adminAccount.passwordStrength')}</span>
                 <span
                   className={`text-xs font-medium ${
                     passwordStrength.color === 'green'
@@ -555,7 +559,7 @@ function Step2AdminAccount({ data, setData, fieldErrors, passwordStrength }: Ste
             htmlFor="confirmPassword"
             className="block text-sm font-medium text-brand-ink mb-1"
           >
-            Confirm Password
+            {t('setup:adminAccount.confirmPassword')}
           </label>
           <input
             id="confirmPassword"
@@ -565,7 +569,7 @@ function Step2AdminAccount({ data, setData, fieldErrors, passwordStrength }: Ste
             className={`input-cozy w-full ${
               fieldErrors.confirmPassword ? 'border-spirit-red' : ''
             }`}
-            placeholder="Re-enter your password"
+            placeholder={t('setup:adminAccount.confirmPasswordPlaceholder')}
           />
           {fieldErrors.confirmPassword && (
             <p className="mt-1 text-xs text-spirit-red">{fieldErrors.confirmPassword}</p>
@@ -587,6 +591,8 @@ interface Step3Props {
 }
 
 function Step3SystemConfig({ data, setData, fieldErrors }: Step3Props) {
+  const { t } = useTranslation('setup');
+
   // Get common timezones
   const timezones = [
     'America/New_York',
@@ -609,10 +615,10 @@ function Step3SystemConfig({ data, setData, fieldErrors }: Step3Props) {
     <div className="space-y-6">
       <div className="text-center">
         <h2 className="text-2xl font-bold text-brand-ink mb-2">
-          System Configuration
+          {t('systemConfig.title')}
         </h2>
         <p className="text-sm text-stone-gray">
-          Customize your CozyVTT instance
+          {t('systemConfig.subtitle')}
         </p>
       </div>
 
@@ -623,7 +629,7 @@ function Step3SystemConfig({ data, setData, fieldErrors }: Step3Props) {
             htmlFor="instanceName"
             className="block text-sm font-medium text-brand-ink mb-1"
           >
-            Instance Name
+            {t('systemConfig.instanceName')}
           </label>
           <input
             id="instanceName"
@@ -633,10 +639,10 @@ function Step3SystemConfig({ data, setData, fieldErrors }: Step3Props) {
             className={`input-cozy w-full ${
               fieldErrors.instanceName ? 'border-spirit-red' : ''
             }`}
-            placeholder="CozyVTT"
+            placeholder={t('systemConfig.instanceNamePlaceholder')}
           />
           <p className="mt-1 text-xs text-warm-gray">
-            This will appear in the browser tab and page titles
+            {t('systemConfig.instanceNameHint')}
           </p>
           {fieldErrors.instanceName && (
             <p className="mt-1 text-xs text-spirit-red">{fieldErrors.instanceName}</p>
@@ -646,7 +652,7 @@ function Step3SystemConfig({ data, setData, fieldErrors }: Step3Props) {
         {/* Timezone */}
         <div>
           <label htmlFor="timezone" className="block text-sm font-medium text-brand-ink mb-1">
-            Timezone
+            {t('systemConfig.timezone')}
           </label>
           <select
             id="timezone"
@@ -654,8 +660,8 @@ function Step3SystemConfig({ data, setData, fieldErrors }: Step3Props) {
             onChange={(e) => setData({ ...data, timezone: e.target.value })}
             className="input-cozy w-full"
           >
-            <option value={data.timezone}>{data.timezone} (Detected)</option>
-            <optgroup label="Common Timezones">
+            <option value={data.timezone}>{data.timezone} {t('systemConfig.detected')}</option>
+            <optgroup label={t('systemConfig.commonTimezones')}>
               {timezones
                 .filter((tz) => tz !== data.timezone)
                 .map((tz) => (
@@ -666,7 +672,7 @@ function Step3SystemConfig({ data, setData, fieldErrors }: Step3Props) {
             </optgroup>
           </select>
           <p className="mt-1 text-xs text-warm-gray">
-            Used for scheduling and timestamps
+            {t('systemConfig.timezoneHint')}
           </p>
         </div>
 
@@ -687,14 +693,13 @@ function Step3SystemConfig({ data, setData, fieldErrors }: Step3Props) {
                 htmlFor="enableRegistration"
                 className="block text-sm font-medium text-brand-ink cursor-pointer"
               >
-                Enable Public Registration
+                {t('systemConfig.enableRegistration')}
               </label>
               <p className="mt-1 text-xs text-stone-gray">
-                Allow anyone to create an account on this instance. You can change this
-                later in system settings.
+                {t('systemConfig.enableRegistrationDesc')}
               </p>
               <p className="mt-2 text-xs text-warm-amber font-medium">
-                ⚠️ Recommended: Keep this disabled for private instances
+                {t('systemConfig.registrationWarning')}
               </p>
             </div>
           </div>
@@ -714,14 +719,16 @@ interface Step4Props {
 }
 
 function Step4Review({ adminData, systemConfig }: Step4Props) {
+  const { t } = useTranslation('setup');
+
   return (
     <div className="space-y-6">
       <div className="text-center">
         <h2 className="text-2xl font-bold text-brand-ink mb-2">
-          Review & Confirm
+          {t('review.title')}
         </h2>
         <p className="text-sm text-stone-gray">
-          Please review your configuration before completing setup
+          {t('review.subtitle')}
         </p>
       </div>
 
@@ -730,20 +737,20 @@ function Step4Review({ adminData, systemConfig }: Step4Props) {
         <div className="glass-panel p-4 bg-moss-green/5">
           <h3 className="font-semibold text-brand-ink mb-3 flex items-center gap-2">
             <Shield className="w-5 h-5" />
-            Administrator Account
+            {t('review.adminSection')}
           </h3>
           <dl className="space-y-2 text-sm">
             <div className="flex justify-between">
-              <dt className="text-warm-gray">Display Name:</dt>
+              <dt className="text-warm-gray">{t('review.displayName')}</dt>
               <dd className="text-brand-ink font-medium">{adminData.displayName}</dd>
             </div>
             <div className="flex justify-between">
-              <dt className="text-warm-gray">Email:</dt>
+              <dt className="text-warm-gray">{t('review.email')}</dt>
               <dd className="text-brand-ink font-medium">{adminData.email}</dd>
             </div>
             <div className="flex justify-between">
-              <dt className="text-warm-gray">Password:</dt>
-              <dd className="text-stone-gray">••••••••••••</dd>
+              <dt className="text-warm-gray">{t('review.password')}</dt>
+              <dd className="text-stone-gray">{t('review.passwordMasked')}</dd>
             </div>
           </dl>
         </div>
@@ -752,25 +759,25 @@ function Step4Review({ adminData, systemConfig }: Step4Props) {
         <div className="glass-panel p-4 bg-warm-amber/5">
           <h3 className="font-semibold text-brand-ink mb-3 flex items-center gap-2">
             <Settings className="w-5 h-5" />
-            System Configuration
+            {t('review.systemSection')}
           </h3>
           <dl className="space-y-2 text-sm">
             <div className="flex justify-between">
-              <dt className="text-warm-gray">Instance Name:</dt>
+              <dt className="text-warm-gray">{t('review.instanceName')}</dt>
               <dd className="text-brand-ink font-medium">{systemConfig.instanceName}</dd>
             </div>
             <div className="flex justify-between">
-              <dt className="text-warm-gray">Timezone:</dt>
+              <dt className="text-warm-gray">{t('review.timezone')}</dt>
               <dd className="text-brand-ink font-medium">{systemConfig.timezone}</dd>
             </div>
             <div className="flex justify-between">
-              <dt className="text-warm-gray">Public Registration:</dt>
+              <dt className="text-warm-gray">{t('review.publicRegistration')}</dt>
               <dd
                 className={`font-medium ${
                   systemConfig.enableRegistration ? 'text-warm-amber' : 'text-stone-gray'
                 }`}
               >
-                {systemConfig.enableRegistration ? 'Enabled' : 'Disabled'}
+                {systemConfig.enableRegistration ? t('review.enabled') : t('review.disabled')}
               </dd>
             </div>
           </dl>
@@ -778,11 +785,10 @@ function Step4Review({ adminData, systemConfig }: Step4Props) {
 
         {/* Confirmation Message */}
         <div className="glass-panel p-4 border-2 border-moss-green/30">
-          <p className="text-sm text-stone-gray text-center">
-            Click <span className="font-medium text-brand-ink">Complete Setup</span> to
-            create your admin account and finish the installation. You will be
-            automatically logged in and redirected to the dashboard.
-          </p>
+          <p
+            className="text-sm text-stone-gray text-center"
+            dangerouslySetInnerHTML={{ __html: t('review.confirmation') }}
+          />
         </div>
       </div>
     </div>

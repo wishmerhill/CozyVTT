@@ -1,15 +1,12 @@
 /**
  * i18next configuration for CozyVTT
  *
- * Uses i18next-browser-languagedetector to detect the user's preferred language
- * from the browser, and falls back to Italian (it) as the default.
- *
- * Translation resources are imported directly at build time via Vite's JSON
- * import support, so no HTTP backend is needed.
+ * Translations are imported directly at build time via Vite's JSON import support.
+ * No HTTP backend is used — all resources are bundled.
+ * Italian is the only supported language; no language detector is needed.
  */
 import i18n from 'i18next';
 import { initReactI18next } from 'react-i18next';
-import LanguageDetector from 'i18next-browser-languagedetector';
 
 // Import all Italian translation resources
 import commonIt from '../../public/locales/it/common.json';
@@ -20,6 +17,9 @@ import adminIt from '../../public/locales/it/admin.json';
 import gameSystemsIt from '../../public/locales/it/game-systems.json';
 import errorsIt from '../../public/locales/it/errors.json';
 import validationIt from '../../public/locales/it/validation.json';
+import setupIt from '../../public/locales/it/setup.json';
+import dashboardIt from '../../public/locales/it/dashboard.json';
+import assetsIt from '../../public/locales/it/assets.json';
 
 /** All available namespace keys — must match the JSON files in public/locales/. */
 export const NAMESPACES = [
@@ -31,6 +31,9 @@ export const NAMESPACES = [
   'game-systems',
   'errors',
   'validation',
+  'setup',
+  'dashboard',
+  'assets',
 ] as const;
 
 export type Namespace = (typeof NAMESPACES)[number];
@@ -54,46 +57,32 @@ const resources = {
     'game-systems': gameSystemsIt,
     errors: errorsIt,
     validation: validationIt,
+    setup: setupIt,
+    dashboard: dashboardIt,
+    assets: assetsIt,
   },
 } as const;
 
-void i18n
-  .use(LanguageDetector) // detects language from browser settings
-  .use(initReactI18next) // passes i18n instance to react-i18next
-  .init({
-    // Italian is the default language
-    fallbackLng: 'it',
-    // If a translation key is missing, show the key itself as a fallback
-    // (rather than showing nothing or throwing)
-    returnNull: false,
-    returnEmptyString: false,
-    // Namespace configuration
-    defaultNS: DEFAULT_NS,
-    ns: NAMESPACES,
-    // Inline resources — no HTTP backend needed
-    resources: resources as Record<string, Record<string, object>>,
-    // Enable debug in development
-    debug: import.meta.env.DEV,
-    interpolation: {
-      escapeValue: false, // React already escapes values
-    },
-    // Language detection options
-    detection: {
-      // Order of language detection methods
-      order: ['navigator', 'htmlTag', 'path', 'subdomain'],
-      // Cache language in localStorage
-      caches: ['localStorage'],
-      // Convert 'it-IT' to 'it'
-      convertDetectedLanguage: (lng: string) => {
-        const supported = ['it'];
-        const base = lng.split('-')[0];
-        return supported.includes(base) ? base : 'it';
-      },
-    },
-    // React options
-    react: {
-      useSuspense: false,
-    },
-  });
+// Initialize synchronously — no async backend, no language detector.
+i18n.use(initReactI18next).init({
+  lng: 'it',
+  fallbackLng: 'it',
+  returnNull: false,
+  returnEmptyString: false,
+  defaultNS: DEFAULT_NS,
+  ns: NAMESPACES,
+  resources: resources as Record<string, Record<string, object>>,
+  debug: import.meta.env.DEV,
+  interpolation: {
+    escapeValue: false,
+  },
+  react: {
+    useSuspense: false,  },
+});
+
+// Expose on window for dev debugging
+if (typeof window !== 'undefined') {
+  (window as any).i18next = i18n;
+}
 
 export default i18n;

@@ -1,0 +1,62 @@
+{
+  "title": "CozyVTT Setup",
+  "subtitle": "Prepariamo il tuo Tavolo Virtuale",
+  "back": "Indietro",
+  "next": "Avanti",
+  "completing": "Completamento in corso...",
+  "completeSetup": "Completa Setup",
+  "alreadyCompleted": "Il setup è già stato completato",
+  "errorOccurred": "Si è verificato un errore durante il setup. Riprova.",
+  "welcome": {
+    "title": "Benvenuto su CozyVTT!",
+    "description": "Questa procedura ti guiderà nella configurazione del tuo Tavolo Virtuale self-hosted per campagne accoglienti e basate sulla narrazione.",
+    "whatWellSetup": "Cosa configureremo:",
+    "createAdmin": "Creare il tuo account amministratore",
+    "configureSystem": "Configurare le impostazioni di base del sistema",
+    "completeInstallation": "Completare il processo di installazione",
+    "timeInfo": "Il processo richiede circa 2 minuti. Clicca Avanti per iniziare."
+  },
+  "adminAccount": {
+    "title": "Crea Account Amministratore",
+    "subtitle": "Questo account avrà accesso completo al sistema",
+    "displayName": "Nome Visualizzato",
+    "displayNamePlaceholder": "Il tuo nome",
+    "email": "Indirizzo Email",
+    "emailPlaceholder": "admin@example.com",
+    "password": "Password",
+    "passwordPlaceholder": "Almeno 12 caratteri",
+    "confirmPassword": "Conferma Password",
+    "confirmPasswordPlaceholder": "Re-inserisci la password",
+    "passwordStrength": "Forza della password:"
+  },
+  "systemConfig": {
+    "title": "Configurazione Sistema",
+    "subtitle": "Personalizza la tua istanza CozyVTT",
+    "instanceName": "Nome Istanza",
+    "instanceNamePlaceholder": "CozyVTT",
+    "instanceNameHint": "Apparirà nella scheda del browser e nei titoli delle pagine",
+    "timezone": "Fuso Orario",
+    "timezoneHint": "Utilizzato per pianificazione e timestamp",
+    "detected": "(Rilevato)",
+    "commonTimezones": "Fusi Orari Comuni",
+    "enableRegistration": "Abilita Registrazione Pubblica",
+    "enableRegistrationDesc": "Permetti a chiunque di creare un account su questa istanza. Puoi modificarlo in seguito nelle impostazioni di sistema.",
+    "registrationWarning": "⚠️ Consigliato: Mantieni disabilitato per istanze private"
+  },
+  "review": {
+    "title": "Riepilogo e Conferma",
+    "subtitle": "Verifica la configurazione prima di completare il setup",
+    "adminSection": "Account Amministratore",
+    "systemSection": "Configurazione Sistema",
+    "displayName": "Nome Visualizzato:",
+    "email": "Email:",
+    "password": "Password:",
+    "passwordMasked": "••••••••••••",
+    "instanceName": "Nome Istanza:",
+    "timezone": "Fuso Orario:",
+    "publicRegistration": "Registrazione Pubblica:",
+    "enabled": "Attivata",
+    "disabled": "Disattivata",
+    "confirmation": "Clicca <strong>Completa Setup</strong> per creare l'account amministratore e completare l'installazione. Verrai automaticamente autenticato e reindirizzato alla dashboard."
+  }
+}

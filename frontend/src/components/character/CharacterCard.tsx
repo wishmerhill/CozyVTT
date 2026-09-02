@@ -4,6 +4,7 @@
 // ============================================
 
 import { memo, useState } from 'react';
+import { useTranslation } from 'react-i18next';
 import type { Character, Campaign } from '@/types';
 import { User, Calendar, Link2, MoreVertical, Edit, Copy, Trash2, FileDown, Link as LinkIcon } from 'lucide-react';
 import GameSystemBadge from '@/components/common/GameSystemBadge';
@@ -31,6 +32,7 @@ function CharacterCardInner({
   onAssign,
   onExport,
 }: CharacterCardProps) {
+  const { t } = useTranslation('character');
   const [showMenu, setShowMenu] = useState(false);
 
   // Format date
@@ -40,12 +42,12 @@ function CharacterCardInner({
     const diffMs = now.getTime() - date.getTime();
     const diffDays = Math.floor(diffMs / (1000 * 60 * 60 * 24));
 
-    if (diffDays === 0) return 'Today';
-    if (diffDays === 1) return 'Yesterday';
-    if (diffDays < 7) return `${diffDays} days ago`;
-    if (diffDays < 30) return `${Math.floor(diffDays / 7)} weeks ago`;
-    if (diffDays < 365) return `${Math.floor(diffDays / 30)} months ago`;
-    return `${Math.floor(diffDays / 365)} years ago`;
+    if (diffDays === 0) return t('time.today');
+    if (diffDays === 1) return t('time.yesterday');
+    if (diffDays < 7) return t('time.daysAgo', { count: diffDays });
+    if (diffDays < 30) return t('time.weeksAgo', { count: Math.floor(diffDays / 7) });
+    if (diffDays < 365) return t('time.monthsAgo', { count: Math.floor(diffDays / 30) });
+    return t('time.yearsAgo', { count: Math.floor(diffDays / 365) });
   };
 
   // Handle card click — opens the sheet to read, not to edit. Editing is a
@@ -108,7 +110,7 @@ function CharacterCardInner({
             onClick={handleMenuToggle}
             className="p-2 rounded-lg hover:bg-warm-gray/20 transition-colors
                      focus:outline-none focus:ring-2 focus:ring-moss-green/50"
-            aria-label="Character actions"
+            aria-label={t('card.aria.actions')}
             type="button"
           >
             <MoreVertical className="w-5 h-5 text-stone-gray" />
@@ -132,7 +134,7 @@ function CharacterCardInner({
                              flex items-center gap-2 transition-colors"
                   >
                     <Edit className="w-4 h-4" />
-                    Edit Character
+                    {t('card.editCharacter')}
                   </button>
 
                   <button
@@ -141,7 +143,7 @@ function CharacterCardInner({
                              flex items-center gap-2 transition-colors"
                   >
                     <Copy className="w-4 h-4" />
-                    Copy/Duplicate
+                    {t('card.copyDuplicate')}
                   </button>
 
                   <button
@@ -150,7 +152,7 @@ function CharacterCardInner({
                              flex items-center gap-2 transition-colors"
                   >
                     <LinkIcon className="w-4 h-4" />
-                    {campaign ? 'Reassign Campaign' : 'Assign to Campaign'}
+                    {campaign ? t('card.reassignCampaign') : t('card.assignToCampaign')}
                   </button>
 
                   <button
@@ -159,7 +161,7 @@ function CharacterCardInner({
                              flex items-center gap-2 transition-colors"
                   >
                     <FileDown className="w-4 h-4" />
-                    Export as JSON
+                    {t('card.exportAsJSON')}
                   </button>
 
                   <div className="border-t border-moss-green/20 my-1" />
@@ -170,7 +172,7 @@ function CharacterCardInner({
                              flex items-center gap-2 transition-colors"
                   >
                     <Trash2 className="w-4 h-4" />
-                    Delete Character
+                    {t('card.deleteCharacter')}
                   </button>
                 </div>
               </motion.div>
@@ -212,7 +214,7 @@ function CharacterCardInner({
             <div className="flex items-center gap-2">
               <Link2 className="w-4 h-4 text-spirit-purple" />
               <span className="text-sm font-medium text-spirit-purple">
-                Assigned to:
+                {t('card.assignedTo')}
               </span>
               <span className="text-sm text-stone-gray truncate">
                 {campaign.name}
@@ -226,7 +228,7 @@ function CharacterCardInner({
             <div className="flex items-center gap-2">
               <Link2 className="w-4 h-4 text-warm-gray" />
               <span className="text-sm text-warm-gray">
-                Not assigned to any campaign
+                {t('card.notAssigned')}
               </span>
             </div>
           </div>
@@ -237,7 +239,7 @@ function CharacterCardInner({
           {/* Last Updated */}
           <div className="flex items-center gap-2 text-stone-gray">
             <Calendar className="w-4 h-4 text-warm-amber" />
-            <span className="text-warm-gray">Updated:</span>
+            <span className="text-warm-gray">{t('card.updated')}:</span>
             <span className="text-stone-gray font-medium">{formatDate(character.updatedAt)}</span>
           </div>
         </div>

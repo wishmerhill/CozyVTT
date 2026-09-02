@@ -63,7 +63,7 @@ function characterWith(
 
 /** The number rendered in the "Passive Perception" row. */
 function renderedPassivePerception(): number {
-  const label = screen.getByText('Passive Perception');
+  const label = screen.getByText('Percezione Passiva');
   const row = label.parentElement!;
   const value = row.querySelector('span:last-child')!.textContent!.trim();
   return Number(value);

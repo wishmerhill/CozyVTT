@@ -7,6 +7,7 @@
  */
 
 import { useState, useEffect, useCallback, useRef } from 'react';
+import { useTranslation } from 'react-i18next';
 import { AnimatePresence, motion } from 'framer-motion';
 import {
   X,
@@ -69,6 +70,7 @@ interface CreatureLibraryProps {
 // ============================================
 
 export default function CreatureLibrary({ isOpen, onClose }: CreatureLibraryProps) {
+  const { t } = useTranslation('campaign');
   const { campaign, currentMap } = useCampaign();
   const { socket } = useWebSocket();
 
@@ -141,7 +143,7 @@ export default function CreatureLibrary({ isOpen, onClose }: CreatureLibraryProp
       }
       setTotal(result.total);
     } catch {
-      setError('Failed to load creature library');
+      setError(t('creature.errors.loadFailed'));
     } finally {
       setIsLoading(false);
     }
@@ -196,7 +198,7 @@ export default function CreatureLibrary({ isOpen, onClose }: CreatureLibraryProp
       // Refresh the list
       fetchCreatures(true);
     } catch {
-      setError('Failed to seed SRD creatures. Check that the server can reach api.open5e.com.');
+      setError(t('creature.errors.seedFailed'));
     } finally {
       setIsSeeding(false);
     }
@@ -244,7 +246,7 @@ export default function CreatureLibrary({ isOpen, onClose }: CreatureLibraryProp
       useGameStore.getState().addToken(result.token);
       socket?.emitMapChange(currentMap.id);
     } catch {
-      setError('Failed to place creature on map');
+      setError(t('creature.errors.placeFailed'));
     } finally {
       setPlacingId(null);
     }
@@ -258,7 +260,7 @@ export default function CreatureLibrary({ isOpen, onClose }: CreatureLibraryProp
       setCreatures((prev) => [duplicate, ...prev]);
       setTotal((prev) => prev + 1);
     } catch {
-      setError('Failed to duplicate creature');
+      setError(t('creature.errors.duplicateFailed'));
     }
   }, [campaign]);
 
@@ -271,7 +273,7 @@ export default function CreatureLibrary({ isOpen, onClose }: CreatureLibraryProp
       setTotal((prev) => prev - 1);
       if (expandedId === creatureId) setExpandedId(null);
     } catch {
-      setError('Failed to delete creature');
+      setError(t('creature.errors.deleteFailed'));
     }
   }, [campaign, expandedId]);
 
@@ -362,13 +364,13 @@ export default function CreatureLibrary({ isOpen, onClose }: CreatureLibraryProp
             {/* ── Header ── */}
             <div className="flex items-center gap-3 px-5 py-4 border-b border-moss-green/20 bg-parchment/60 sticky top-0 z-10">
               <BookOpen className="w-5 h-5 text-brand-ink flex-shrink-0" />
-              <h2 className="flex-1 text-base font-bold text-brand-ink">
-                Creature Library
+                <h2 className="flex-1 text-base font-bold text-brand-ink">
+                {t('creature.library')}
               </h2>
               <span className="text-xs text-stone-gray/60">
-                {total} creature{total !== 1 ? 's' : ''}
+                {t('creature.count', { count: total })}
               </span>
-              <Button onClick={onClose} variant="secondary" className="p-1.5 flex-shrink-0" title="Close">
+              <Button onClick={onClose} variant="secondary" className="p-1.5 flex-shrink-0" title={t('common:close')}>
                 <X className="w-4 h-4" />
               </Button>
             </div>
@@ -382,7 +384,7 @@ export default function CreatureLibrary({ isOpen, onClose }: CreatureLibraryProp
                   type="text"
                   value={searchQuery}
                   onChange={(e) => setSearchQuery(e.target.value)}
-                  placeholder="Search creatures..."
+                  placeholder={t('creature.searchPlaceholder')}
                   className="input-cozy w-full pl-8 text-sm"
                 />
               </div>
@@ -393,7 +395,7 @@ export default function CreatureLibrary({ isOpen, onClose }: CreatureLibraryProp
                 className="flex items-center gap-1 text-xs text-brand-ink hover:text-brand-ink/80 transition-colors"
               >
                 {showFilters ? <ChevronDown className="w-3 h-3" /> : <ChevronRight className="w-3 h-3" />}
-                Filters
+                {t('creature.filters')}
               </button>
 
               {/* Filter controls */}
@@ -414,7 +416,7 @@ export default function CreatureLibrary({ isOpen, onClose }: CreatureLibraryProp
                       onChange={(e) => setCrFilter(e.target.value)}
                       className="input-cozy text-xs w-20"
                     >
-                      <option value="">All CR</option>
+                      <option value="">{t('creature.allCR')}</option>
                       {CR_OPTIONS.map((cr) => (
                         <option key={cr} value={cr}>CR {cr}</option>
                       ))}
@@ -431,7 +433,7 @@ export default function CreatureLibrary({ isOpen, onClose }: CreatureLibraryProp
                       <option value="campaign">
                         {GAME_SYSTEM_SHORT_LABELS[campaign.gameSystem]} only (this campaign)
                       </option>
-                      <option value="all">All game systems</option>
+                      <option value="all">{t('creature.allGameSystems')}</option>
                     </select>
                   )}
                 </div>

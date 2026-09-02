@@ -6,6 +6,7 @@
  */
 
 import React from 'react';
+import { useTranslation } from 'react-i18next';
 import { Brain, AlertTriangle, Skull } from 'lucide-react';
 
 interface SanityTrackerProps {
@@ -42,16 +43,18 @@ export const SanityTracker: React.FC<SanityTrackerProps> = ({
   editable = false,
   onChange,
 }) => {
+  const { t } = useTranslation('character');
+
   // Calculate percentage for progress bar
   const percentage = maximum > 0 ? Math.round((current / maximum) * 100) : 0;
 
   // Determine danger level and color
   const getDangerLevel = () => {
     const ratio = current / maximum;
-    if (ratio > 0.75) return { level: 'Stable', color: 'bg-green-600', text: 'text-green-600' };
-    if (ratio > 0.5) return { level: 'Shaken', color: 'bg-yellow-500', text: 'text-yellow-600' };
-    if (ratio > 0.25) return { level: 'Fragile', color: 'bg-orange-500', text: 'text-orange-600' };
-    return { level: 'Breaking', color: 'bg-red-600', text: 'text-red-600' };
+    if (ratio > 0.75) return { level: t('sheet.coc7e.sanity.stable'), color: 'bg-green-600', text: 'text-green-600' };
+    if (ratio > 0.5) return { level: t('sheet.coc7e.sanity.shaken'), color: 'bg-yellow-500', text: 'text-yellow-600' };
+    if (ratio > 0.25) return { level: t('sheet.coc7e.sanity.fragile'), color: 'bg-orange-500', text: 'text-orange-600' };
+    return { level: t('sheet.coc7e.sanity.breaking'), color: 'bg-red-600', text: 'text-red-600' };
   };
 
   const dangerLevel = getDangerLevel();
@@ -62,7 +65,7 @@ export const SanityTracker: React.FC<SanityTrackerProps> = ({
       <div className="flex items-center justify-between">
         <div className="flex items-center space-x-2">
           <Brain className="w-5 h-5 text-purple-300" />
-          <h3 className="text-lg font-bold text-purple-100">Sanity Points</h3>
+          <h3 className="text-lg font-bold text-purple-100">{t('sheet.coc7e.sanity.title')}</h3>
         </div>
         <div className={`flex items-center space-x-1 ${dangerLevel.text}`}>
           {dangerLevel.level === 'Breaking' && <Skull className="w-4 h-4" />}

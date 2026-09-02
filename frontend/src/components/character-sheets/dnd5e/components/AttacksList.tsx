@@ -5,6 +5,7 @@
  */
 
 import React from 'react';
+import { useTranslation } from 'react-i18next';
 import { Sword, Zap, Dices } from 'lucide-react';
 
 interface Attack {
@@ -33,16 +34,17 @@ const AttackRow: React.FC<{
   onRoll?: (expression: string, purpose: string) => void;
   onRollContext?: (e: React.MouseEvent, expression: string, purpose: string) => void;
 }> = ({ attack, onRoll, onRollContext }) => {
+  const { t } = useTranslation('character');
   const formatBonus = (bonus: number): string => {
     return bonus >= 0 ? `+${bonus}` : `${bonus}`;
   };
 
   // Determine if this is a spell attack (cantrip/spell) or weapon attack
-  const isSpell = attack.name.toLowerCase().includes('cantrip') ||
-                  attack.name.toLowerCase().includes('spell');
+  const isSpell = attack.name.toLowerCase().includes(t('sheet.attackRow.cantrip').toLowerCase()) ||
+                  attack.name.toLowerCase().includes(t('sheet.attackRow.spell').toLowerCase());
 
   const attackExpr = `1d20${formatBonus(attack.attackBonus)}`;
-  const attackPurpose = `${attack.name} Attack`;
+  const attackPurpose = t('sheet.attackRow.attackPurpose', { name: attack.name });
   const isClickable = !!onRoll;
 
   const handleAttackClick = () => {
@@ -55,7 +57,7 @@ const AttackRow: React.FC<{
 
   const handleDamageClick = (e: React.MouseEvent) => {
     e.stopPropagation();
-    if (onRoll && attack.damageRoll) onRoll(attack.damageRoll, `${attack.name} Damage`);
+    if (onRoll && attack.damageRoll) onRoll(attack.damageRoll, t('sheet.attackRow.damagePurpose', { name: attack.name }));
   };
 
   return (
@@ -65,7 +67,7 @@ const AttackRow: React.FC<{
       }`}
       onClick={isClickable ? handleAttackClick : undefined}
       onContextMenu={isClickable ? handleAttackContext : undefined}
-      title={isClickable ? `Left-click: roll attack  |  Right-click: Advantage / Disadvantage` : undefined}
+      title={isClickable ? t('sheet.attackRow.rollHint') : undefined}
     >
       {/* Attack Name & Icon */}
       <div className="flex items-center justify-between mb-2">
@@ -86,7 +88,7 @@ const AttackRow: React.FC<{
       <div className="grid grid-cols-2 md:grid-cols-4 gap-2 text-sm">
         {/* Attack Bonus */}
         <div>
-          <span className="text-xs text-stone-500">Attack</span>
+          <span className="text-xs text-stone-500">{t('sheet.attackRow.attack')}</span>
           <div className="font-semibold text-red-700">
             {formatBonus(attack.attackBonus)}
           </div>
@@ -96,9 +98,9 @@ const AttackRow: React.FC<{
         <div
           className={isClickable && attack.damageRoll ? 'cursor-pointer hover:text-red-700' : ''}
           onClick={isClickable && attack.damageRoll ? handleDamageClick : undefined}
-          title={isClickable && attack.damageRoll ? `Click to roll damage: ${attack.damageRoll}` : undefined}
+          title={isClickable && attack.damageRoll ? t('sheet.attackRow.clickForDamage', { roll: attack.damageRoll }) : undefined}
         >
-          <span className="text-xs text-stone-500">Damage</span>
+          <span className="text-xs text-stone-500">{t('sheet.attackRow.damage')}</span>
           <div className="font-semibold text-stone-700">
             {attack.damageRoll}
           </div>
@@ -106,7 +108,7 @@ const AttackRow: React.FC<{
 
         {/* Damage Type */}
         <div>
-          <span className="text-xs text-stone-500">Type</span>
+          <span className="text-xs text-stone-500">{t('sheet.attackRow.type')}</span>
           <div className="font-semibold text-stone-700 capitalize">
             {attack.damageType}
           </div>
@@ -114,9 +116,9 @@ const AttackRow: React.FC<{
 
         {/* Range */}
         <div>
-          <span className="text-xs text-stone-500">Range</span>
+          <span className="text-xs text-stone-500">{t('sheet.attackRow.range')}</span>
           <div className="font-semibold text-stone-700">
-            {attack.range} ft
+            {t('sheet.attackRow.rangeValue', { range: attack.range })}
           </div>
         </div>
       </div>
@@ -151,10 +153,11 @@ const AttackRow: React.FC<{
  * AttacksList - Displays all attacks
  */
 export const AttacksList: React.FC<AttacksListProps> = ({ attacks, onRoll, onRollContext }) => {
+  const { t } = useTranslation('character');
   if (!attacks || attacks.length === 0) {
     return (
       <div className="text-center py-8 text-stone-500">
-        No attacks configured
+        {t('sheet.noAttacks')}
       </div>
     );
   }

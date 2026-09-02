@@ -1,6 +1,72 @@
 {
+  "modal": {
+    "new": {
+      "title": "Crea Nuovo Personaggio",
+      "cancel": "Annulla",
+      "create": "Crea Personaggio",
+      "createAndPublish": "Crea e Pubblica come Modello",
+      "creating": "Creazione in corso…",
+      "errors": {
+        "nameTooShort": "Il nome del personaggio deve contenere almeno 2 caratteri",
+        "nameTooLong": "Il nome del personaggio deve contenere meno di 100 caratteri",
+        "createFailed": "Creazione personaggio fallita"
+      }
+    },
+    "delete": {
+      "title": "Elimina Personaggio",
+      "confirm": "Sei sicuro di voler eliminare \"{name}\"? Questa azione non può essere annullata.",
+      "delete": "Elimina",
+      "cancel": "Annulla"
+    },
+    "import": {
+      "title": "Importa Personaggio",
+      "pasteJSON": "Incolla JSON del personaggio",
+      "import": "Importa",
+      "cancel": "Annulla",
+      "error": "JSON non valido — controlla la sintassi e riprova"
+    },
+    "assign": {
+      "title": "Assegna Personaggio",
+      "selectCampaign": "Seleziona una campagna",
+      "assign": "Assegna",
+      "cancel": "Annulla"
+    }
+  },
+  "card": {
+    "editCharacter": "Modifica Personaggio",
+    "copyDuplicate": "Copia/Duplica",
+    "reassignCampaign": "Riassegna Campagna",
+    "assignToCampaign": "Assegna a Campagna",
+    "exportAsJSON": "Esporta come JSON",
+    "deleteCharacter": "Elimina Personaggio",
+    "assignedTo": "Assegnato a:",
+    "notAssigned": "Non assegnato a nessuna campagna",
+    "updated": "Aggiornato",
+    "aria": {
+      "actions": "Azioni personaggio"
+    }
+  },
   "sheet": {
     "edit": "Modifica",
+    "noAttacks": "Nessun attacco configurato",
+    "currency": "Monete",
+    "attunementSlots": "Slot di Sintonizzazione",
+    "attunedTo": "Sintonizzato con",
+    "weightLb": "{weight} lb",
+    "equipped": "Equipaggiato",
+    "attackRow": {
+      "attack": "Attacco",
+      "damage": "Danni",
+      "type": "Tipo",
+      "range": "Gittata",
+      "rangeValue": "{range} m",
+      "cantrip": "trucchetto",
+      "spell": "incantesimo",
+      "attackPurpose": "{name} Attacco",
+      "damagePurpose": "{name} Danni",
+      "rollHint": "Clic sinistro: tira attacco | Clic destro: Vantaggio / Svantaggio",
+      "clickForDamage": "Clicca per tirare i danni: {roll}"
+    },
     "unnamedCharacter": "Personaggio senza nome",
     "level": "Livello",
     "experience": "Esperienza",
@@ -12,7 +78,7 @@
     "bio": "Biografia",
     "abilityScores": "Punteggi di Caratteristica",
     "savingThrows": "Tiri Salvezza",
-    "skills": "Abilità",
+    "skillList": "Abilità",
     "proficiencyBonus": "Bonus di Competenza",
     "inspiration": "Ispirazione",
     "yes": "Sì",
@@ -88,10 +154,86 @@
     "leftClickRoll": "Clic sinistro: tira",
     "rightClickAdvantage": "Clic destro: Vantaggio / Svantaggio",
     "clickRollDamage": "Clicca per tirare i danni",
-    "notProficient": "Non Competente",
-    "proficient": "Competente",
-    "expertise": "Perizia",
+    "skills": {
+      "acrobatics": "Acrobazia",
+      "animalHandling": "Addestrare Animali",
+      "arcana": "Arcano",
+      "athletics": "Atletica",
+      "deception": "Inganno",
+      "history": "Storia",
+      "insight": "Intuizione",
+      "intimidation": "Intimidire",
+      "investigation": "Indagare",
+      "medicine": "Medicina",
+      "nature": "Natura",
+      "perception": "Percezione",
+      "performance": "Intrattenere",
+      "persuasion": "Persuasione",
+      "religion": "Religione",
+      "sleightOfHand": "Rapidità di Mano",
+      "stealth": "Furtività",
+      "survival": "Sopravvivenza",
+      "rollPurpose": "{skill} Prova",
+      "rollHint": "Clic sinistro: tira abilità | Clic destro: Vantaggio / Svantaggio",
+      "notProficient": "Non Competente",
+      "proficient": "Competente",
+      "expertise": "Perizia"
+    },
+    "coc7e": {
+      "sanity": {
+        "title": "Punti Sanità",
+        "stable": "Stabile",
+        "shaken": "Scosso",
+        "fragile": "Fragile",
+        "breaking": "In Frattura",
+        "current": "Attuale",
+        "start": "Inizio",
+        "max": "Max",
+        "mythos": "(99 - {value} Mito)",
+        "warning": "Attenzione: il tuo investigatore si sta avvicinando alla pazzia totale. Perdere altri PS può causare follia indefinita."
+      },
+      "backstory": {
+        "title": "Retroscena Investigatore",
+        "noInfo": "Nessuna informazione fornita",
+        "keeperNote": "Nota del Custode",
+        "keeperNoteBody": "In Call of Cthulhu, gli elementi del retroscena diventano spesso centrali nella narrazione. Il Custode può utilizzare persone importanti, luoghi significativi o oggetti preziosi come agganci narrativi. Fobie e manie possono essere acquisite durante il gioco attraverso traumatiche perdite di sanità. Incontri con entità strane possono perseguitare gli investigatori per tutta la campagna.",
+        "description": "Retroscena & Storia",
+        "descriptionPlaceholder": "Descrivi il retroscena del tuo investigatore, la sua educazione e come è arrivato alla sua occupazione attuale...",
+        "personalDescription": "Descrizione Personale",
+        "personalDescriptionPlaceholder": "Aspetto fisico, maniere e prime impressioni...",
+        "ideology": "Ideologia & Credenze",
+        "ideologyPlaceholder": "Credenze fondamentali, visione filosofica o princìpi guida...",
+        "significantPeople": "Persone Importanti",
+        "significantPeoplePlaceholder": "Persone importanti nella vita dell'investigatore (famiglia, mentori, amici, rivali)...",
+        "meaningfulLocations": "Luoghi Significativi",
+        "meaningfulLocationsPlaceholder": "Luoghi di importanza (casa d'infanzia, biblioteca preferita, luogo di un evento che ha cambiato la vita)...",
+        "treasuredPossessions": "Possessi Preziosi",
+        "treasuredPossessionsPlaceholder": "Oggetti di importanza personale al di là della loro mera utilità...",
+        "traits": "Tratti della Personalità",
+        "traitsPlaceholder": "Tratti notevoli, abitudini, stranezze o modelli comportamentali...",
+        "injuriesAndScars": "Ferite & Cicatrici",
+        "injuriesAndScarsPlaceholder": "Segni fisici, vecchie ferite o lesioni durature e le loro origini...",
+        "phobiasAndManias": "Fobie & Manie",
+        "phobiasAndManiasPlaceholder": "Paure, compulsioni o comportamenti irrazionali (spesso acquisiti attraverso esperienze traumatiche)...",
+        "arcaneTomes": "Tomi Arcani & Incantesimi",
+        "arcaneTomesPlaceholder": "Testi proibiti letti o incantesimi appresi (se presenti)...",
+        "strangeEncounters": "Incontri con Entità Strane",
+        "strangeEncountersPlacholder": "Incontro  precenti con il soprannaturale o l'ispiegabile..."
+      }
+    },
     "passivePerception": "Percezione Passiva",
-    "legend": "Legenda"
+    "legend": "Legenda",
+    "time": {
+      "today": "Oggi",
+      "yesterday": "Ieri",
+      "daysAgo": "{count} giorni fa",
+      "daysAgo_one": "{count} giorno fa",
+      "weeksAgo": "{count} settimane fa",
+      "weeksAgo_one": "{count} settimana fa",
+      "monthsAgo": "{count} mesi fa",
+      "monthsAgo_one": "{count} mese fa",
+      "yearsAgo": "{count} anni fa",
+      "yearsAgo_one": "{count} anno fa"
+    }
   }
 }
