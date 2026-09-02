@@ -91,6 +91,21 @@ export function drawDynamicLighting(
     }
   }
 
+  // Clip light coverage to player's field of view so lights don't
+  // reveal areas the player cannot see (e.g. lights in adjacent rooms).
+  covCtx.save();
+  covCtx.beginPath();
+  for (const { poly } of state.tokenVision) {
+    if (poly.points.length >= 3) {
+      covCtx.moveTo(poly.points[0].x, poly.points[0].y);
+      for (let i = 1; i < poly.points.length; i++) {
+        covCtx.lineTo(poly.points[i].x, poly.points[i].y);
+      }
+      covCtx.closePath();
+    }
+  }
+  covCtx.clip();
+
   // Light sources → clipped to visibility polygon for wall shadows.
   // Dim circle at α 0.5; bright circle adds another α 0.5 on top.
   for (let li = 0; li < state.enabledLights.length; li++) {
@@ -124,6 +139,7 @@ export function drawDynamicLighting(
     }
     covCtx.restore();
   }
+  covCtx.restore();
   covCtx.globalCompositeOperation = 'source-over';
 
   // ── Build fog with coverage subtracted ──────────────────────────
@@ -161,6 +177,21 @@ export function drawDynamicLighting(
   // Two-zone light glow: bright inner + dim outer. Additive compositing
   // lets overlapping dim zones read as bright.
   ctx.globalCompositeOperation = 'lighter';
+
+  // Clip light glows to player's field of view so they don't bleed
+  // through walls into adjacent rooms.
+  ctx.beginPath();
+  for (const { poly } of state.tokenVision) {
+    if (poly.points.length >= 3) {
+      ctx.moveTo(poly.points[0].x, poly.points[0].y);
+      for (let i = 1; i < poly.points.length; i++) {
+        ctx.lineTo(poly.points[i].x, poly.points[i].y);
+      }
+      ctx.closePath();
+    }
+  }
+  ctx.clip();
+
   for (const light of state.enabledLights) {
     const brightPx = light.brightRadius * viewport.gridSize;
     const dimPx = light.dimRadius * viewport.gridSize;
