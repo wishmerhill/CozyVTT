@@ -14,6 +14,7 @@
  */
 
 import React, { useState, useEffect, useRef, useCallback } from 'react';
+import { useTranslation } from 'react-i18next';
 import {
   Swords,
   ChevronDown,
@@ -67,6 +68,7 @@ interface AddCombatantModalProps {
 }
 
 function AddCombatantModal({ tokens, combatantIds, mapId: _mapId, onAdd, onClose }: AddCombatantModalProps) {
+  const { t } = useTranslation('campaign');
   const available = tokens.filter((t) => !combatantIds.has(t.id) && t.visible);
   const modalRef = useRef<HTMLDivElement>(null);
 
@@ -86,7 +88,7 @@ function AddCombatantModal({ tokens, combatantIds, mapId: _mapId, onAdd, onClose
         className="bg-soft-cream border-2 border-moss-green/30 rounded-xl shadow-2xl w-full max-w-sm mx-4"
       >
         <div className="flex items-center justify-between p-4 border-b border-moss-green/20">
-          <h3 className="font-bold text-brand-ink">Add Combatant</h3>
+          <h3 className="font-bold text-brand-ink">{t('initiative.addCombatant')}</h3>
           <button onClick={onClose} className="p-1 rounded hover:bg-stone-gray/10 transition-colors">
             <XCircle className="w-4 h-4 text-stone-gray" />
           </button>
@@ -94,7 +96,7 @@ function AddCombatantModal({ tokens, combatantIds, mapId: _mapId, onAdd, onClose
         <div className="p-4 space-y-2 max-h-80 overflow-y-auto">
           {available.length === 0 ? (
             <p className="text-sm text-stone-gray text-center py-4">
-              All visible tokens are already in initiative.
+              {t('initiative.allTokensInInitiative')}
             </p>
           ) : (
             available.map((token) => (
@@ -121,7 +123,7 @@ function AddCombatantModal({ tokens, combatantIds, mapId: _mapId, onAdd, onClose
                   </div>
                 </div>
                 {token.initiative !== null && (
-                  <span className="text-xs font-bold text-warm-amber">Init {token.initiative}</span>
+                  <span className="text-xs font-bold text-warm-amber">{t('initiative.init')} {token.initiative}</span>
                 )}
               </button>
             ))
@@ -164,6 +166,7 @@ function CombatantRow({
   onSetInitiative, onRoll, onRemove,
   onDragStart, onDragOver, onDrop, onDragEnd,
 }: CombatantRowProps) {
+  const { t } = useTranslation('campaign');
   const [editing, setEditing] = useState(false);
   const [inputVal, setInputVal] = useState(entry.initiative !== null ? String(entry.initiative) : '');
   const inputRef = useRef<HTMLInputElement>(null);
@@ -239,7 +242,7 @@ function CombatantRow({
         </div>
         {entry.hp && (
           <div className="text-xs text-stone-gray">
-            HP {entry.hp.current}/{entry.hp.max}
+            {t('token.hp')} {entry.hp.current}/{entry.hp.max}
           </div>
         )}
       </div>
@@ -265,7 +268,7 @@ function CombatantRow({
           <span
             className={`text-sm font-bold cursor-${isDM ? 'pointer' : 'default'} ${isActive ? 'text-warm-amber' : 'text-stone-gray'}`}
             onClick={() => isDM && setEditing(true)}
-            title={isDM ? 'Click to edit initiative value' : undefined}
+            title={isDM ? t('initiative.clickEditInitiative') : undefined}
           >
             {entry.initiative !== null ? entry.initiative : '—'}
           </span>
@@ -279,7 +282,7 @@ function CombatantRow({
           {canRoll && (
             <button
               onClick={() => onRoll(entry.tokenId)}
-              title={isDM ? 'Roll initiative for this token' : 'Roll your initiative'}
+              title={isDM ? t('initiative.rollForToken') : t('initiative.rollYourInit')}
               className="p-1 rounded hover:bg-moss-green/10 text-stone-gray hover:text-brand-ink transition-colors"
             >
               <Dices className="w-3.5 h-3.5" />
@@ -288,7 +291,7 @@ function CombatantRow({
           {isDM && (
             <button
               onClick={() => onRemove(entry.tokenId)}
-              title="Remove from initiative"
+              title={t('initiative.removeFromInitiative')}
               className="p-1 rounded hover:bg-danger/10 text-stone-gray hover:text-danger-ink transition-colors"
             >
               <Trash2 className="w-3.5 h-3.5" />
@@ -305,6 +308,7 @@ function CombatantRow({
 // ---------------------------------------------------------------------------
 
 export default function InitiativeTracker() {
+  const { t } = useTranslation('campaign');
   const { userRole, currentMap } = useCampaign();
   const { user } = useAuth();
   // Initiative reads token names/ids, not coordinates — skip move re-renders.
@@ -455,15 +459,15 @@ export default function InitiativeTracker() {
         >
           <div className="flex items-center gap-2">
             <Swords className="w-4 h-4 text-brand-ink" />
-            <span className="font-semibold text-brand-ink text-sm">Initiative Tracker</span>
+            <span className="font-semibold text-brand-ink text-sm">{t('initiative.tracker')}</span>
             {combatState.active && (
               <span className="text-xs font-bold text-warm-amber bg-warm-amber/10 border border-warm-amber/20 rounded px-1.5 py-0.5">
-                Round {combatState.round}
+                {t('initiative.round', { round: combatState.round })}
               </span>
             )}
             {hasCombatants && !combatState.active && (
               <span className="text-xs text-stone-gray bg-stone-gray/10 rounded px-1.5 py-0.5">
-                {combatState.combatants.length} ready
+                {combatState.combatants.length} {t('initiative.ready')}
               </span>
             )}
           </div>
@@ -481,7 +485,7 @@ export default function InitiativeTracker() {
               <div className="flex items-center gap-2 px-3 py-2 bg-warm-amber/10 border border-warm-amber/30 rounded-lg">
                 <div className="w-2 h-2 rounded-full bg-warm-amber animate-pulse flex-shrink-0" />
                 <span className="text-xs font-semibold text-warm-amber truncate">
-                  {currentCombatant.name}'s turn
+                  {t('initiative.turn', { name: currentCombatant.name })}
                 </span>
               </div>
             )}
@@ -512,9 +516,9 @@ export default function InitiativeTracker() {
             ) : (
               <div className="text-center py-4 text-stone-gray">
                 <Swords className="w-8 h-8 mx-auto mb-2 opacity-30" />
-                <p className="text-xs">No combatants yet</p>
+                <p className="text-xs">{t('initiative.noCombatants')}</p>
                 {isDM && (
-                  <p className="text-xs mt-1">Add tokens from the map to begin</p>
+                  <p className="text-xs mt-1">{t('initiative.noCombatantsDesc')}</p>
                 )}
               </div>
             )}
@@ -529,7 +533,7 @@ export default function InitiativeTracker() {
                     className="w-full flex items-center justify-center gap-2 py-1.5 px-3 text-xs font-medium text-brand-ink border border-dashed border-moss-green/30 rounded-lg hover:bg-moss-green/5 transition-colors"
                   >
                     <Plus className="w-3.5 h-3.5" />
-                    Add Combatant
+                    {t('initiative.addCombatant')}
                   </button>
                 )}
 
@@ -542,7 +546,7 @@ export default function InitiativeTracker() {
                         className="flex-1 flex items-center justify-center gap-1.5 py-1.5 px-3 text-xs font-semibold bg-moss-green text-white rounded-lg hover:bg-moss-green/90 transition-colors"
                       >
                         <Play className="w-3.5 h-3.5" />
-                        Start Combat
+                        {t('initiative.startCombat')}
                       </button>
                     ) : (
                       <>
@@ -551,12 +555,12 @@ export default function InitiativeTracker() {
                           className="flex-1 flex items-center justify-center gap-1.5 py-1.5 px-3 text-xs font-semibold bg-warm-amber text-white rounded-lg hover:bg-warm-amber/90 transition-colors"
                         >
                           <SkipForward className="w-3.5 h-3.5" />
-                          Next Turn
+                          {t('initiative.nextTurn')}
                         </button>
                         <button
                           onClick={handleEnd}
                           className="flex items-center justify-center gap-1.5 py-1.5 px-3 text-xs font-semibold border border-danger/30 text-danger-ink rounded-lg hover:bg-danger/10 transition-colors"
-                          title="End combat"
+                          title={t('initiative.endCombat')}
                         >
                           <XCircle className="w-3.5 h-3.5" />
                         </button>
@@ -570,7 +574,7 @@ export default function InitiativeTracker() {
             {/* Initiative hint for DM */}
             {isDM && hasCombatants && !combatState.active && (
               <p className="text-xs text-stone-gray text-center">
-                Drag to reorder · Click a value to edit · <Dices className="w-3 h-3 inline" /> to roll
+                {t('initiative.dragReorder')} · {t('initiative.clickToEdit')} · <Dices className="w-3 h-3 inline" /> {t('initiative.toRoll')}
               </p>
             )}
 
@@ -578,7 +582,7 @@ export default function InitiativeTracker() {
                 has not rolled yet — the die is small and easy to miss. */}
             {!isDM && hasCombatants && !combatState.active && playerNeedsToRoll && (
               <p className="text-xs text-stone-gray text-center">
-                <Dices className="w-3 h-3 inline" /> to roll your initiative
+                <Dices className="w-3 h-3 inline" /> {t('initiative.rollYourInitiative')}
               </p>
             )}
           </div>
@@ -599,9 +603,9 @@ export default function InitiativeTracker() {
       {/* End combat confirmation */}
       <ConfirmDialog
         isOpen={showEndConfirm}
-        title="End Combat"
-        message="End combat and clear initiative order?"
-        confirmLabel="End Combat"
+        title={t('initiative.endCombat')}
+        message={t('initiative.endCombatConfirm')}
+        confirmLabel={t('initiative.endCombat')}
         variant="danger"
         onConfirm={handleEndConfirmed}
         onCancel={() => setShowEndConfirm(false)}

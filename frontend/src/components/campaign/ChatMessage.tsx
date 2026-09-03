@@ -4,6 +4,7 @@
 // ============================================
 
 import { memo } from 'react';
+import { useTranslation } from 'react-i18next';
 import { Bot, Shield } from 'lucide-react';
 import type { Message, MessageType } from '@/types';
 
@@ -17,10 +18,10 @@ interface ChatMessageProps {
 /**
  * Format timestamp as relative time (e.g., "2 minutes ago")
  */
-function formatRelativeTime(timestamp: string): string {
+function formatRelativeTime(timestamp: string, t: (key: string, options?: any) => string): string {
   // Handle undefined, null, or empty timestamps
   if (!timestamp) {
-    return 'unknown time';
+    return t('chat.unknownTime');
   }
 
   const date = new Date(timestamp);
@@ -28,7 +29,7 @@ function formatRelativeTime(timestamp: string): string {
   // Check if date is invalid
   if (isNaN(date.getTime())) {
     console.warn('[ChatMessage] Invalid timestamp:', timestamp);
-    return 'unknown time';
+    return t('chat.unknownTime');
   }
 
   const now = new Date();
@@ -38,10 +39,10 @@ function formatRelativeTime(timestamp: string): string {
   const diffHour = Math.floor(diffMin / 60);
   const diffDay = Math.floor(diffHour / 24);
 
-  if (diffSec < 60) return 'just now';
-  if (diffMin < 60) return `${diffMin} ${diffMin === 1 ? 'minute' : 'minutes'} ago`;
-  if (diffHour < 24) return `${diffHour} ${diffHour === 1 ? 'hour' : 'hours'} ago`;
-  if (diffDay < 7) return `${diffDay} ${diffDay === 1 ? 'day' : 'days'} ago`;
+  if (diffSec < 60) return t('chat.justNow');
+  if (diffMin < 60) return t('chat.minutesAgo', { count: diffMin });
+  if (diffHour < 24) return t('chat.hoursAgo', { count: diffHour });
+  if (diffDay < 7) return t('chat.daysAgo', { count: diffDay });
 
   // If older than a week, show the date
   return date.toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' });
@@ -86,14 +87,15 @@ function getMessageStyle(type: MessageType): { bg: string; textColor: string; bo
 }
 
 function ChatMessageInner({ message, isCurrentUser = false, isPending = false }: ChatMessageProps) {
+  const { t } = useTranslation('campaign');
   const { bg, textColor, borderColor } = getMessageStyle(message.type);
   const isSystem = message.type === 'SYSTEM';
   const isDM = message.type === 'DM';
 
   // Get display name
   const displayName = isSystem
-    ? 'System'
-    : message.user?.displayName || 'Unknown User';
+    ? t('chat.system')
+    : message.user?.displayName || t('chat.unknownUser');
 
   return (
     <div
@@ -120,15 +122,15 @@ function ChatMessageInner({ message, isCurrentUser = false, isPending = false }:
           }`}
         >
           {displayName}
-          {isCurrentUser && !isSystem && ' (You)'}
+          {isCurrentUser && !isSystem && t('chat.you')}
         </span>
 
         {/* Timestamp / pending indicator */}
         {isPending ? (
-          <span className="text-xs text-stone-gray/50 italic">sending…</span>
+          <span className="text-xs text-stone-gray/50 italic">{t('chat.sending')}</span>
         ) : (
-          <span className="text-xs text-stone-gray/70" title={message.createdAt ? new Date(message.createdAt).toLocaleString() : 'Unknown time'}>
-            {formatRelativeTime(message.createdAt)}
+          <span className="text-xs text-stone-gray/70" title={message.createdAt ? new Date(message.createdAt).toLocaleString() : t('chat.unknownTime')}>
+            {formatRelativeTime(message.createdAt, t)}
           </span>
         )}
       </div>

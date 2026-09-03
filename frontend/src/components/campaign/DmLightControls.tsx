@@ -10,6 +10,7 @@
  */
 
 import { useState, useRef, useCallback, useEffect } from 'react';
+import { useTranslation } from 'react-i18next';
 import type { LightSource } from '@/types/walls';
 
 export type LightToolMode = 'light-place' | 'light-select' | null;
@@ -28,24 +29,24 @@ const DEFAULT_PLACEMENT: LightPlacementDefaults = {
 };
 
 /** Named presets matching common TTRPG light sources (radii in grid squares). */
-const LIGHT_PRESETS: Array<{ label: string; bright: number; dim: number }> = [
-  { label: 'Candle',    bright: 1,  dim: 2 },
-  { label: 'Torch',     bright: 4,  dim: 8 },
-  { label: 'Lamp',      bright: 3,  dim: 6 },
-  { label: 'Lantern',   bright: 6,  dim: 12 },
-  { label: 'Campfire',  bright: 8,  dim: 16 },
+const LIGHT_PRESETS: Array<{ labelKey: string; bright: number; dim: number }> = [
+  { labelKey: 'lighting.candle',    bright: 1,  dim: 2 },
+  { labelKey: 'lighting.torch',     bright: 4,  dim: 8 },
+  { labelKey: 'lighting.lamp',      bright: 3,  dim: 6 },
+  { labelKey: 'lighting.lantern',   bright: 6,  dim: 12 },
+  { labelKey: 'lighting.campfire',  bright: 8,  dim: 16 },
 ];
 
 /** Preset glow colors for the palette. */
 const LIGHT_COLOR_PRESETS = [
-  { label: 'Warm Amber', value: '#ffcc66' },
-  { label: 'Candlelight', value: '#ff9933' },
-  { label: 'Daylight', value: '#ffffee' },
-  { label: 'Cool Blue', value: '#66aaff' },
-  { label: 'Eerie Green', value: '#66ff99' },
-  { label: 'Arcane Purple', value: '#cc66ff' },
-  { label: 'Firelight', value: '#ff6633' },
-  { label: 'Moonlight', value: '#aabbdd' },
+  { labelKey: 'lighting.warmAmber', value: '#ffcc66' },
+  { labelKey: 'lighting.candlelight', value: '#ff9933' },
+  { labelKey: 'lighting.daylight', value: '#ffffee' },
+  { labelKey: 'lighting.coolBlue', value: '#66aaff' },
+  { labelKey: 'lighting.eerieGreen', value: '#66ff99' },
+  { labelKey: 'lighting.arcanePurple', value: '#cc66ff' },
+  { labelKey: 'lighting.firelight', value: '#ff6633' },
+  { labelKey: 'lighting.moonlight', value: '#aabbdd' },
 ];
 
 interface DmLightControlsProps {
@@ -102,6 +103,7 @@ export default function DmLightControls({
   onDefaultsChange,
   placementDefaults = DEFAULT_PLACEMENT,
 }: DmLightControlsProps) {
+  const { t } = useTranslation('campaign');
   const [confirmClear, setConfirmClear] = useState(false);
   const [collapsed, setCollapsed] = useState(false);
 
@@ -174,7 +176,7 @@ export default function DmLightControls({
         }}
       >
         <span className="text-xs text-amber-400/70 font-medium uppercase tracking-wide">
-          Lights
+          {t('lighting.title')}
           {lightCount > 0 && (
             <span className="ml-1 text-stone-400 normal-case">({lightCount})</span>
           )}
@@ -187,7 +189,7 @@ export default function DmLightControls({
           {/* Warning when lighting is off */}
           {!lightingEnabled && (
             <div className="text-[10px] text-amber-400/60 bg-amber-400/5 rounded px-1.5 py-1 border border-amber-400/10">
-              Dynamic lighting is off. Enable it in Map Settings for lights to affect player visibility.
+              {t('lighting.dynamicLightingOff')}
             </div>
           )}
 
@@ -201,9 +203,9 @@ export default function DmLightControls({
                   ? 'bg-amber-400/30 text-amber-300 border border-amber-400/50'
                   : 'bg-stone-700/60 text-stone-300 border border-stone-600/50 hover:bg-stone-700'
               }`}
-              title="Click on map to place a light source"
+              title={t('lighting.place')}
             >
-              Place
+              {t('lighting.place')}
             </button>
             <button
               type="button"
@@ -213,9 +215,9 @@ export default function DmLightControls({
                   ? 'bg-amber-400/30 text-amber-300 border border-amber-400/50'
                   : 'bg-stone-700/60 text-stone-300 border border-stone-600/50 hover:bg-stone-700'
               }`}
-              title="Click a light source to select and edit it; drag to move"
+              title={t('lighting.select')}
             >
-              Select
+              {t('lighting.select')}
             </button>
           </div>
 
@@ -223,7 +225,7 @@ export default function DmLightControls({
           {lightMode && (
             <div className="flex flex-col gap-2 bg-stone-700/40 rounded p-2 border border-stone-600/40">
               <div className="text-[10px] text-stone-400 uppercase tracking-wide">
-                {isEditing ? 'Edit Light' : 'New Light Settings'}
+                {isEditing ? t('lighting.editLight') : t('lighting.newLightSettings')}
               </div>
 
               {/* Enabled toggle — only for selected light */}
@@ -236,20 +238,20 @@ export default function DmLightControls({
                     className="rounded accent-amber-400"
                   />
                   <span className="text-[11px] text-stone-300">
-                    {selectedLight.enabled ? 'Enabled' : 'Disabled (extinguished)'}
+                    {selectedLight.enabled ? t('lighting.enabled') : t('lighting.disabled')}
                   </span>
                 </label>
               )}
 
               {/* Preset buttons */}
               <div>
-                <span className="text-[10px] text-stone-400 block mb-1">Presets</span>
+                <span className="text-[10px] text-stone-400 block mb-1">{t('lighting.presets')}</span>
                 <div className="flex flex-wrap gap-1">
                   {LIGHT_PRESETS.map((p) => {
                     const isActive = displayBright === p.bright && displayDim === p.dim;
                     return (
                       <button
-                        key={p.label}
+                        key={p.labelKey}
                         type="button"
                         onClick={() => {
                           if (isEditing) {
@@ -263,9 +265,9 @@ export default function DmLightControls({
                             ? 'bg-amber-400/25 text-amber-300 border border-amber-400/40'
                             : 'bg-stone-700/60 text-stone-400 border border-stone-600/40 hover:text-stone-300 hover:bg-stone-700'
                         }`}
-                        title={`Bright: ${p.bright} sq, Dim: ${p.dim} sq`}
+                        title={`${t('lighting.brightRadius')}: ${p.bright} sq, ${t('lighting.dimRadius')}: ${p.dim} sq`}
                       >
-                        {p.label}
+                        {t(p.labelKey)}
                       </button>
                     );
                   })}
@@ -275,7 +277,7 @@ export default function DmLightControls({
               {/* Bright radius slider */}
               <div>
                 <div className="flex justify-between mb-0.5">
-                  <span className="text-[10px] text-stone-400">Bright</span>
+                  <span className="text-[10px] text-stone-400">{t('lighting.brightRadius')}</span>
                   <span className="text-[10px] text-stone-300">{displayBright.toFixed(1)} sq</span>
                 </div>
                 <input
@@ -302,7 +304,7 @@ export default function DmLightControls({
               {/* Dim radius slider */}
               <div>
                 <div className="flex justify-between mb-0.5">
-                  <span className="text-[10px] text-stone-400">Dim</span>
+                  <span className="text-[10px] text-stone-400">{t('lighting.dimRadius')}</span>
                   <span className="text-[10px] text-stone-300">{displayDim.toFixed(1)} sq</span>
                 </div>
                 <input
@@ -328,7 +330,7 @@ export default function DmLightControls({
 
               {/* Color presets */}
               <div>
-                <span className="text-[10px] text-stone-400 block mb-1">Color</span>
+                <span className="text-[10px] text-stone-400 block mb-1">{t('lighting.color')}</span>
                 <div className="flex flex-wrap gap-1">
                   {LIGHT_COLOR_PRESETS.map((c) => (
                     <button
@@ -344,7 +346,7 @@ export default function DmLightControls({
                           : 'border-stone-600 hover:border-stone-400'
                       }`}
                       style={{ backgroundColor: c.value }}
-                      title={c.label}
+                      title={t(c.labelKey)}
                     />
                   ))}
                 </div>
@@ -358,7 +360,7 @@ export default function DmLightControls({
                       else updateDefaults({ color: e.target.value });
                     }}
                     className="w-5 h-5 rounded cursor-pointer border-0 bg-transparent"
-                    title="Pick custom color"
+                    title={t('lighting.pickCustomColor')}
                   />
                   <input
                     type="text"
@@ -385,7 +387,7 @@ export default function DmLightControls({
                   onClick={onDeleteSelected}
                   className="text-[11px] py-1 rounded bg-red-500/15 text-red-400 border border-red-500/30 hover:bg-red-500/25 transition-colors"
                 >
-                  Delete Light
+                  {t('lighting.deleteLight')}
                 </button>
               )}
             </div>
@@ -403,7 +405,7 @@ export default function DmLightControls({
                   : 'bg-stone-700/60 text-stone-400 border border-stone-600/40 hover:text-stone-300'
               }`}
             >
-              {confirmClear ? 'Confirm Clear All' : `Clear All (${lightCount})`}
+              {confirmClear ? t('lighting.confirmClearAll') : t('lighting.clearAll', { count: lightCount })}
             </button>
           )}
         </div>

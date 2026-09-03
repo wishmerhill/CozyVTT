@@ -5,6 +5,7 @@
 
 import { useState, useRef, useCallback } from 'react';
 import { useNavigate } from 'react-router-dom';
+import { useTranslation } from 'react-i18next';
 import { motion, AnimatePresence } from 'framer-motion';
 import {
   X,
@@ -35,6 +36,7 @@ export default function CampaignImportDialog({
   onClose,
   onSuccess,
 }: CampaignImportDialogProps) {
+  const { t } = useTranslation('campaign');
   const navigate = useNavigate();
   const fileInputRef = useRef<HTMLInputElement>(null);
 
@@ -201,14 +203,14 @@ export default function CampaignImportDialog({
               <div className="space-y-5">
                 {/* Archive summary */}
                 <div className="grid grid-cols-2 gap-3">
-                  <StatCard icon={<MapIcon className="w-4 h-4" />} label="Maps" value={preview.mapCount} />
-                  <StatCard icon={<Swords className="w-4 h-4" />} label="Creatures" value={preview.creatureCount} />
-                  <StatCard icon={<Package className="w-4 h-4" />} label="Token Templates" value={preview.tokenTemplateCount} />
-                  <StatCard icon={<Music className="w-4 h-4" />} label="Audio" value={preview.includesAudio ? 'Yes' : 'No'} />
+                  <StatCard icon={<MapIcon className="w-4 h-4" />} label={t('map.title')} value={preview.mapCount} />
+                  <StatCard icon={<Swords className="w-4 h-4" />} label={t('creature.title')} value={preview.creatureCount} />
+                  <StatCard icon={<Package className="w-4 h-4" />} label={t('tools.tokenTemplates')} value={preview.tokenTemplateCount} />
+                  <StatCard icon={<Music className="w-4 h-4" />} label={t('import.audio')} value={preview.includesAudio ? t('import.yes') : t('import.no')} />
                 </div>
 
                 <div className="text-xs text-warm-gray flex items-center justify-between">
-                  <span>Total tokens: {preview.tokenCount} | Assets: {preview.assetCount}</span>
+                  <span>{t('token.title')}: {preview.tokenCount} | {t('assets')}: {preview.assetCount}</span>
                   <span>{formatBytes(preview.totalSizeBytes)}</span>
                 </div>
 
@@ -221,7 +223,7 @@ export default function CampaignImportDialog({
                 <div className="space-y-3 pt-2 border-t border-moss-green/10">
                   <div>
                     <label htmlFor="import-name" className="block text-sm font-semibold text-stone-gray mb-1">
-                      Campaign Name
+                      {t('campaign.name')}
                     </label>
                     <input
                       id="import-name"
@@ -236,8 +238,8 @@ export default function CampaignImportDialog({
 
                   <div className="flex items-center justify-between">
                     <div>
-                      <p className="text-sm font-semibold text-stone-gray">Import tokens</p>
-                      <p className="text-xs text-warm-gray">Include tokens placed on maps</p>
+                      <p className="text-sm font-semibold text-stone-gray">{t('token.title')}</p>
+                      <p className="text-xs text-warm-gray">{t('import.includeTokens')}</p>
                     </div>
                     <button
                       type="button"
@@ -263,7 +265,7 @@ export default function CampaignImportDialog({
                     onClick={handleClose}
                     variant="secondary" className="flex-1"
                   >
-                    Cancel
+                    {t('common:cancel')}
                   </Button>
                   <Button
                     onClick={handleImport}
@@ -271,7 +273,7 @@ export default function CampaignImportDialog({
                     className="flex-1 flex items-center justify-center gap-2 disabled:opacity-50 disabled:cursor-not-allowed"
                   >
                     <Upload className="w-4 h-4" />
-                    Import Campaign
+                    {t('campaign.create')}
                   </Button>
                 </div>
               </div>
@@ -281,8 +283,8 @@ export default function CampaignImportDialog({
             {step === 'importing' && (
               <div className="text-center py-8">
                 <Loader2 className="w-12 h-12 text-brand-ink animate-spin mx-auto mb-4" />
-                <p className="text-sm font-medium text-stone-gray mb-1">Importing campaign...</p>
-                <p className="text-xs text-warm-gray">This may take a moment for large archives.</p>
+                <p className="text-sm font-medium text-stone-gray mb-1">{t('import.importing')}</p>
+                <p className="text-xs text-warm-gray">{t('import.importingHint')}</p>
               </div>
             )}
 
@@ -291,26 +293,26 @@ export default function CampaignImportDialog({
               <div className="text-center py-6 space-y-4">
                 <CheckCircle2 className="w-12 h-12 text-brand-ink mx-auto" />
                 <div>
-                  <p className="text-lg font-bold text-brand-ink mb-1">Import Complete!</p>
+                  <p className="text-lg font-bold text-brand-ink mb-1">{t('import.complete')}</p>
                   <p className="text-sm text-stone-gray">
                     <span className="font-semibold">{result.campaignName}</span> is ready.
                   </p>
                 </div>
 
                 <div className="grid grid-cols-2 gap-2 text-sm max-w-xs mx-auto">
-                  <div className="text-warm-gray text-right">Maps:</div>
+                  <div className="text-warm-gray text-right">{t('map.title')}:</div>
                   <div className="text-stone-gray font-medium text-left">{result.mapCount}</div>
-                  <div className="text-warm-gray text-right">Tokens:</div>
+                  <div className="text-warm-gray text-right">{t('token.title')}:</div>
                   <div className="text-stone-gray font-medium text-left">{result.tokenCount}</div>
-                  <div className="text-warm-gray text-right">Creatures:</div>
+                  <div className="text-warm-gray text-right">{t('creature.title')}:</div>
                   <div className="text-stone-gray font-medium text-left">{result.creatureCount}</div>
-                  <div className="text-warm-gray text-right">Templates:</div>
+                  <div className="text-warm-gray text-right">{t('tools.tokenTemplates')}:</div>
                   <div className="text-stone-gray font-medium text-left">{result.tokenTemplateCount}</div>
                 </div>
 
                 <div className="flex items-center gap-3 pt-2">
                   <Button onClick={handleClose} variant="secondary" className="flex-1">
-                    Close
+                    {t('common:close')}
                   </Button>
                   <Button
                     onClick={() => {
@@ -319,7 +321,7 @@ export default function CampaignImportDialog({
                     }}
                     className="flex-1"
                   >
-                    Open Campaign
+                    {t('campaign.open')}
                   </Button>
                 </div>
               </div>
@@ -330,7 +332,7 @@ export default function CampaignImportDialog({
               <div className="text-center py-6 space-y-4">
                 <AlertCircle className="w-12 h-12 text-danger-ink mx-auto" />
                 <div>
-                  <p className="text-lg font-bold text-danger-ink mb-1">Import Failed</p>
+                  <p className="text-lg font-bold text-danger-ink mb-1">{t('import.failed')}</p>
                   <p className="text-sm text-stone-gray">{errorMessage}</p>
                 </div>
                 <div className="flex items-center gap-3 pt-2">
@@ -338,7 +340,7 @@ export default function CampaignImportDialog({
                     Close
                   </Button>
                   <Button onClick={resetState} className="flex-1">
-                    Try Again
+                    {t('common:retry')}
                   </Button>
                 </div>
               </div>

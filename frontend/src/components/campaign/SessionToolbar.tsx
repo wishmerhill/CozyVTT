@@ -6,6 +6,7 @@
 // CampaignPage — this is presentation only.
 // ============================================
 
+import { useTranslation } from 'react-i18next';
 import {
   Map as MapIcon,
   Swords,
@@ -31,23 +32,23 @@ export type SessionToolKey =
 
 interface ToolDef {
   key: SessionToolKey;
-  label: string;
+  labelKey: string;
   icon: LucideIcon;
 }
 
 // Grouped by intent: campaign content, scene ambience, configuration.
 const TOOL_GROUPS: ToolDef[][] = [
   [
-    { key: 'maps', label: 'Map Library', icon: MapIcon },
-    { key: 'tokens', label: 'Token Manager', icon: Swords },
-    { key: 'creatures', label: 'Creature Library', icon: BookOpen },
-    { key: 'templates', label: 'Token Templates', icon: Package },
+    { key: 'maps', labelKey: 'tools.mapLibrary', icon: MapIcon },
+    { key: 'tokens', labelKey: 'tools.tokenManager', icon: Swords },
+    { key: 'creatures', labelKey: 'tools.creatureLibrary', icon: BookOpen },
+    { key: 'templates', labelKey: 'tools.tokenTemplates', icon: Package },
   ],
   [
-    { key: 'spirit', label: 'Spirit Layer', icon: Ghost },
-    { key: 'atmosphere', label: 'Atmosphere', icon: Cloud },
+    { key: 'spirit', labelKey: 'tools.spiritLayer', icon: Ghost },
+    { key: 'atmosphere', labelKey: 'tools.atmosphere', icon: Cloud },
   ],
-  [{ key: 'settings', label: 'Campaign Settings', icon: Settings }],
+  [{ key: 'settings', labelKey: 'tools.campaignSettings', icon: Settings }],
 ];
 
 interface SessionToolbarProps {
@@ -63,18 +64,19 @@ export default function SessionToolbar({
   onOpen,
   spiritLayerEnabled = false,
 }: SessionToolbarProps) {
+  const { t } = useTranslation('campaign');
   return (
-    <div className="flex items-center gap-1" role="toolbar" aria-label="DM tools">
+    <div className="flex items-center gap-1" role="toolbar" aria-label={t('tools.dmTools')}>
       {TOOL_GROUPS.map((group, groupIndex) => (
         <div key={groupIndex} className="flex items-center gap-1">
           {groupIndex > 0 && <div className="h-6 w-px bg-moss-green/20 mx-1" aria-hidden="true" />}
-          {group.map(({ key, label, icon }) => (
-            <Tooltip key={key} content={label} side="bottom">
+          {group.map(({ key, labelKey, icon }) => (
+            <Tooltip key={key} content={t(labelKey)} side="bottom">
               <Button
                 variant="ghost"
                 iconOnly
                 icon={icon}
-                aria-label={label}
+                aria-label={t(labelKey)}
                 onClick={() => onOpen(key)}
                 className={cn(
                   openPanels[key] && '!bg-accent/15 !text-accent',
