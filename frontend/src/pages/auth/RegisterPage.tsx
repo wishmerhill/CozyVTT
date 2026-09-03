@@ -16,7 +16,7 @@ import {
 import Button from '@/components/ui/Button';
 
 export default function RegisterPage() {
-  const { t } = useTranslation();
+  const { t } = useTranslation(['auth', 'common']);
   const navigate = useNavigate();
   const { register, authenticated } = useAuth();
 
@@ -60,32 +60,32 @@ export default function RegisterPage() {
 
     // Validate display name
     if (!displayName) {
-      errors.displayName = t('common.displayNameRequired');
+      errors.displayName = t('common:displayNameRequired');
     } else if (displayName.length < 2) {
-      errors.displayName = t('common.displayNameMinLength');
+      errors.displayName = t('common:displayNameMinLength');
     } else if (displayName.length > 50) {
-      errors.displayName = t('common.displayNameMaxLength');
+      errors.displayName = t('common:displayNameMaxLength');
     }
 
     // Validate email
     if (!email) {
-      errors.email = t('common.emailRequired');
+      errors.email = t('common:emailRequired');
     } else if (!isValidEmail(email)) {
-      errors.email = t('common.validEmailRequired');
+      errors.email = t('common:validEmailRequired');
     }
 
     // Validate password
     if (!password) {
-      errors.password = t('common.passwordRequired');
+      errors.password = t('common:passwordRequired');
     } else if (!isStrongPassword(password)) {
-      errors.password = t('common.passwordMinLength');
+      errors.password = t('common:passwordMinLength');
     }
 
     // Validate confirm password
     if (!confirmPassword) {
-      errors.confirmPassword = t('common.confirmPasswordRequired');
+      errors.confirmPassword = t('common:confirmPasswordRequired');
     } else if (password !== confirmPassword) {
-      errors.confirmPassword = t('common.passwordsDoNotMatch');
+      errors.confirmPassword = t('common:passwordsDoNotMatch');
     }
 
     setFieldErrors(errors);
@@ -118,15 +118,15 @@ export default function RegisterPage() {
     } catch (err: any) {
       // Handle specific error messages
       if (err.response?.status === 403) {
-        setError(err.response.data.message || t('common.registrationDisabled'));
+        setError(err.response.data.message || t('auth:register.errorDisabled'));
       } else if (err.response?.data?.error) {
         setError(err.response.data.error);
       } else if (err.response?.status === 409) {
-        setError(t('common.accountExists'));
+        setError(t('auth:register.errorAccountExists'));
       } else if (err.response?.status === 429) {
-        setError(t('common.tooManyAttempts'));
+        setError(t('auth:register.errorTooManyAttempts'));
       } else {
-        setError(t('common.anErrorOccurred'));
+        setError(t('auth:register.errorGeneric'));
       }
     } finally {
       setLoading(false);
@@ -140,10 +140,10 @@ export default function RegisterPage() {
           <div className="w-16 h-16 rounded-full bg-warning/10 flex items-center justify-center mx-auto">
             <span className="text-3xl">&#9203;</span>
           </div>
-          <h1 className="text-2xl font-bold text-brand-ink font-heading">{t('common.registrationSubmitted')}</h1>
-          <p className="text-warm-gray text-sm" dangerouslySetInnerHTML={{ __html: t('common.pendingApprovalMessage') }} />
+          <h1 className="text-2xl font-bold text-brand-ink font-heading">{t('auth:register.pendingApprovalTitle')}</h1>
+          <p className="text-warm-gray text-sm" dangerouslySetInnerHTML={{ __html: t('auth:register.pendingApprovalMessage') }} />
           <Link to="/auth/login" className="btn-primary inline-block mt-4">
-            {t('common.backToLogin')}
+            {t('auth:register.backToLogin')}
           </Link>
         </div>
       </div>
@@ -156,10 +156,10 @@ export default function RegisterPage() {
         {/* Header */}
         <div className="text-center">
           <h1 className="text-3xl font-bold text-brand-ink font-heading">
-            {t('common.createAccount')}
+            {t('auth:register.title')}
           </h1>
           <p className="mt-2 text-sm text-warm-gray">
-            {t('common.joinCozyVTT')}
+            {t('auth:register.subtitle')}
           </p>
         </div>
 
@@ -178,7 +178,7 @@ export default function RegisterPage() {
               htmlFor="displayName"
               className="block text-sm font-medium text-brand-ink mb-1"
             >
-              {t('common.displayName')}
+              {t('auth:register.displayNameLabel')}
             </label>
             <input
               id="displayName"
@@ -214,7 +214,7 @@ export default function RegisterPage() {
               htmlFor="email"
               className="block text-sm font-medium text-brand-ink mb-1"
             >
-              {t('common.email')}
+              {t('auth:register.emailLabel')}
             </label>
             <input
               id="email"
@@ -245,7 +245,7 @@ export default function RegisterPage() {
               htmlFor="password"
               className="block text-sm font-medium text-brand-ink mb-1"
             >
-              {t('common.password')}
+              {t('auth:register.passwordLabel')}
             </label>
             <input
               id="password"
@@ -281,7 +281,7 @@ export default function RegisterPage() {
               <div id="password-strength" className="mt-2" aria-live="polite">
                 <div className="flex items-center justify-between mb-1">
                   <span className="text-xs text-warm-gray">
-                    {t('common.passwordStrength')}
+                    {t('common:passwordStrength')}
                   </span>
                   <span
                     className={`text-xs font-medium ${
@@ -317,7 +317,7 @@ export default function RegisterPage() {
               htmlFor="confirmPassword"
               className="block text-sm font-medium text-brand-ink mb-1"
             >
-              {t('common.confirmPassword')}
+              {t('auth:register.confirmPasswordLabel')}
             </label>
             <input
               id="confirmPassword"
@@ -374,10 +374,10 @@ export default function RegisterPage() {
                     d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"
                   ></path>
                 </svg>
-                {t('common.creating')}
+                {t('auth:register.loading')}
               </span>
             ) : (
-              t('common.createAccount')
+              t('auth:register.submit')
             )}
           </Button>
         </form>
@@ -385,12 +385,12 @@ export default function RegisterPage() {
         {/* Login Link */}
         <div className="text-center">
           <p className="text-sm text-warm-gray">
-            {t('common.alreadyHaveAccount')}{' '}
+            {t('auth:register.alreadyHaveAccount')}{' '}
               <Link
                 to="/auth/login"
                 className="text-brand-ink hover:text-brand-ink/80 font-medium transition-colors"
               >
-                {t('common.signInLink')}
+                {t('auth:register.signIn')}
               </Link>
           </p>
         </div>

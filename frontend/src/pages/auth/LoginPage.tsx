@@ -13,7 +13,7 @@ import { api } from '@/services/api';
 import Button from '@/components/ui/Button';
 
 export default function LoginPage() {
-  const { t } = useTranslation();
+  const { t } = useTranslation(['auth', 'common']);
   const { login, authenticated, mfaPending } = useAuth();
 
   // Form state
@@ -56,14 +56,14 @@ export default function LoginPage() {
 
     // Validate email
     if (!email) {
-      errors.email = t('common.emailRequired');
+      errors.email = t('common:emailRequired');
     } else if (!isValidEmail(email)) {
-      errors.email = t('common.validEmailRequired');
+      errors.email = t('common:validEmailRequired');
     }
 
     // Validate password
     if (!password) {
-      errors.password = t('common.passwordRequired');
+      errors.password = t('common:passwordRequired');
     }
 
     setFieldErrors(errors);
@@ -94,11 +94,11 @@ export default function LoginPage() {
       if (err.response?.data?.error) {
         setError(err.response.data.error);
       } else if (err.response?.status === 401) {
-        setError(t('common.invalidEmailPassword'));
+        setError(t('auth:login.errorInvalid'));
       } else if (err.response?.status === 429) {
-        setError(t('common.tooManyLoginAttempts'));
+        setError(t('auth:login.errorTooManyAttempts'));
       } else {
-        setError(t('common.loginError'));
+        setError(t('auth:login.errorGeneric'));
       }
     } finally {
       setLoading(false);
@@ -111,10 +111,10 @@ export default function LoginPage() {
         {/* Header */}
         <div className="text-center">
           <h1 className="text-3xl font-bold text-brand-ink font-heading">
-            {t('common.welcomeBack')}
+            {t('auth:login.title')}
           </h1>
           <p className="mt-2 text-sm text-warm-gray">
-            {t('common.signInTo')}
+            {t('auth:login.subtitle')}
           </p>
         </div>
 
@@ -133,7 +133,7 @@ export default function LoginPage() {
               htmlFor="email"
               className="block text-sm font-medium text-brand-ink mb-1"
             >
-              {t('common.email')}
+              {t('auth:login.emailLabel')}
             </label>
             <input
               id="email"
@@ -164,7 +164,7 @@ export default function LoginPage() {
               htmlFor="password"
               className="block text-sm font-medium text-brand-ink mb-1"
             >
-              {t('common.password')}
+              {t('auth:login.passwordLabel')}
             </label>
             <input
               id="password"
@@ -204,7 +204,7 @@ export default function LoginPage() {
                 htmlFor="remember-me"
                 className="ml-2 block text-sm text-warm-gray"
               >
-                {t('common.rememberMe')}
+                {t('auth:login.rememberMe')}
               </label>
             </div>
 
@@ -212,7 +212,7 @@ export default function LoginPage() {
               to="/auth/forgot-password"
               className="text-sm text-brand-ink hover:text-brand-ink/80 transition-colors"
             >
-              {t('common.forgotPassword')}
+              {t('auth:login.forgotPassword')}
             </Link>
           </div>
 
@@ -244,10 +244,10 @@ export default function LoginPage() {
                     d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"
                   ></path>
                 </svg>
-                {t('common.signingIn')}
+                {t('auth:login.loading')}
               </span>
             ) : (
-              t('common.signIn')
+              t('auth:login.submit')
             )}
           </Button>
         </form>
@@ -256,12 +256,12 @@ export default function LoginPage() {
         {registrationAllowed && (
           <div className="text-center">
             <p className="text-sm text-warm-gray">
-              {t('common.dontHaveAccount')}{' '}
+              {t('auth:login.noAccount')}{' '}
               <Link
                 to="/auth/register"
                 className="text-brand-ink hover:text-brand-ink/80 font-medium transition-colors"
               >
-                {t('common.createOne')}
+                {t('auth:login.createAccount')}
               </Link>
             </p>
           </div>

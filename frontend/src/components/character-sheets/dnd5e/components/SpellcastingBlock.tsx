@@ -5,7 +5,8 @@
  */
 
 import React from 'react';
-import { Sparkles, Circle, CircleDot, BookOpen, Zap } from 'lucide-react';
+import { useTranslation } from 'react-i18next';
+import { Sparkles, CircleDot, BookOpen, Zap } from 'lucide-react';
 
 interface SpellSlot {
   total: number;
@@ -48,22 +49,23 @@ interface SpellcastingBlockProps {
  * SpellSlotIndicator - Visual representation of spell slots
  */
 const SpellSlotIndicator: React.FC<{ slot: SpellSlot }> = ({ slot }) => {
+  const filled = slot.expended;
   const remaining = slot.total - slot.expended;
+  const dots = Math.max(slot.total, 1);
 
   return (
     <div className="flex items-center space-x-1">
-      {Array.from({ length: slot.total }).map((_, idx) => (
-        <div key={idx}>
-          {idx < remaining ? (
-            <CircleDot className="w-3 h-3 text-blue-600" />
-          ) : (
-            <Circle className="w-3 h-3 text-stone-500" />
-          )}
-        </div>
+      {Array.from({ length: dots }).map((_, i) => (
+        <div
+          key={i}
+          className={`w-3 h-3 rounded-full border ${
+            i < filled
+              ? 'bg-blue-500 border-blue-600'
+              : 'bg-white border-stone-300'
+          }`}
+          title={`${remaining}/${slot.total} remaining`}
+        />
       ))}
-      <span className="text-xs text-stone-600 ml-1">
-        {remaining}/{slot.total}
-      </span>
     </div>
   );
 };
@@ -72,25 +74,31 @@ const SpellSlotIndicator: React.FC<{ slot: SpellSlot }> = ({ slot }) => {
  * SpellRow - Single spell display
  */
 const SpellRow: React.FC<{ spell: Spell }> = ({ spell }) => {
+  const { t } = useTranslation('character');
   return (
     <div className="flex items-center justify-between py-1 px-2 hover:bg-stone-50 rounded">
       <div className="flex items-center space-x-2">
         {spell.prepared ? (
-          <BookOpen className="w-4 h-4 text-blue-600" />
+          <BookOpen className="w-3.5 h-3.5 text-blue-600" />
         ) : (
-          <BookOpen className="w-4 h-4 text-stone-500" />
+          <div className="w-3.5 h-3.5" />
         )}
-        <span className={`text-sm ${spell.prepared ? 'text-stone-800 font-medium' : 'text-stone-500'}`}>
-          {spell.name}
-        </span>
+        <span className="text-sm text-stone-700">{spell.name}</span>
+      </div>
+      <div className="flex items-center space-x-3 text-xs">
         {spell.ritual && (
-          <span className="px-1.5 py-0.5 text-xs bg-purple-100 text-purple-700 rounded">
-            R
+          <span className="px-1.5 py-0.5 bg-blue-100 text-blue-700 rounded font-medium">
+            {t('sheet.preparedSpell')}
           </span>
         )}
         {spell.concentration && (
-          <span className="px-1.5 py-0.5 text-xs bg-orange-100 text-orange-700 rounded">
-            C
+          <span className="px-1.5 py-0.5 bg-amber-100 text-amber-700 rounded font-medium">
+            {t('sheet.ritual')}
+          </span>
+        )}
+        {spell.ritual && spell.concentration && (
+          <span title={t('sheet.concentration')}>
+            <Zap className="w-3 h-3 text-stone-400" />
           </span>
         )}
       </div>
@@ -99,45 +107,43 @@ const SpellRow: React.FC<{ spell: Spell }> = ({ spell }) => {
 };
 
 /**
- * SpellcastingBlock - Complete spellcasting display
+ * SpellcastingBlock - Full spellcasting display
  */
 export const SpellcastingBlock: React.FC<SpellcastingBlockProps> = ({ spellcasting }) => {
-  const formatBonus = (bonus: number): string => {
-    return bonus >= 0 ? `+${bonus}` : `${bonus}`;
-  };
+  const { t } = useTranslation('character');
 
   // Group spells by level
-  const spellsByLevel = spellcasting.spells.reduce((acc, spell) => {
-    if (!acc[spell.level]) {
-      acc[spell.level] = [];
-    }
-    acc[spell.level].push(spell);
-    return acc;
-  }, {} as Record<number, Spell[]>);
+  const spellsByLevel: Record<number, Spell[]> = {};
+  if (spellcasting.spells) {
+    spellcasting.spells.forEach((spell) => {
+      if (!spellsByLevel[spell.level]) {
+        spellsByLevel[spell.level] = [];
+      }
+      spellsByLevel[spell.level].push(spell);
+    });
+  }
 
   return (
-    <div className="space-y-4">
-      {/* Spellcasting Header */}
-      <div className="p-4 bg-gradient-to-br from-blue-50 to-purple-50 border-2 border-blue-200 rounded-lg">
+    <div className="space-y-6">
+      {/* Spellcasting Ability Header */}
+      <div className="bg-indigo-50 border border-indigo-200 rounded-lg p-4">
         <div className="flex items-center space-x-2 mb-3">
-          <Sparkles className="w-5 h-5 text-blue-600" />
-          <h4 className="font-semibold text-stone-800">
-            {spellcasting.class} Spellcasting
-          </h4>
+          <Sparkles className="w-5 h-5 text-indigo-600" />
+          <h3 className="text-lg font-semibold text-stone-800">{t('sheet.spellcasting')}</h3>
         </div>
-        <div className="grid grid-cols-3 gap-4 text-center">
+        <div className="grid grid-cols-3 gap-4">
           <div>
-            <div className="text-xs text-stone-500">Spellcasting Ability</div>
-            <div className="text-lg font-bold text-blue-700">{spellcasting.ability}</div>
+            <div className="text-xs text-stone-500">{t('sheet.spellcastingAbility')}</div>
+            <div className="font-semibold text-stone-800">{spellcasting.ability}</div>
           </div>
           <div>
-            <div className="text-xs text-stone-500">Spell Save DC</div>
-            <div className="text-lg font-bold text-blue-700">{spellcasting.spellSaveDC}</div>
+            <div className="text-xs text-stone-500">{t('sheet.spellSaveDC')}</div>
+            <div className="font-semibold text-stone-800">{spellcasting.spellSaveDC}</div>
           </div>
           <div>
-            <div className="text-xs text-stone-500">Spell Attack</div>
-            <div className="text-lg font-bold text-blue-700">
-              {formatBonus(spellcasting.spellAttackBonus)}
+            <div className="text-xs text-stone-500">{t('sheet.spellAttack')}</div>
+            <div className="font-semibold text-stone-800">
+              {spellcasting.spellAttackBonus >= 0 ? '+' : ''}{spellcasting.spellAttackBonus}
             </div>
           </div>
         </div>
@@ -146,15 +152,12 @@ export const SpellcastingBlock: React.FC<SpellcastingBlockProps> = ({ spellcasti
       {/* Cantrips */}
       {spellcasting.cantrips && spellcasting.cantrips.length > 0 && (
         <div className="bg-stone-50 border border-stone-200 rounded-lg p-4">
-          <div className="flex items-center space-x-2 mb-2">
-            <Zap className="w-4 h-4 text-yellow-600" />
-            <h5 className="font-semibold text-stone-800">Cantrips</h5>
-          </div>
+          <h4 className="text-base font-semibold text-stone-800 mb-3">{t('sheet.cantrips')}</h4>
           <div className="flex flex-wrap gap-2">
             {spellcasting.cantrips.map((cantrip, idx) => (
               <span
                 key={idx}
-                className="px-2 py-1 text-sm bg-yellow-100 text-yellow-800 rounded border border-yellow-300"
+                className="px-3 py-1 bg-white border border-stone-300 rounded-lg text-sm text-stone-700"
               >
                 {cantrip}
               </span>
@@ -164,24 +167,27 @@ export const SpellcastingBlock: React.FC<SpellcastingBlockProps> = ({ spellcasti
       )}
 
       {/* Spell Slots */}
-      <div className="bg-stone-50 border border-stone-200 rounded-lg p-4">
-        <h5 className="font-semibold text-stone-800 mb-3">Spell Slots</h5>
-        <div className="grid grid-cols-3 md:grid-cols-5 gap-3">
-          {Object.entries(spellcasting.slots)
-            .filter(([_, slot]) => slot.total > 0)
-            .map(([level, slot]) => (
-              <div key={level} className="text-center">
-                <div className="text-xs text-stone-500 mb-1">Level {level}</div>
+      {spellcasting.slots && (
+        <div className="bg-stone-50 border border-stone-200 rounded-lg p-4">
+          <h4 className="text-base font-semibold text-stone-800 mb-3">{t('sheet.spellSlots')}</h4>
+          <div className="grid grid-cols-3 md:grid-cols-5 gap-3">
+            {Object.entries(spellcasting.slots).map(([level, slot]) => (
+              <div key={level} className="space-y-1">
+                <div className="text-xs font-semibold text-stone-600">{t('sheet.level')} {level}</div>
                 <SpellSlotIndicator slot={slot} />
+                <div className="text-xs text-stone-500">
+                  {slot.total - slot.expended}/{slot.total}
+                </div>
               </div>
             ))}
+          </div>
         </div>
-      </div>
+      )}
 
       {/* Spells by Level */}
       <div className="bg-stone-50 border border-stone-200 rounded-lg overflow-hidden">
         <div className="p-3 bg-stone-100 border-b border-stone-200">
-          <h5 className="font-semibold text-stone-800">Spell List</h5>
+          <h5 className="font-semibold text-stone-800">{t('sheet.spellList')}</h5>
         </div>
         <div className="divide-y divide-stone-100">
           {Object.keys(spellsByLevel)
@@ -190,7 +196,7 @@ export const SpellcastingBlock: React.FC<SpellcastingBlockProps> = ({ spellcasti
             .map((level) => (
               <div key={level} className="p-3">
                 <h6 className="text-sm font-semibold text-stone-700 mb-2">
-                  {level === 0 ? 'Cantrips' : `Level ${level}`}
+                  {level === 0 ? t('sheet.cantrips') : `${t('sheet.level')} ${level}`}
                 </h6>
                 <div className="space-y-1">
                   {spellsByLevel[level].map((spell, idx) => (
@@ -206,15 +212,15 @@ export const SpellcastingBlock: React.FC<SpellcastingBlockProps> = ({ spellcasti
       <div className="text-xs text-stone-600 space-y-1 px-2">
         <div className="flex items-center space-x-2">
           <BookOpen className="w-3 h-3 text-blue-600" />
-          <span>Prepared spell</span>
+          <span>{t('sheet.preparedSpell')}</span>
         </div>
         <div className="flex items-center space-x-2">
-          <span className="px-1.5 py-0.5 bg-purple-100 text-purple-700 rounded">R</span>
-          <span>Ritual</span>
+          <CircleDot className="w-3 h-3 text-blue-500" />
+          <span>{t('sheet.ritual')}</span>
         </div>
         <div className="flex items-center space-x-2">
-          <span className="px-1.5 py-0.5 bg-orange-100 text-orange-700 rounded">C</span>
-          <span>Concentration</span>
+          <Zap className="w-3 h-3 text-amber-500" />
+          <span>{t('sheet.concentration')}</span>
         </div>
       </div>
     </div>

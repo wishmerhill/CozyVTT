@@ -298,7 +298,7 @@ export const DnD5eCharacterView: React.FC<DnD5eCharacterViewProps> = ({ characte
       {/* Skills */}
       {data.skills && (
         <div>
-          <h3 className="text-lg font-semibold text-stone-800 mb-3">{t('sheet.skills')}</h3>
+          <h3 className="text-lg font-semibold text-stone-800 mb-3">{t('sheet.skillList')}</h3>
           <div className="bg-stone-50 border border-stone-200 rounded-lg p-4">
             <SkillsList
               skills={data.skills}

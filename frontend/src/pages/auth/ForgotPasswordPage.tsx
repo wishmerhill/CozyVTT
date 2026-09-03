@@ -13,7 +13,7 @@ import authService from '@/services/auth.service';
 import Button from '@/components/ui/Button';
 
 export default function ForgotPasswordPage() {
-  const { t } = useTranslation();
+  const { t } = useTranslation(['auth', 'common']);
   const { authenticated } = useAuth();
 
   const [email, setEmail] = useState('');
@@ -28,11 +28,11 @@ export default function ForgotPasswordPage() {
 
   const validate = (): boolean => {
     if (!email) {
-      setEmailError(t('common.emailRequired'));
+      setEmailError(t('common:emailRequired'));
       return false;
     }
     if (!isValidEmail(email)) {
-      setEmailError(t('common.validEmailRequired'));
+      setEmailError(t('common:validEmailRequired'));
       return false;
     }
     setEmailError('');
@@ -69,19 +69,19 @@ export default function ForgotPasswordPage() {
           /* Success state */
           <div className="text-center space-y-4">
             <CheckCircle className="w-14 h-14 text-brand-ink mx-auto" aria-hidden="true" />
-            <h1 className="text-2xl font-bold text-brand-ink font-heading">{t('common.checkYourInbox')}</h1>
+            <h1 className="text-2xl font-bold text-brand-ink font-heading">{t('auth:password.forgotTitle')}</h1>
             <p className="text-sm text-warm-gray leading-relaxed">
-              {serverMessage || t('common.resetLinkSent')}
+              {serverMessage || t('auth:password.forgotSuccess')}
             </p>
             <p className="text-xs text-stone-gray/70">
-              {t('common.didntReceiveIt')}
+              {t('common:didntReceiveIt')}
             </p>
             <Link
               to="/auth/login"
               className="inline-flex items-center gap-2 text-sm text-brand-ink hover:text-brand-ink/80 font-medium transition-colors"
             >
               <ArrowLeft className="w-4 h-4" aria-hidden="true" />
-              {t('common.backToSignIn')}
+              {t('common:backToSignIn')}
             </Link>
           </div>
         ) : (
@@ -91,16 +91,16 @@ export default function ForgotPasswordPage() {
               <div className="flex justify-center mb-3">
                 <Mail className="w-10 h-10 text-brand-ink/70" aria-hidden="true" />
               </div>
-              <h1 className="text-2xl font-bold text-brand-ink font-heading">{t('common.forgotPasswordTitle')}</h1>
+              <h1 className="text-2xl font-bold text-brand-ink font-heading">{t('auth:password.forgotTitle')}</h1>
               <p className="mt-2 text-sm text-warm-gray">
-                {t('common.forgotPasswordInstructions')}
+                {t('auth:password.forgotInstructions')}
               </p>
             </div>
 
             <form onSubmit={handleSubmit} className="space-y-4" noValidate>
               <div>
                 <label htmlFor="email" className="block text-sm font-medium text-brand-ink mb-1">
-                  {t('common.emailAddress')}
+                  {t('common:emailAddress')}
                 </label>
                 <input
                   id="email"
@@ -135,10 +135,10 @@ export default function ForgotPasswordPage() {
                       <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4" />
                       <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z" />
                     </svg>
-                    {t('common.sending')}
+                    {t('auth:password.forgotLoading')}
                   </span>
                 ) : (
-                  t('common.sendResetLink')
+                  t('auth:password.forgotSubmit')
                 )}
               </Button>
             </form>
@@ -149,7 +149,7 @@ export default function ForgotPasswordPage() {
                 className="inline-flex items-center gap-1.5 text-sm text-brand-ink hover:text-brand-ink/80 transition-colors"
               >
                 <ArrowLeft className="w-4 h-4" aria-hidden="true" />
-                {t('common.backToSignIn')}
+                {t('common:backToSignIn')}
               </Link>
             </div>
           </>

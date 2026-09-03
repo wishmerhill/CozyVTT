@@ -6,10 +6,12 @@
 
 import { useState, FormEvent } from 'react';
 import { useNavigate } from 'react-router-dom';
+import { useTranslation } from 'react-i18next';
 import { useAuth } from '@/contexts/AuthContext';
 import Button from '@/components/ui/Button';
 
 export default function MFAVerifyPage() {
+  const { t } = useTranslation(['auth', 'common']);
   const navigate = useNavigate();
   const { verifyMFA, verifyMFAWithBackupCode, mfaPending, authenticated } =
     useAuth();
@@ -43,12 +45,12 @@ export default function MFAVerifyPage() {
     setError(null);
 
     if (!token) {
-      setError('Please enter your authentication code');
+      setError(t('auth:mfa.verifyTokenErrorEmpty'));
       return;
     }
 
     if (token.length !== 6) {
-      setError('Authentication code must be 6 digits');
+      setError(t('auth:mfa.verifyTokenErrorInvalid'));
       return;
     }
 
@@ -63,11 +65,11 @@ export default function MFAVerifyPage() {
       if (err.response?.data?.error) {
         setError(err.response.data.error);
       } else if (err.response?.status === 401) {
-        setError('Invalid authentication code. Please try again.');
+        setError(t('auth:mfa.verifyTokenErrorInvalidCode'));
       } else if (err.response?.status === 429) {
-        setError('Too many attempts. Please try again later.');
+        setError(t('auth:mfa.verifyTokenErrorTooManyAttempts'));
       } else {
-        setError('An error occurred during verification. Please try again.');
+        setError(t('auth:mfa.verifyTokenErrorGeneric'));
       }
     } finally {
       setLoading(false);
@@ -82,7 +84,7 @@ export default function MFAVerifyPage() {
     setError(null);
 
     if (!backupCode) {
-      setError('Please enter your backup code');
+      setError(t('auth:mfa.backupCodeErrorEmpty'));
       return;
     }
 
@@ -90,7 +92,7 @@ export default function MFAVerifyPage() {
     const cleanedCode = backupCode.replace(/[-\s]/g, '');
 
     if (cleanedCode.length !== 8) {
-      setError('Backup code must be 8 characters');
+      setError(t('auth:mfa.backupCodeErrorInvalid'));
       return;
     }
 
@@ -105,11 +107,11 @@ export default function MFAVerifyPage() {
       if (err.response?.data?.error) {
         setError(err.response.data.error);
       } else if (err.response?.status === 401) {
-        setError('Invalid backup code. Please try again.');
+        setError(t('auth:mfa.backupCodeErrorInvalidCode'));
       } else if (err.response?.status === 429) {
-        setError('Too many attempts. Please try again later.');
+        setError(t('auth:mfa.backupCodeErrorTooManyAttempts'));
       } else {
-        setError('An error occurred during verification. Please try again.');
+        setError(t('auth:mfa.backupCodeErrorGeneric'));
       }
     } finally {
       setLoading(false);
@@ -149,12 +151,12 @@ export default function MFAVerifyPage() {
             </div>
           </div>
           <h1 className="text-3xl font-bold text-brand-ink font-heading">
-            Two-Factor Authentication
+            {t('auth:mfa.verifyTitle')}
           </h1>
           <p className="mt-2 text-sm text-warm-gray">
             {useBackupCode
-              ? 'Enter one of your backup codes'
-              : 'Enter the 6-digit code from your authenticator app'}
+              ? t('auth:mfa.backupCodeDescription')
+              : t('auth:mfa.verifyTokenDescription')}
           </p>
         </div>
 
@@ -173,7 +175,7 @@ export default function MFAVerifyPage() {
                 htmlFor="token"
                 className="block text-sm font-medium text-brand-ink mb-1"
               >
-                Authentication Code
+                {t('auth:mfa.verifyTokenLabel')}
               </label>
               <input
                 id="token"
@@ -189,12 +191,12 @@ export default function MFAVerifyPage() {
                   setError(null);
                 }}
                 className="input-cozy w-full text-center text-2xl tracking-widest font-mono"
-                placeholder="000000"
+                placeholder={t('auth:mfa.verifyTokenPlaceholder')}
                 disabled={loading}
                 autoFocus
               />
               <p className="mt-1 text-xs text-warm-gray text-center">
-                Enter the 6-digit code from your authenticator app
+                {t('auth:mfa.verifyTokenHelp')}
               </p>
             </div>
 
@@ -225,10 +227,10 @@ export default function MFAVerifyPage() {
                       d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"
                     ></path>
                   </svg>
-                  Verifying...
+                  {t('auth:mfa.verifyTokenLoading')}
                 </span>
               ) : (
-                'Verify Code'
+                t('auth:mfa.verifyTokenSubmit')
               )}
             </Button>
           </form>
@@ -242,7 +244,7 @@ export default function MFAVerifyPage() {
                 htmlFor="backupCode"
                 className="block text-sm font-medium text-brand-ink mb-1"
               >
-                Backup Code
+                {t('auth:mfa.backupCodeLabel')}
               </label>
               <input
                 id="backupCode"
@@ -262,12 +264,12 @@ export default function MFAVerifyPage() {
                   setError(null);
                 }}
                 className="input-cozy w-full text-center text-xl tracking-wider font-mono"
-                placeholder="XXXX-XXXX"
+                placeholder={t('auth:mfa.backupCodePlaceholder')}
                 disabled={loading}
                 autoFocus
               />
               <p className="mt-1 text-xs text-warm-gray text-center">
-                Enter one of your 8-character backup codes
+                {t('auth:mfa.backupCodeHelp')}
               </p>
             </div>
 
@@ -300,10 +302,10 @@ export default function MFAVerifyPage() {
                       d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"
                     ></path>
                   </svg>
-                  Verifying...
+                  {t('auth:mfa.backupCodeLoading')}
                 </span>
               ) : (
-                'Verify Backup Code'
+                t('auth:mfa.backupCodeSubmit')
               )}
             </Button>
           </form>
@@ -317,8 +319,8 @@ export default function MFAVerifyPage() {
             disabled={loading}
           >
             {useBackupCode
-              ? 'Use authenticator app instead'
-              : "Can't access your app? Use a backup code"}
+              ? t('auth:mfa.toggleToToken')
+              : t('auth:mfa.toggleToBackup')}
           </button>
         </div>
 
@@ -329,7 +331,7 @@ export default function MFAVerifyPage() {
             className="text-sm text-warm-gray hover:text-brand-ink transition-colors"
             disabled={loading}
           >
-            Back to login
+            {t('auth:mfa.backToLogin')}
           </button>
         </div>
       </div>

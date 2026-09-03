@@ -4,6 +4,7 @@
 // ============================================
 
 import { useState, useEffect, useCallback, useRef } from 'react';
+import { useTranslation } from 'react-i18next';
 import { AnimatePresence, motion } from 'framer-motion';
 import {
   Swords,
@@ -32,9 +33,9 @@ import AssetGrid from '@/components/assets/AssetGrid';
 // ============================================
 
 const SIZE_OPTIONS = [
-  { label: 'Small/Med', sublabel: '1×1', value: { width: 1, height: 1 } },
-  { label: 'Large',     sublabel: '2×2', value: { width: 2, height: 2 } },
-  { label: 'Huge',      sublabel: '3×3', value: { width: 3, height: 3 } },
+  { labelKey: 'size.smallMed', sublabel: '1×1', value: { width: 1, height: 1 } },
+  { labelKey: 'size.large', sublabel: '2×2', value: { width: 2, height: 2 } },
+  { labelKey: 'size.huge', sublabel: '3×3', value: { width: 3, height: 3 } },
 ];
 
 // ============================================
@@ -51,6 +52,7 @@ interface TokenManagerProps {
 // ============================================
 
 export default function TokenManager({ isOpen, onClose }: TokenManagerProps) {
+  const { t } = useTranslation('campaign');
   const { campaign, currentMap } = useCampaign();
   // Manager lists tokens by name/flags — no need to re-render on moves.
   const tokens = useTokenListIgnoringMovement();
@@ -102,7 +104,7 @@ export default function TokenManager({ isOpen, onClose }: TokenManagerProps) {
         limit: 100,
       })
       .then((res) => setAssets(res.assets))
-      .catch(() => setError('Failed to load token assets'))
+      .catch(() => setError(t('token.errors.loadAssets')))
       .finally(() => setIsLoadingAssets(false));
   }, [isOpen, campaign?.id]);
 
@@ -144,7 +146,7 @@ export default function TokenManager({ isOpen, onClose }: TokenManagerProps) {
       setSelectedAsset(asset);
       setTokenName((prev) => prev || asset.name || baseName);
     } catch {
-      setUploadError('Upload failed — check file type and size');
+      setUploadError(t('token.errors.uploadFailed'));
     } finally {
       setIsUploading(false);
     }
@@ -232,7 +234,7 @@ export default function TokenManager({ isOpen, onClose }: TokenManagerProps) {
       setInitiative('');
       setObjectHidden(true);
     } catch {
-      setError('Failed to add token to map');
+      setError(t('token.errors.addFailed'));
     } finally {
       setIsAdding(false);
     }
@@ -250,7 +252,7 @@ export default function TokenManager({ isOpen, onClose }: TokenManagerProps) {
       useGameStore.getState().patchToken(token.id, { visible: !token.visible });
       socket?.emitMapChange(currentMap.id);
     } catch {
-      setError('Failed to toggle token visibility');
+      setError(t('token.errors.toggleVisibility'));
     } finally {
       setTogglingVisibilityId(null);
     }
@@ -265,7 +267,7 @@ export default function TokenManager({ isOpen, onClose }: TokenManagerProps) {
       useGameStore.getState().patchToken(token.id, { layer: newLayer });
       socket?.emitMapChange(currentMap.id);
     } catch {
-      setError('Failed to move token between layers');
+      setError(t('token.errors.moveLayer'));
     } finally {
       setTogglingLayerId(null);
     }
@@ -306,7 +308,7 @@ export default function TokenManager({ isOpen, onClose }: TokenManagerProps) {
       socket?.emitMapChange(currentMap.id);
       socket?.emitMapChange(targetMapId);
     } catch {
-      setError('Failed to move token to map');
+      setError(t('token.errors.moveToMap'));
     } finally {
       setIsMovingTokenMap(false);
     }
@@ -320,7 +322,7 @@ export default function TokenManager({ isOpen, onClose }: TokenManagerProps) {
       useGameStore.getState().removeToken(token.id);
       socket?.emitMapChange(currentMap.id);
     } catch {
-      setError('Failed to remove token from map');
+      setError(t('token.errors.removeFromMap'));
     } finally {
       setDeletingId(null);
     }
@@ -357,7 +359,7 @@ export default function TokenManager({ isOpen, onClose }: TokenManagerProps) {
             <div className="flex items-center justify-between px-5 py-4 border-b border-moss-green/20 bg-parchment/60 sticky top-0 z-10">
               <div className="flex items-center gap-2">
                 <Swords className="w-5 h-5 text-brand-ink" />
-                <h2 className="text-lg font-bold text-brand-ink">Token Manager</h2>
+                <h2 className="text-lg font-bold text-brand-ink">{t('token.manager')}</h2>
               </div>
               <Button onClick={onClose} variant="secondary" className="p-1.5" title="Close">
                 <X className="w-4 h-4" />
@@ -376,20 +378,20 @@ export default function TokenManager({ isOpen, onClose }: TokenManagerProps) {
               {/* ── Section 1: Add Token ── */}
               <section>
                 <h3 className="text-sm font-semibold text-stone-gray uppercase tracking-wide mb-3">
-                  Add Token
+                  {t('token.add')}
                 </h3>
 
                 {/* Token Type Selector */}
                 <div className="mb-3">
                   <label className="text-xs text-stone-gray font-medium block mb-1">
-                    Token Type
+                    {t('token.type')}
                   </label>
                   <div className="flex gap-2">
                     {([
-                      { type: TokenType.PLAYER, label: 'Player' },
-                      { type: TokenType.NPC,    label: 'NPC / Creature' },
-                      { type: TokenType.OBJECT, label: 'Object' },
-                    ] as const).map(({ type, label }) => (
+                      { type: TokenType.PLAYER, labelKey: 'token.player' },
+                      { type: TokenType.NPC,    labelKey: 'token.npcCreature' },
+                      { type: TokenType.OBJECT, labelKey: 'token.object' },
+                    ] as const).map(({ type, labelKey }) => (
                       <button
                         key={type}
                         onClick={() => setTokenType(type)}
@@ -399,13 +401,13 @@ export default function TokenManager({ isOpen, onClose }: TokenManagerProps) {
                             : 'border-moss-green/20 hover:border-moss-green/40 text-stone-gray'
                         }`}
                       >
-                        {label}
+                        {t(labelKey)}
                       </button>
                     ))}
                   </div>
                   {tokenType === TokenType.PLAYER && (
                     <p className="text-[10px] text-stone-gray/60 mt-1">
-                      Player tokens link to a character sheet. For summoned creatures, use NPC type and assign a player as controller.
+                      {t('token.playerTypeHint')}
                     </p>
                   )}
                 </div>
@@ -422,11 +424,11 @@ export default function TokenManager({ isOpen, onClose }: TokenManagerProps) {
                   />
 
                   <div className="flex items-center justify-between mb-2">
-                    <p className="text-xs text-stone-gray">Token image <span className="opacity-50">(optional — uses placeholder if empty)</span>:</p>
+                    <p className="text-xs text-stone-gray">{t('token.imageLabel')} <span className="opacity-50">{t('common:optional')}</span>:</p>
                     <button
                       onClick={() => fileInputRef.current?.click()}
                       disabled={isUploading}
-                      title="Upload a new token image"
+                      title={t('token.uploadImage')}
                       className="flex items-center gap-1 text-xs text-brand-ink hover:text-brand-ink/80 disabled:opacity-40 transition-colors"
                     >
                       {isUploading ? (
@@ -434,7 +436,7 @@ export default function TokenManager({ isOpen, onClose }: TokenManagerProps) {
                       ) : (
                         <Upload className="w-3 h-3" />
                       )}
-                      {isUploading ? 'Uploading…' : 'Upload'}
+                      {isUploading ? t('token.uploading') : t('common:upload')}
                     </button>
                   </div>
                   {uploadError && (
@@ -443,7 +445,7 @@ export default function TokenManager({ isOpen, onClose }: TokenManagerProps) {
                   {isLoadingAssets ? (
                     <div className="flex items-center gap-2 text-stone-gray text-sm py-4">
                       <Loader2 className="w-4 h-4 animate-spin" />
-                      Loading assets…
+                      {t('chat.loading')}
                     </div>
                   ) : assets.length === 0 ? (
                     <div className="glass-panel p-3">
@@ -658,7 +660,7 @@ export default function TokenManager({ isOpen, onClose }: TokenManagerProps) {
                       const isSelected = tokenSize.width === opt.value.width;
                       return (
                         <button
-                          key={opt.label}
+                          key={opt.labelKey}
                           onClick={() => setTokenSize(opt.value)}
                           className={`flex-1 py-1.5 text-center text-xs rounded-cozy border transition-all ${
                             isSelected
@@ -666,7 +668,7 @@ export default function TokenManager({ isOpen, onClose }: TokenManagerProps) {
                               : 'border-moss-green/20 hover:border-moss-green/40 text-stone-gray'
                           }`}
                         >
-                          <span className="block">{opt.label}</span>
+                          <span className="block">{t(opt.labelKey)}</span>
                           <span className="block text-[10px] opacity-60">{opt.sublabel}</span>
                         </button>
                       );

@@ -6,6 +6,7 @@
 
 import { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
+import { useTranslation } from 'react-i18next';
 import { motion, AnimatePresence } from 'framer-motion';
 import {
   X,
@@ -46,6 +47,7 @@ export default function CampaignSettingsModal({
   isOpen,
   onClose,
 }: CampaignSettingsModalProps) {
+  const { t } = useTranslation('campaign');
   const { campaign, refreshCampaign } = useCampaign();
   const { showToast } = useToast();
   const { user } = useAuth();
@@ -99,7 +101,7 @@ export default function CampaignSettingsModal({
   const handleSaveGeneral = async () => {
     const trimmedName = name.trim();
     if (!trimmedName) {
-      showToast('Campaign name cannot be empty', 'error');
+      showToast(t('settings.validationNameRequired'), 'error');
       return;
     }
     setSavingGeneral(true);
@@ -109,9 +111,9 @@ export default function CampaignSettingsModal({
         description: description.trim() || undefined,
       });
       await refreshCampaign();
-      showToast('Campaign settings saved', 'success');
+      showToast(t('settings.saved'), 'success');
     } catch (err: any) {
-      showToast(err.response?.data?.message ?? 'Failed to save settings', 'error');
+      showToast(err.response?.data?.message ?? t('settings.saveFailed'), 'error');
     } finally {
       setSavingGeneral(false);
     }
@@ -125,9 +127,9 @@ export default function CampaignSettingsModal({
         chatCooldownSeconds,
       });
       await refreshCampaign();
-      showToast('Chat settings saved', 'success');
+      showToast(t('settings.chatSaved'), 'success');
     } catch (err: any) {
-      showToast(err.response?.data?.message ?? 'Failed to save chat settings', 'error');
+      showToast(err.response?.data?.message ?? t('settings.chatSaveFailed'), 'error');
     } finally {
       setSavingChat(false);
     }
@@ -144,9 +146,9 @@ export default function CampaignSettingsModal({
     try {
       await api.removeCampaignMember(campaign.id, memberToRemove.userId);
       await refreshCampaign();
-      showToast('Player removed from campaign', 'success');
+      showToast(t('settings.playerRemoved'), 'success');
     } catch (err: any) {
-      showToast(err.response?.data?.message ?? 'Failed to remove member', 'error');
+      showToast(err.response?.data?.message ?? t('settings.removeMemberFailed'), 'error');
     } finally {
       setRemovingMemberId(null);
     }
@@ -157,10 +159,10 @@ export default function CampaignSettingsModal({
     setDeletingCampaign(true);
     try {
       await campaignService.deleteCampaign(campaign.id);
-      showToast(`Campaign "${campaign.name}" deleted`, 'success');
+      showToast(t('settings.campaignDeleted', { name: campaign.name }), 'success');
       navigate('/dashboard');
     } catch (err: any) {
-      showToast(err.response?.data?.message ?? 'Failed to delete campaign', 'error');
+      showToast(err.response?.data?.message ?? t('settings.deleteFailed'), 'error');
       setDeletingCampaign(false);
     }
   };
@@ -178,9 +180,9 @@ export default function CampaignSettingsModal({
       a.click();
       document.body.removeChild(a);
       URL.revokeObjectURL(url);
-      showToast('Campaign exported successfully', 'success');
+      showToast(t('settings.exported'), 'success');
     } catch (err: any) {
-      showToast(err.response?.data?.message ?? 'Failed to export campaign', 'error');
+      showToast(err.response?.data?.message ?? t('settings.exportFailed'), 'error');
     } finally {
       setExporting(false);
     }
@@ -218,14 +220,14 @@ export default function CampaignSettingsModal({
                   <div className="flex items-center gap-3">
                     <Settings className="w-6 h-6 text-brand-ink" />
                     <div>
-                      <h2 className="text-xl font-bold text-brand-ink">Campaign Settings</h2>
+                      <h2 className="text-xl font-bold text-brand-ink">{t('settings.title')}</h2>
                       <p className="text-xs text-stone-gray truncate max-w-[220px]">{campaign.name}</p>
                     </div>
                   </div>
                   <button
                     onClick={onClose}
                     className="p-2 hover:bg-moss-green/10 rounded-lg transition-colors"
-                    aria-label="Close settings"
+                    aria-label={t('settings.close')}
                   >
                     <X className="w-5 h-5 text-stone-gray" />
                   </button>
@@ -235,10 +237,10 @@ export default function CampaignSettingsModal({
                 <div className="flex gap-1 mt-4">
                   {(
                     [
-                      { id: 'general', label: 'General' },
-                      { id: 'chat', label: 'Chat' },
-                      { id: 'members', label: 'Members' },
-                      { id: 'danger', label: 'Danger Zone' },
+                      { id: 'general', label: t('settings.tabs.general') },
+                      { id: 'chat', label: t('settings.tabs.chat') },
+                      { id: 'members', label: t('settings.tabs.members') },
+                      { id: 'danger', label: t('settings.tabs.danger') },
                     ] as { id: SettingsTab; label: string }[]
                   ).map((tab) => (
                     <button
@@ -269,7 +271,7 @@ export default function CampaignSettingsModal({
                         htmlFor="cs-name"
                         className="block text-sm font-semibold text-stone-gray mb-1.5"
                       >
-                        Campaign Name <span className="text-danger-ink">*</span>
+                        {t('campaign.name')} <span className="text-danger-ink">*</span>
                       </label>
                       <input
                         id="cs-name"
@@ -278,7 +280,7 @@ export default function CampaignSettingsModal({
                         onChange={(e) => setName(e.target.value)}
                         maxLength={100}
                         className="input-cozy w-full"
-                        placeholder="My Campaign"
+                        placeholder={t('settings.namePlaceholder')}
                       />
                     </div>
 
@@ -287,7 +289,7 @@ export default function CampaignSettingsModal({
                         htmlFor="cs-description"
                         className="block text-sm font-semibold text-stone-gray mb-1.5"
                       >
-                        Description <span className="text-warm-gray font-normal">(optional)</span>
+                        {t('campaign.description')} <span className="text-warm-gray font-normal">({t('common:optional')})</span>
                       </label>
                       <textarea
                         id="cs-description"
@@ -296,7 +298,7 @@ export default function CampaignSettingsModal({
                         rows={4}
                         maxLength={1000}
                         className="input-cozy w-full resize-none"
-                        placeholder="Describe your campaign…"
+                        placeholder={t('settings.descriptionPlaceholder')}
                       />
                       <p className="mt-1 text-xs text-warm-gray text-right">
                         {description.length}/1000
@@ -313,12 +315,12 @@ export default function CampaignSettingsModal({
                         {savingGeneral ? (
                           <>
                             <Loader2 className="w-4 h-4 animate-spin" />
-                            Saving…
+                            {t('common:saving')}
                           </>
                         ) : (
                           <>
                             <Save className="w-4 h-4" />
-                            Save Changes
+                            {t('common:saveChanges')}
                           </>
                         )}
                       </Button>
@@ -328,17 +330,16 @@ export default function CampaignSettingsModal({
                     <div className="pt-4 mt-4 border-t border-moss-green/15 space-y-3">
                       <div className="flex items-center gap-2 text-sm font-semibold text-stone-gray">
                         <Download className="w-4 h-4 text-brand-ink" />
-                        Export Campaign
+                        {t('settings.export')}
                       </div>
                       <p className="text-xs text-warm-gray">
-                        Download a <span className="font-mono">.cozyvtt</span> archive containing maps, creatures,
-                        token templates, and all associated assets. Character data is not included for privacy.
+                        {t('settings.exportHint')}
                       </p>
 
                       <div className="flex items-center justify-between">
                         <div>
-                          <p className="text-sm text-stone-gray">Include audio assets</p>
-                          <p className="text-xs text-warm-gray">Ambient tracks and sound effects</p>
+                          <p className="text-sm text-stone-gray">{t('settings.includeAudio')}</p>
+                          <p className="text-xs text-warm-gray">{t('settings.includeAudioHint')}</p>
                         </div>
                         <button
                           type="button"
@@ -366,12 +367,12 @@ export default function CampaignSettingsModal({
                         {exporting ? (
                           <>
                             <Loader2 className="w-4 h-4 animate-spin" />
-                            Exporting…
+                            {t('settings.exporting')}
                           </>
                         ) : (
                           <>
                             <Download className="w-4 h-4" />
-                            Export Campaign
+                            {t('settings.export')}
                           </>
                         )}
                       </Button>
@@ -385,17 +386,15 @@ export default function CampaignSettingsModal({
                     <div className="flex items-start gap-3 p-4 rounded-lg bg-moss-green/5 border border-moss-green/15">
                       <MessageCircle className="w-5 h-5 text-brand-ink flex-shrink-0 mt-0.5" />
                       <p className="text-sm text-stone-gray">
-                        A message cooldown prevents players from sending messages too quickly.
-                        When enabled, each player must wait the configured number of seconds
-                        before sending their next message.
+                        {t('settings.chatCooldownHint')}
                       </p>
                     </div>
 
                     {/* Enable toggle */}
                     <div className="flex items-center justify-between">
                       <div>
-                        <p className="text-sm font-semibold text-stone-gray">Enable message cooldown</p>
-                        <p className="text-xs text-warm-gray mt-0.5">Off by default — players can chat freely</p>
+                        <p className="text-sm font-semibold text-stone-gray">{t('settings.enableCooldown')}</p>
+                        <p className="text-xs text-warm-gray mt-0.5">{t('settings.enableCooldownHint')}</p>
                       </div>
                       <button
                         type="button"
@@ -421,7 +420,7 @@ export default function CampaignSettingsModal({
                           htmlFor="cs-cooldown-seconds"
                           className="block text-sm font-semibold text-stone-gray mb-1.5"
                         >
-                          Cooldown duration <span className="font-normal text-warm-gray">(seconds)</span>
+                          {t('settings.cooldownDuration')} <span className="font-normal text-warm-gray">({t('settings.seconds')})</span>
                         </label>
                         <div className="flex items-center gap-3">
                           <input
@@ -438,11 +437,11 @@ export default function CampaignSettingsModal({
                           />
                           <span className="text-sm text-warm-gray">
                             {chatCooldownSeconds === 1
-                              ? '1 second between messages'
-                              : `${chatCooldownSeconds} seconds between messages`}
+                              ? t('settings.oneSecondBetween')
+                              : t('settings.secondsBetween', { count: chatCooldownSeconds })}
                           </span>
                         </div>
-                        <p className="mt-1 text-xs text-warm-gray">Between 1 and 300 seconds.</p>
+                        <p className="mt-1 text-xs text-warm-gray">{t('settings.cooldownRange')}</p>
                       </div>
                     )}
 
@@ -456,12 +455,12 @@ export default function CampaignSettingsModal({
                         {savingChat ? (
                           <>
                             <Loader2 className="w-4 h-4 animate-spin" />
-                            Saving…
+                            {t('common:saving')}
                           </>
                         ) : (
                           <>
                             <Save className="w-4 h-4" />
-                            Save Changes
+                            {t('common:saveChanges')}
                           </>
                         )}
                       </Button>
@@ -476,7 +475,7 @@ export default function CampaignSettingsModal({
                     <div className="flex items-center justify-between">
                       <div className="flex items-center gap-2 text-sm text-stone-gray">
                         <Users className="w-4 h-4" />
-                        <span>{memberships.length} member{memberships.length !== 1 ? 's' : ''}</span>
+                        <span>{t('settings.memberCount', { count: memberships.length })}</span>
                       </div>
                       <Button
                         type="button"
@@ -484,7 +483,7 @@ export default function CampaignSettingsModal({
                         variant="secondary" className="flex items-center gap-2 text-sm"
                       >
                         <UserPlus className="w-4 h-4" />
-                        Invite Player
+                        {t('roster.invite')}
                       </Button>
                     </div>
 
@@ -508,9 +507,9 @@ export default function CampaignSettingsModal({
                               </div>
                               <div className="min-w-0">
                                 <p className="text-sm font-semibold text-stone-gray truncate">
-                                  {membership.user?.displayName ?? 'Unknown'}
+                                  {membership.user?.displayName ?? t('common:unknown')}
                                   {isSelf && (
-                                    <span className="ml-1.5 text-xs font-normal text-warm-gray">(you)</span>
+                                    <span className="ml-1.5 text-xs font-normal text-warm-gray">({t('common:you')})</span>
                                   )}
                                 </p>
                                 <p className="text-xs text-warm-gray truncate">
@@ -547,7 +546,7 @@ export default function CampaignSettingsModal({
                                   onClick={() => handleRemoveMemberClick(membership)}
                                   disabled={isRemoving}
                                   className="p-1.5 rounded-lg text-danger-ink hover:text-danger-ink hover:bg-danger/10 transition-colors disabled:opacity-40"
-                                  aria-label={`Remove ${membership.user?.displayName} from campaign`}
+                                  aria-label={t('settings.removeMemberAria', { name: membership.user?.displayName })}
                                 >
                                   {isRemoving ? (
                                     <Loader2 className="w-4 h-4 animate-spin" />
@@ -571,14 +570,12 @@ export default function CampaignSettingsModal({
                       <div className="flex items-start gap-3 mb-4">
                         <AlertTriangle className="w-5 h-5 text-danger-ink flex-shrink-0 mt-0.5" />
                         <div>
-                          <h3 className="text-sm font-bold text-danger-ink mb-1">Delete Campaign</h3>
+                          <h3 className="text-sm font-bold text-danger-ink mb-1">{t('settings.deleteCampaign')}</h3>
                           <p className="text-sm text-danger-ink">
-                            Permanently deletes this campaign and all associated maps, tokens, chat
-                            history, and session records. Characters and uploaded assets are{' '}
-                            <strong>not</strong> deleted — they remain in your library.
+                            {t('settings.deleteCampaignHint')}
                           </p>
                           <p className="text-sm text-danger-ink mt-2">
-                            This action <strong>cannot be undone</strong>.
+                            {t('settings.deleteCampaignCannotUndo')}
                           </p>
                         </div>
                       </div>
@@ -589,7 +586,7 @@ export default function CampaignSettingsModal({
                             htmlFor="cs-delete-confirm"
                             className="block text-sm font-semibold text-danger-ink mb-1.5"
                           >
-                            Type <span className="font-mono bg-danger/10 px-1 rounded">{campaign.name}</span> to confirm:
+                            {t('settings.typeToConfirm')} <span className="font-mono bg-danger/10 px-1 rounded">{campaign.name}</span>:
                           </label>
                           <input
                             id="cs-delete-confirm"
@@ -611,12 +608,12 @@ export default function CampaignSettingsModal({
                           {deletingCampaign ? (
                             <>
                               <Loader2 className="w-4 h-4 animate-spin" />
-                              Deleting…
+                              {t('settings.deleting')}
                             </>
                           ) : (
                             <>
                               <Trash2 className="w-4 h-4" />
-                              Delete Campaign
+                              {t('settings.deleteCampaign')}
                             </>
                           )}
                         </Button>
@@ -633,10 +630,10 @@ export default function CampaignSettingsModal({
       {/* Remove member confirm dialog */}
       <ConfirmDialog
         isOpen={!!memberToRemove}
-        title="Remove Player"
-        message={`Remove ${memberToRemove?.user?.displayName ?? 'this player'} from "${campaign.name}"? They will lose access to the campaign immediately.`}
-        confirmLabel="Remove"
-        cancelLabel="Cancel"
+        title={t('campaign.removePlayer')}
+        message={t('campaign.removePlayerConfirm', { name: memberToRemove?.user?.displayName ?? t('common:thisPlayer'), campaign: campaign.name })}
+        confirmLabel={t('common:remove')}
+        cancelLabel={t('common:cancel')}
         variant="danger"
         onConfirm={handleConfirmRemoveMember}
         onCancel={() => setMemberToRemove(null)}
@@ -645,10 +642,10 @@ export default function CampaignSettingsModal({
       {/* Final delete confirm dialog */}
       <ConfirmDialog
         isOpen={showDeleteConfirm}
-        title="Delete Campaign"
-        message={`Are you absolutely sure you want to permanently delete "${campaign.name}"? This cannot be undone.`}
-        confirmLabel="Delete Forever"
-        cancelLabel="Cancel"
+        title={t('settings.deleteCampaign')}
+        message={t('settings.deleteCampaignConfirm', { name: campaign.name })}
+        confirmLabel={t('campaign.deleteForever')}
+        cancelLabel={t('common:cancel')}
         variant="danger"
         isLoading={deletingCampaign}
         onConfirm={handleDeleteCampaign}
@@ -663,7 +660,7 @@ export default function CampaignSettingsModal({
           onSuccess={() => {
             setShowInviteModal(false);
             refreshCampaign();
-            showToast('Invitation sent!', 'success');
+            showToast(t('invitation.sent'), 'success');
           }}
         />
       )}

@@ -6,6 +6,7 @@
  */
 
 import React from 'react';
+import { useTranslation } from 'react-i18next';
 import { Package, Coins, Star } from 'lucide-react';
 
 interface InventoryItem {
@@ -37,6 +38,7 @@ interface InventoryListProps {
  * CurrencyDisplay - Shows character's money
  */
 const CurrencyDisplay: React.FC<{ currency: Currency }> = ({ currency }) => {
+  const { t } = useTranslation('character');
   const coins = [
     { label: 'PP', value: currency.pp, color: 'text-slate-400' },
     { label: 'GP', value: currency.gp, color: 'text-yellow-600' },
@@ -49,7 +51,7 @@ const CurrencyDisplay: React.FC<{ currency: Currency }> = ({ currency }) => {
     <div className="p-4 bg-gradient-to-br from-yellow-50 to-amber-50 border-2 border-yellow-300 rounded-lg">
       <div className="flex items-center space-x-2 mb-3">
         <Coins className="w-5 h-5 text-yellow-700" />
-        <h4 className="font-semibold text-stone-800">Currency</h4>
+        <h4 className="font-semibold text-stone-800">{t('sheet.currency')}</h4>
       </div>
       <div className="grid grid-cols-5 gap-2">
         {coins.map(({ label, value, color }) => (
@@ -67,6 +69,7 @@ const CurrencyDisplay: React.FC<{ currency: Currency }> = ({ currency }) => {
  * InventoryItem Row
  */
 const InventoryItemRow: React.FC<{ item: InventoryItem }> = ({ item }) => {
+  const { t } = useTranslation('character');
   return (
     <div className="flex items-center justify-between p-2 hover:bg-stone-50 rounded border-b border-stone-100 last:border-0">
       <div className="flex-1">
@@ -77,18 +80,18 @@ const InventoryItemRow: React.FC<{ item: InventoryItem }> = ({ item }) => {
               <span className="font-medium text-stone-800">{item.name}</span>
               {item.equipped && (
                 <span className="px-1.5 py-0.5 text-xs bg-green-100 text-green-700 rounded border border-green-300">
-                  Equipped
+                  {t('sheet.equipped')}
                 </span>
               )}
               {item.attuned && (
                 <span className="px-1.5 py-0.5 text-xs bg-purple-100 text-purple-700 rounded border border-purple-300 flex items-center gap-1">
                   <Star className="w-3 h-3" />
-                  Attuned
+                  {t('sheet.attuned')}
                 </span>
               )}
               {item.requiresAttunement && !item.attuned && (
                 <span className="px-1.5 py-0.5 text-xs bg-amber-50 text-amber-700 rounded border border-amber-300">
-                  Requires Attunement
+                  {t('sheet.requiresAttunement')}
                 </span>
               )}
             </div>
@@ -100,12 +103,12 @@ const InventoryItemRow: React.FC<{ item: InventoryItem }> = ({ item }) => {
       </div>
       <div className="flex items-center space-x-4 text-sm text-stone-600">
         <div className="text-right">
-          <div className="text-xs text-stone-500">Qty</div>
+          <div className="text-xs text-stone-500">{t('sheet.qty')}</div>
           <div>{item.quantity}</div>
         </div>
         <div className="text-right">
-          <div className="text-xs text-stone-500">Wt</div>
-          <div>{item.weight} lb</div>
+          <div className="text-xs text-stone-500">{t('sheet.wt')}</div>
+          <div>{t('sheet.weightLb', { weight: item.weight })}</div>
         </div>
       </div>
     </div>
@@ -116,6 +119,7 @@ const InventoryItemRow: React.FC<{ item: InventoryItem }> = ({ item }) => {
  * InventoryList - Displays inventory and currency
  */
 export const InventoryList: React.FC<InventoryListProps> = ({ inventory, currency }) => {
+  const { t } = useTranslation('character');
   const totalWeight = inventory?.reduce((sum, item) => sum + (item.weight * item.quantity), 0) || 0;
 
   // Calculate attunement slots (D&D 5e max: 3 attuned items)
@@ -134,7 +138,7 @@ export const InventoryList: React.FC<InventoryListProps> = ({ inventory, currenc
           <div className="flex items-center justify-between mb-3">
             <div className="flex items-center space-x-2">
               <Star className="w-5 h-5 text-purple-600" />
-              <h4 className="font-semibold text-stone-800">Attunement Slots</h4>
+              <h4 className="font-semibold text-stone-800">{t('sheet.attunementSlots')}</h4>
             </div>
             <span className={`text-lg font-bold ${attunedCount >= maxAttunement ? 'text-red-600' : 'text-purple-700'}`}>
               {attunedCount} / {maxAttunement}
@@ -154,7 +158,7 @@ export const InventoryList: React.FC<InventoryListProps> = ({ inventory, currenc
           </div>
           {attunedItems.length > 0 && (
             <div className="mt-3 text-xs text-purple-900">
-              <span className="font-medium">Attuned to:</span>{' '}
+              <span className="font-medium">{t('sheet.attunedTo')}:</span>{' '}
               {attunedItems.map(item => item.name).join(', ')}
             </div>
           )}
@@ -165,9 +169,9 @@ export const InventoryList: React.FC<InventoryListProps> = ({ inventory, currenc
       <div className="bg-stone-50 border border-stone-200 rounded-lg overflow-hidden">
         <div className="p-3 bg-stone-100 border-b border-stone-200">
           <div className="flex items-center justify-between">
-            <h4 className="font-semibold text-stone-800">Equipment & Items</h4>
+            <h4 className="font-semibold text-stone-800">{t('sheet.equipmentAndItems')}</h4>
             <span className="text-sm text-stone-600">
-              Total Weight: <span className="font-semibold">{totalWeight.toFixed(1)} lb</span>
+              {t('sheet.totalWeight')}: <span className="font-semibold">{t('sheet.weightLb', { weight: totalWeight.toFixed(1) })}</span>
             </span>
           </div>
         </div>
@@ -178,7 +182,7 @@ export const InventoryList: React.FC<InventoryListProps> = ({ inventory, currenc
             ))
           ) : (
             <div className="p-8 text-center text-stone-500">
-              No items in inventory
+              {t('sheet.noItems')}
             </div>
           )}
         </div>
