@@ -623,8 +623,11 @@ export interface Token {
   showHpBar:   boolean;
   notes:       string;
   initiative:  number | null;
-  /** Sight radius in grid squares (0 = unlimited). Used by dynamic lighting. */
+  /** Sight radius in grid squares (3 = default D&D 5e, 0 = unlimited). Used by dynamic lighting. */
   sightRadius?: number;
+  /** Darkvision radius in grid squares (e.g. 12 = 60ft for D&D 5e). Areas revealed only by
+   *  darkvision (outside any enabled LightSource range) are rendered in grayscale. */
+  darkvisionRadius?: number;
   /** Display mode: pog (circular + border), top-down (circular, no border), full-art (rectangular, alpha). Default: pog */
   displayMode?: TokenDisplayMode;
   /** NPC stat block — populated when placing from creature library or entered manually. */

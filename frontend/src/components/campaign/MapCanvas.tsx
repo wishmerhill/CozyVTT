@@ -1555,6 +1555,7 @@ export default function MapCanvas({ onEditToken }: MapCanvasProps) {
           enabledLights,
           tokenVision: vision.tokenVision,
           lightVision: vision.lightVision,
+          darkvision: vision.darkvision,
           lightingCanvas: lightingOffscreenRef,
           coverageCanvas: lightCoverageOffscreenRef,
         }, viewport);

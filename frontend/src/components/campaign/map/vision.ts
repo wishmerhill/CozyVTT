@@ -30,6 +30,9 @@ export interface VisionState {
   tokenVision: VisionSource[];
   /** One entry per enabled light source (dim radius applied). */
   lightVision: VisionSource[];
+  /** Darkvision polygons for tokens that have darkvisionRadius set.
+   *  These reveal the area in grayscale when no light source covers it. */
+  darkvision: VisionSource[];
   /** Concatenated in draw order — used by the walls layer door filter. */
   all: VisionSource[];
 }
@@ -40,7 +43,9 @@ function tokenSource(token: Token, viewport: Viewport): { cx: number; cy: number
   return {
     cx: (token.position.x + token.size.width / 2) * viewport.gridSize,
     cy: gridYToCentrePx(token.position.y, token.size.height, viewport.mapHeight, viewport.gridSize),
-    r: (token.sightRadius ?? 0) * viewport.gridSize,
+    // Default sight radius of 3 grid squares (D&D 5e standard human vision).
+    // 0 = unlimited (DM override).
+    r: (token.sightRadius ?? 3) * viewport.gridSize,
   };
 }
 
@@ -69,7 +74,22 @@ export function computeVisionState(
     return { poly, cx: light.x, cy: light.y };
   });
 
-  return { tokenVision, lightVision, all: [...tokenVision, ...lightVision] };
+  // Darkvision polygons — use the darkvision radius from the token, clipped
+  // by walls. Darkvision does not extend beyond sightRadius, so clamp it.
+  const darkvision: VisionSource[] = myTokens
+    .filter((t) => (t.darkvisionRadius ?? 0) > 0)
+    .map((token) => {
+      const { cx, cy } = tokenSource(token, viewport);
+      const sr = (token.sightRadius ?? 0) * viewport.gridSize;
+      const dvr = Math.min(
+        token.darkvisionRadius! * viewport.gridSize,
+        sr > 0 ? sr : Infinity
+      );
+      const poly = computeVisibility({ x: cx, y: cy }, wallSegments as WallSegment[], mapWidthPx, mapHeightPx, dvr);
+      return { poly, cx, cy };
+    });
+
+  return { tokenVision, lightVision, darkvision, all: [...tokenVision, ...lightVision] };
 }
 
 /**
@@ -106,6 +126,7 @@ export function createVisionCache(): VisionCache {
   let lastWalls: readonly WallSegment[] | null = null;
   const tokenCache = new Map<string, CachedSource>();
   const lightCache = new Map<string, CachedSource>();
+  const darkvisionCache = new Map<string, CachedSource>();
 
   return {
     compute(myTokens, enabledLights, wallSegments, viewport) {
@@ -115,6 +136,7 @@ export function createVisionCache(): VisionCache {
       if (wallSegments !== lastWalls) {
         tokenCache.clear();
         lightCache.clear();
+        darkvisionCache.clear();
         lastWalls = wallSegments;
       }
 
@@ -144,7 +166,28 @@ export function createVisionCache(): VisionCache {
       });
       for (const id of lightCache.keys()) if (!seenLights.has(id)) lightCache.delete(id);
 
-      return { tokenVision, lightVision, all: [...tokenVision, ...lightVision] };
+      // Darkvision polygons — cached per token id.
+      const seenDv = new Set<string>();
+      const darkvision: VisionSource[] = myTokens
+        .filter((t) => (t.darkvisionRadius ?? 0) > 0)
+        .map((token) => {
+          const { cx, cy } = tokenSource(token, viewport);
+          const sr = (token.sightRadius ?? 0) * viewport.gridSize;
+          const dvr = Math.min(
+            token.darkvisionRadius! * viewport.gridSize,
+            sr > 0 ? sr : Infinity
+          );
+          seenDv.add(token.id);
+          const hit = darkvisionCache.get(token.id);
+          if (hit && hit.x === cx && hit.y === cy && hit.r === dvr) return hit.src;
+          const poly = computeVisibility({ x: cx, y: cy }, wallSegments as WallSegment[], mapWidthPx, mapHeightPx, dvr);
+          const src: VisionSource = { poly, cx, cy };
+          darkvisionCache.set(token.id, { x: cx, y: cy, r: dvr, src });
+          return src;
+        });
+      for (const id of darkvisionCache.keys()) if (!seenDv.has(id)) darkvisionCache.delete(id);
+
+      return { tokenVision, lightVision, darkvision, all: [...tokenVision, ...lightVision] };
     },
   };
 }

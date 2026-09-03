@@ -27,6 +27,8 @@ export interface LightingDrawState {
   /** Precomputed via computeVisionState — order must match inputs. */
   tokenVision: readonly VisionSource[];
   lightVision: readonly VisionSource[];
+  /** Darkvision polygons for tokens with darkvisionRadius set. */
+  darkvision: readonly VisionSource[];
   /** Persistent offscreen canvases (fog composite + light coverage). */
   lightingCanvas: CanvasHolder;
   coverageCanvas: CanvasHolder;
@@ -91,21 +93,6 @@ export function drawDynamicLighting(
     }
   }
 
-  // Clip light coverage to player's field of view so lights don't
-  // reveal areas the player cannot see (e.g. lights in adjacent rooms).
-  covCtx.save();
-  covCtx.beginPath();
-  for (const { poly } of state.tokenVision) {
-    if (poly.points.length >= 3) {
-      covCtx.moveTo(poly.points[0].x, poly.points[0].y);
-      for (let i = 1; i < poly.points.length; i++) {
-        covCtx.lineTo(poly.points[i].x, poly.points[i].y);
-      }
-      covCtx.closePath();
-    }
-  }
-  covCtx.clip();
-
   // Light sources → clipped to visibility polygon for wall shadows.
   // Dim circle at α 0.5; bright circle adds another α 0.5 on top.
   for (let li = 0; li < state.enabledLights.length; li++) {
@@ -117,12 +104,26 @@ export function drawDynamicLighting(
     const brightRadiusPx = light.brightRadius * viewport.gridSize;
 
     covCtx.save();
+    // Clip to the light's own raycasted polygon (wall shadows).
     covCtx.beginPath();
     covCtx.moveTo(poly.points[0].x, poly.points[0].y);
     for (let i = 1; i < poly.points.length; i++) {
       covCtx.lineTo(poly.points[i].x, poly.points[i].y);
     }
     covCtx.closePath();
+    covCtx.clip();
+    // Also clip to the player's field of view so lights don't reveal
+    // areas through walls that the player cannot see.
+    covCtx.beginPath();
+    for (const { poly: tvPoly } of state.tokenVision) {
+      if (tvPoly.points.length >= 3) {
+        covCtx.moveTo(tvPoly.points[0].x, tvPoly.points[0].y);
+        for (let i = 1; i < tvPoly.points.length; i++) {
+          covCtx.lineTo(tvPoly.points[i].x, tvPoly.points[i].y);
+        }
+        covCtx.closePath();
+      }
+    }
     covCtx.clip();
 
     if (dimRadiusPx > 0) {
@@ -139,7 +140,6 @@ export function drawDynamicLighting(
     }
     covCtx.restore();
   }
-  covCtx.restore();
   covCtx.globalCompositeOperation = 'source-over';
 
   // ── Build fog with coverage subtracted ──────────────────────────
@@ -148,6 +148,61 @@ export function drawDynamicLighting(
   offCtx.globalCompositeOperation = 'destination-out';
   offCtx.drawImage(coverage, 0, 0);
   offCtx.globalCompositeOperation = 'source-over';
+
+  // ── Darkvision-only overlay (grayscale) ────────────────────────
+  // Areas revealed by darkvision but NOT covered by any light source
+  // should appear desaturated (black & white). We compute a mask of
+  // "darkvision polygon minus light coverage", then use that mask to
+  // overlay a desaturated copy of the fog onto the normal fog.
+  if (state.darkvision.length > 0) {
+    // Build mask: darkvision polygon minus light-covered area
+    const mask = document.createElement('canvas');
+    mask.width = mapWidthPx;
+    mask.height = mapHeightPx;
+    const maskCtx = mask.getContext('2d')!;
+
+    maskCtx.fillStyle = 'rgba(255, 255, 255, 1)';
+    for (const { poly } of state.darkvision) {
+      if (poly.points.length >= 3) {
+        maskCtx.beginPath();
+        maskCtx.moveTo(poly.points[0].x, poly.points[0].y);
+        for (let i = 1; i < poly.points.length; i++) {
+          maskCtx.lineTo(poly.points[i].x, poly.points[i].y);
+        }
+        maskCtx.closePath();
+        maskCtx.fill();
+      }
+    }
+    // Erase light-covered area from mask
+    maskCtx.globalCompositeOperation = 'destination-out';
+    maskCtx.drawImage(coverage, 0, 0);
+    maskCtx.globalCompositeOperation = 'source-over';
+
+    // Make a desaturated copy of the fog
+    const fogSnapshot = document.createElement('canvas');
+    fogSnapshot.width = mapWidthPx;
+    fogSnapshot.height = mapHeightPx;
+    const snapCtx = fogSnapshot.getContext('2d')!;
+    snapCtx.drawImage(offscreen, 0, 0);
+    // Desaturate via grayscale filter
+    const imageData = snapCtx.getImageData(0, 0, mapWidthPx, mapHeightPx);
+    const data = imageData.data;
+    for (let i = 0; i < data.length; i += 4) {
+      const gray = 0.299 * data[i] + 0.587 * data[i + 1] + 0.114 * data[i + 2];
+      data[i]     = gray;
+      data[i + 1] = gray;
+      data[i + 2] = gray;
+    }
+    snapCtx.putImageData(imageData, 0, 0);
+
+    // Clip desaturated copy to the darkvision-only mask
+    snapCtx.globalCompositeOperation = 'destination-in';
+    snapCtx.drawImage(mask, 0, 0);
+    snapCtx.globalCompositeOperation = 'source-over';
+
+    // Composite the desaturated darkvision-only fog over the normal fog
+    offCtx.drawImage(fogSnapshot, 0, 0);
+  }
 
   // Composite onto main canvas with soft blur edge
   ctx.save();
