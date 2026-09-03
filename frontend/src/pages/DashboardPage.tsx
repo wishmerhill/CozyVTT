@@ -128,7 +128,7 @@ export default function DashboardPage() {
               {/* Profile Avatar Button */}
               <button
                 onClick={() => navigate('/profile')}
-                aria-label={t('dashboard:viewProfile', { name: user?.displayName ?? 'your account' })}
+                aria-label={t('dashboard:viewProfile', { name: user?.displayName ?? t('dashboard:yourAccountFallback') })}
                 className="w-12 h-12 rounded-full border-2 border-moss-green/30 hover:border-moss-green/60 transition-colors overflow-hidden flex items-center justify-center bg-moss-green/10 flex-shrink-0"
               >
                 {user?.avatarUrl ? (

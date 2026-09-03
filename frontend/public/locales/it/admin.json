@@ -68,6 +68,7 @@
     "mfaDesc": "Questo cancella la registrazione dell'app authenticator. Dovrà ri-registrarsi al prossimo accesso.",
     "confirmReset": "Conferma Reset",
     "pwdReset": "Resetta Password",
+    "pwdShort": "Pwd",
     "pwdTitle": "Resetta password per",
     "pwdTemp": "Password temporanea generata. Condividila in modo sicuro — l'utente dovrà cambiarla al prossimo accesso.",
     "pwdGenerate": "Genera Password Temporanea",
@@ -129,6 +130,7 @@
     "scopeUpdateFailed": "Impossibile aggiornare lo scope",
     "count": "Conteggio",
     "personal": "Personale",
+    "global": "Globale",
     "map": "Mappa",
     "token": "Token",
     "audio": "Audio",
@@ -188,6 +190,8 @@
     "noBackupsHint": "Clicca <strong>Crea Backup</strong> per generare il primo backup.",
     "available": "Backup Disponibili",
     "filename": "Nome File",
+    "countLabel_one": "{{count}} file",
+    "countLabel_other": "{{count}} file",
     "size": "Dimensione",
     "created": "Creato",
     "download": "Scarica",
@@ -300,5 +304,14 @@
   "recentActivity": {
     "title": "Attività Recente",
     "noActivity": "Nessuna attività recente"
+  },
+  "time": {
+    "justNow": "proprio ora",
+    "minutesAgo": "{{count}}m fa",
+    "hoursAgo": "{{count}}h fa",
+    "daysAgo": "{{count}}g fa",
+    "expired": "scaduto",
+    "inMinutes": "tra {{count}}m",
+    "inHoursMinutes": "tra {{hours}}h {{minutes}}m"
   }
 }

@@ -9,6 +9,7 @@
 
 import React, { useState, useEffect, useCallback, useMemo, useRef } from 'react';
 import { useTranslation } from 'react-i18next';
+import i18n from '@/i18n/i18n';
 import { useDebounce } from '@/hooks/useDebounce';
 import { useNavigate } from 'react-router-dom';
 import {
@@ -112,22 +113,22 @@ function formatRelativeTime(dateStr: string | null): string {
   if (!dateStr) return '\u2014';
   const diff = Date.now() - new Date(dateStr).getTime();
   const minutes = Math.floor(diff / 60000);
-  if (minutes < 1) return 'just now';
-  if (minutes < 60) return `${minutes}m ago`;
+  if (minutes < 1) return i18n.t('admin:time.justNow');
+  if (minutes < 60) return i18n.t('admin:time.minutesAgo', { count: minutes });
   const hours = Math.floor(minutes / 60);
-  if (hours < 24) return `${hours}h ago`;
+  if (hours < 24) return i18n.t('admin:time.hoursAgo', { count: hours });
   const days = Math.floor(hours / 24);
-  return `${days}d ago`;
+  return i18n.t('admin:time.daysAgo', { count: days });
 }
 
 function formatExpiry(dateStr: string | null): string {
   if (!dateStr) return '\u2014';
   const diff = new Date(dateStr).getTime() - Date.now();
-  if (diff <= 0) return 'expired';
+  if (diff <= 0) return i18n.t('admin:time.expired');
   const minutes = Math.floor(diff / 60000);
-  if (minutes < 60) return `in ${minutes}m`;
+  if (minutes < 60) return i18n.t('admin:time.inMinutes', { count: minutes });
   const hours = Math.floor(minutes / 60);
-  if (hours < 48) return `in ${hours}h ${minutes % 60}m`;
+  if (hours < 48) return i18n.t('admin:time.inHoursMinutes', { hours, minutes: minutes % 60 });
   return new Date(dateStr).toLocaleTimeString(undefined, { hour: '2-digit', minute: '2-digit' });
 }
 
@@ -1000,9 +1001,13 @@ export default function AdminPage() {
                     <p className="text-sm font-bold text-success-ink">{t('admin:dashboard.healthy')}</p>
                     <p className="text-xs text-warm-gray mt-1">{t('admin:dashboard.status')}</p>
                     <div className="mt-2 space-y-1 text-left w-full">
-                      {[['API', true], ['DB', true], ['WS', true]].map(([label, ok]) => (
-                        <div key={String(label)} className="flex items-center justify-between text-xs">
-                          <span className="text-stone-gray">{label}</span>
+                      {[
+                        { key: 'apiLabel', ok: true },
+                        { key: 'dbLabel', ok: true },
+                        { key: 'wsLabel', ok: true },
+                      ].map(({ key, ok }) => (
+                        <div key={key} className="flex items-center justify-between text-xs">
+                          <span className="text-stone-gray">{t(`admin:dashboard.${key}`)}</span>
                           <span className={ok ? 'text-success-ink' : 'text-danger-ink'}>&#9679;</span>
                         </div>
                       ))}
@@ -1312,7 +1317,7 @@ export default function AdminPage() {
                                       variant="secondary" className={`text-xs py-1 px-2 flex items-center gap-1 ${isSelf ? 'opacity-40 cursor-not-allowed' : ''}`}
                                     >
                                       <RefreshCw className="w-3 h-3" />
-                                      Pwd
+                                      {t('admin:users.pwdShort')}
                                     </Button>
                                     {/* Delete */}
                                     <button
@@ -1580,7 +1585,7 @@ export default function AdminPage() {
                 className="input-cozy text-sm"
               >
                 <option value="">{t('admin:assets.filterScope')}</option>
-                <option value="GLOBAL">Global</option>
+                <option value="GLOBAL">{t('admin:assets.global')}</option>
                 <option value="USER">{t('admin:assets.personal')}</option>
                 <option value="CAMPAIGN">{t('admin:assets.campaign')}</option>
               </select>
@@ -1689,7 +1694,7 @@ export default function AdminPage() {
                                   {asset.scope === AssetScope.GLOBAL && <Globe className="w-3 h-3" />}
                                   {asset.scope === AssetScope.USER && <UserIcon className="w-3 h-3" />}
                                   {asset.scope === AssetScope.CAMPAIGN && <Users className="w-3 h-3" />}
-                                  {asset.scope === AssetScope.GLOBAL ? 'Global' : asset.scope === AssetScope.USER ? t('admin:assets.personal') : t('admin:assets.campaign')}
+                                  {asset.scope === AssetScope.GLOBAL ? t('admin:assets.global') : asset.scope === AssetScope.USER ? t('admin:assets.personal') : t('admin:assets.campaign')}
                                 </span>
                               </td>
                               {/* Uploader */}
@@ -1723,7 +1728,7 @@ export default function AdminPage() {
                                       className="text-xs py-1 px-2 pr-6 rounded border border-moss-green/30 text-stone-gray bg-paper-white hover:border-moss-green/60 cursor-pointer disabled:opacity-50 appearance-none"
                                       title={t('admin:assets.scope')}
                                     >
-                                      <option value={AssetScope.GLOBAL}>Global</option>
+                                      <option value={AssetScope.GLOBAL}>{t('admin:assets.global')}</option>
                                       <option value={AssetScope.USER}>{t('admin:assets.personal')}</option>
                                       <option value={AssetScope.CAMPAIGN}>{t('admin:assets.campaign')}…</option>
                                     </select>
@@ -2222,7 +2227,7 @@ export default function AdminPage() {
                 <Database className="w-4 h-4 text-brand-ink" />
                 <h3 className="font-semibold text-brand-ink text-sm">{t('admin:backups.available')}</h3>
                 {backups.length > 0 && (
-                  <span className="ml-auto text-xs text-warm-gray">{backups.length} {backups.length !== 1 ? t('admin:backups.filename') + 's' : t('admin:backups.filename')}</span>
+                  <span className="ml-auto text-xs text-warm-gray">{t('admin:backups.countLabel', { count: backups.length })}</span>
                 )}
               </div>
 

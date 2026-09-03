@@ -68,6 +68,7 @@
     "mfaDesc": "This clears their authenticator app enrollment. They will need to re-enroll on next login.",
     "confirmReset": "Confirm Reset",
     "pwdReset": "Reset Password",
+    "pwdShort": "Pwd",
     "pwdTitle": "Reset password for",
     "pwdTemp": "Temporary password generated. Share it securely — the user will need to change it on next login.",
     "pwdGenerate": "Generate Temporary Password",
@@ -129,6 +130,7 @@
     "scopeUpdateFailed": "Failed to update scope",
     "count": "Count",
     "personal": "Personal",
+    "global": "Global",
     "map": "Map",
     "token": "Token",
     "audio": "Audio",
@@ -188,6 +190,8 @@
     "noBackupsHint": "Click <strong>Create Backup</strong> to generate the first backup.",
     "available": "Available Backups",
     "filename": "File Name",
+    "countLabel_one": "{{count}} file",
+    "countLabel_other": "{{count}} files",
     "size": "Size",
     "created": "Created",
     "download": "Download",
@@ -300,5 +304,14 @@
   "recentActivity": {
     "title": "Recent Activity",
     "noActivity": "No recent activity"
+  },
+  "time": {
+    "justNow": "just now",
+    "minutesAgo": "{{count}}m ago",
+    "hoursAgo": "{{count}}h ago",
+    "daysAgo": "{{count}}d ago",
+    "expired": "expired",
+    "inMinutes": "in {{count}}m",
+    "inHoursMinutes": "in {{hours}}h {{minutes}}m"
   }
 }

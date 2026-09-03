@@ -10,6 +10,7 @@
   "logout": "Log Out",
   "logoutAria": "Log out of CozyVTT",
   "viewProfile": "View {{name}}'s profile",
+  "yourAccountFallback": "your account",
   "yourCharacters": "Your Characters",
   "characterCount_one": "{{count}} character",
   "characterCount_other": "{{count}} characters",
