@@ -11,6 +11,7 @@ import { useId } from 'react';
 import { createPortal } from 'react-dom';
 import { motion, AnimatePresence } from 'framer-motion';
 import { X, type LucideIcon } from 'lucide-react';
+import { useTranslation } from 'react-i18next';
 import { useFocusTrap } from '@/hooks/useFocusTrap';
 import { cn } from '@/utils/cn';
 
@@ -56,6 +57,7 @@ export default function Modal({
   children,
 }: ModalProps) {
   const titleId = useId();
+  const { t } = useTranslation();
 
   const handleClose = () => {
     if (!closeDisabled) onClose();
@@ -121,7 +123,7 @@ export default function Modal({
                   className="p-2 rounded-lg hover:bg-ink/10 transition-colors
                              disabled:opacity-50 disabled:cursor-not-allowed
                              focus:outline-none focus:ring-2 focus:ring-brand"
-                  aria-label="Close dialog"
+                  aria-label={t('closeDialogAria')}
                 >
                   <X className="w-5 h-5 text-ink-muted" aria-hidden="true" />
                 </button>

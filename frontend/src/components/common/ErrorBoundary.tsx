@@ -107,7 +107,7 @@ export default class ErrorBoundary extends Component<Props, State> {
               target="_blank"
               rel="noopener noreferrer"
               className="btn-secondary flex items-center justify-center gap-2"
-              aria-label="Report this issue on GitHub (opens in new tab)"
+              aria-label={i18n.t('reportIssueAria')}
             >
               <ExternalLink className="w-4 h-4" aria-hidden="true" />
               {i18n.t('reportIssue')}
