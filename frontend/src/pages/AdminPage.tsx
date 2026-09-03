@@ -1484,7 +1484,7 @@ export default function AdminPage() {
                                         <div className="flex items-start gap-2 mb-3 p-2.5 bg-warning/10 border border-warning/30 rounded-lg text-xs text-warning-ink">
                                           <AlertCircle className="w-3.5 h-3.5 mt-0.5 flex-shrink-0 text-warning-ink" />
                                           <span dangerouslySetInnerHTML={{
-                                            __html: t('admin:users.deleteAssetWarning', { count: deletingUserAssetCount, context: deletingUserAssetCount === 1 ? '' : 'plural' })
+                                            __html: t('admin:users.deleteAssetWarning', { count: deletingUserAssetCount })
                                           }} />
                                         </div>
                                       )}

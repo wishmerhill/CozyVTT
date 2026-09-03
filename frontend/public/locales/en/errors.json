@@ -1,0 +1,62 @@
+{
+  "generic": {
+    "unknown": "An unknown error occurred",
+    "network": "Connection error. Check your internet connection.",
+    "timeout": "The request timed out. Please try again.",
+    "serverError": "Internal server error. Please try again later.",
+    "notFound": "Resource not found",
+    "unauthorized": "You don't have permission to access this resource",
+    "forbidden": "Access denied",
+    "validation": "Validation error",
+    "rateLimited": "Too many requests. Please try again later.",
+    "sessionExpired": "Session expired. Please log in again."
+  },
+  "auth": {
+    "invalidCredentials": "Invalid email or password",
+    "emailAlreadyExists": "This email is already registered",
+    "weakPassword": "Password too weak",
+    "passwordsDontMatch": "Passwords don't match",
+    "invalidToken": "Invalid or expired token",
+    "mfaRequired": "Two-factor authentication required",
+    "mfaInvalid": "Invalid MFA code",
+    "mfaSetupRequired": "MFA setup required",
+    "accountNotApproved": "Your account is awaiting approval",
+    "accountSuspended": "Account suspended",
+    "mustChangePassword": "You must change your password"
+  },
+  "campaign": {
+    "notFound": "Campaign not found",
+    "noPermission": "You don't have permission for this campaign",
+    "alreadyMember": "You're already a member of this campaign",
+    "invitationExpired": "Invitation expired",
+    "invitationInvalid": "Invalid invitation",
+    "maxMembers": "Maximum number of members reached",
+    "deleteFailed": "Failed to delete campaign"
+  },
+  "character": {
+    "notFound": "Character not found",
+    "noPermission": "You don't have permission to edit this character",
+    "deleteFailed": "Failed to delete character",
+    "saveFailed": "Failed to save character",
+    "invalidData": "Invalid character data"
+  },
+  "map": {
+    "notFound": "Map not found",
+    "noPermission": "You don't have permission to edit this map",
+    "deleteFailed": "Failed to delete map",
+    "saveFailed": "Failed to save map"
+  },
+  "asset": {
+    "notFound": "Asset not found",
+    "uploadFailed": "Upload failed",
+    "tooLarge": "The file exceeds the maximum size limit",
+    "invalidType": "Unsupported file type",
+    "deleteFailed": "Failed to delete asset",
+    "noPermission": "You don't have permission for this asset"
+  },
+  "websocket": {
+    "disconnected": "Connection lost. Reconnecting...",
+    "reconnected": "Reconnected to server",
+    "error": "WebSocket connection error"
+  }
+}

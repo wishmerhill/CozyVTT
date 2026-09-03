@@ -223,7 +223,7 @@ export default function CampaignImportDialog({
                 <div className="space-y-3 pt-2 border-t border-moss-green/10">
                   <div>
                     <label htmlFor="import-name" className="block text-sm font-semibold text-stone-gray mb-1">
-                      {t('campaign.name')}
+                      {t('name')}
                     </label>
                     <input
                       id="import-name"
@@ -273,7 +273,7 @@ export default function CampaignImportDialog({
                     className="flex-1 flex items-center justify-center gap-2 disabled:opacity-50 disabled:cursor-not-allowed"
                   >
                     <Upload className="w-4 h-4" />
-                    {t('campaign.create')}
+                    {t('create')}
                   </Button>
                 </div>
               </div>

@@ -165,7 +165,7 @@ export default function DashboardPage() {
                     <p className="text-sm text-warm-gray">
                       {loading
                         ? t('dashboard:loading')
-                        : t('dashboard:characterCount', { count: characters.length, plural: characters.length !== 1 ? 'i' : '' })}
+                        : t('dashboard:characterCount', { count: characters.length })}
                     </p>
                   </div>
                 </div>

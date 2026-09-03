@@ -271,7 +271,7 @@ export default function CampaignSettingsModal({
                         htmlFor="cs-name"
                         className="block text-sm font-semibold text-stone-gray mb-1.5"
                       >
-                        {t('campaign.name')} <span className="text-danger-ink">*</span>
+                        {t('name')} <span className="text-danger-ink">*</span>
                       </label>
                       <input
                         id="cs-name"
@@ -289,7 +289,7 @@ export default function CampaignSettingsModal({
                         htmlFor="cs-description"
                         className="block text-sm font-semibold text-stone-gray mb-1.5"
                       >
-                        {t('campaign.description')} <span className="text-warm-gray font-normal">({t('common:optional')})</span>
+                        {t('description')} <span className="text-warm-gray font-normal">({t('common:optional')})</span>
                       </label>
                       <textarea
                         id="cs-description"
@@ -630,8 +630,8 @@ export default function CampaignSettingsModal({
       {/* Remove member confirm dialog */}
       <ConfirmDialog
         isOpen={!!memberToRemove}
-        title={t('campaign.removePlayer')}
-        message={t('campaign.removePlayerConfirm', { name: memberToRemove?.user?.displayName ?? t('common:thisPlayer'), campaign: campaign.name })}
+        title={t('removePlayer')}
+        message={t('removePlayerConfirm', { name: memberToRemove?.user?.displayName ?? t('common:thisPlayer'), campaign: campaign.name })}
         confirmLabel={t('common:remove')}
         cancelLabel={t('common:cancel')}
         variant="danger"
@@ -644,7 +644,7 @@ export default function CampaignSettingsModal({
         isOpen={showDeleteConfirm}
         title={t('settings.deleteCampaign')}
         message={t('settings.deleteCampaignConfirm', { name: campaign.name })}
-        confirmLabel={t('campaign.deleteForever')}
+        confirmLabel={t('deleteForever')}
         cancelLabel={t('common:cancel')}
         variant="danger"
         isLoading={deletingCampaign}

@@ -62,10 +62,10 @@ export default class ErrorBoundary extends Component<Props, State> {
           {/* Heading */}
           <div>
             <h1 className="text-2xl font-bold text-brand-ink font-heading mb-2">
-              {i18n.t('common.somethingWentWrong')}
+              {i18n.t('somethingWentWrong')}
             </h1>
             <p className="text-sm text-warm-gray">
-              {i18n.t('common.errorDescription')}
+              {i18n.t('errorDescription')}
             </p>
           </div>
 
@@ -73,7 +73,7 @@ export default class ErrorBoundary extends Component<Props, State> {
           {this.state.error && (
             <details className="text-left bg-danger/10 border border-danger/30 rounded-lg p-4">
               <summary className="text-sm font-medium text-danger-ink cursor-pointer select-none">
-                {i18n.t('common.errorDetails')}
+                {i18n.t('errorDetails')}
               </summary>
               <pre className="mt-2 text-xs text-danger-ink overflow-x-auto whitespace-pre-wrap break-words">
                 {this.state.error.message}
@@ -91,7 +91,7 @@ export default class ErrorBoundary extends Component<Props, State> {
               variant="secondary" className="flex items-center justify-center gap-2"
             >
               <RefreshCcw className="w-4 h-4" aria-hidden="true" />
-              {i18n.t('common.tryAgain')}
+              {i18n.t('tryAgain')}
             </Button>
 
             <Button
@@ -99,7 +99,7 @@ export default class ErrorBoundary extends Component<Props, State> {
               className="flex items-center justify-center gap-2"
             >
               <RefreshCcw className="w-4 h-4" aria-hidden="true" />
-              {i18n.t('common.reloadPage')}
+              {i18n.t('reloadPage')}
             </Button>
 
             <a
@@ -110,7 +110,7 @@ export default class ErrorBoundary extends Component<Props, State> {
               aria-label="Report this issue on GitHub (opens in new tab)"
             >
               <ExternalLink className="w-4 h-4" aria-hidden="true" />
-              {i18n.t('common.reportIssue')}
+              {i18n.t('reportIssue')}
             </a>
           </div>
         </div>

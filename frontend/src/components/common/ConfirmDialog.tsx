@@ -66,8 +66,8 @@ export default function ConfirmDialog({
   }, [isLoading, onCancel]);
 
   const { t } = useTranslation();
-  const resolvedConfirm = confirmLabel ?? t('common.confirm');
-  const resolvedCancel = cancelLabel ?? t('common.cancel');
+  const resolvedConfirm = confirmLabel ?? t('confirm');
+  const resolvedCancel = cancelLabel ?? t('cancel');
   const { icon, iconBg, confirmClass } = VARIANT_CONFIG[variant];
 
   return (

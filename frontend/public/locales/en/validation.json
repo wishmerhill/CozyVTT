@@ -1,0 +1,39 @@
+{
+  "required": "This field is required",
+  "email": "Enter a valid email address",
+  "minLength": "This field must contain at least {{min}} characters",
+  "maxLength": "This field cannot exceed {{max}} characters",
+  "minValue": "The minimum value is {{min}}",
+  "maxValue": "The maximum value is {{max}}",
+  "password": {
+    "minLength": "Password must contain at least {{min}} characters",
+    "uppercase": "Password must contain at least one uppercase letter",
+    "lowercase": "Password must contain at least one lowercase letter",
+    "number": "Password must contain at least one number",
+    "special": "Password must contain at least one special character",
+    "match": "Passwords don't match",
+    "weak": "Weak password",
+    "medium": "Medium password",
+    "strong": "Strong password"
+  },
+  "name": {
+    "required": "Name is required",
+    "tooLong": "Name cannot exceed {{max}} characters"
+  },
+  "description": {
+    "tooLong": "Description cannot exceed {{max}} characters"
+  },
+  "url": "Enter a valid URL",
+  "number": "Enter a valid number",
+  "integer": "Enter a valid whole number",
+  "positive": "The value must be positive",
+  "fileSize": "The file cannot exceed {{max}}",
+  "fileType": "Unsupported file type. Accepted types: {{types}}",
+  "gridSize": "Grid size must be between {{min}} and {{max}} pixels",
+  "feetPerSquare": "The value must be between {{min}} and {{max}}",
+  "selectRequired": "Select an option",
+  "arrayMin": "Select at least {{min}} item(s)",
+  "arrayMax": "You can select at most {{max}} items",
+  "uniqueName": "An item with this name already exists",
+  "invalidFormat": "Invalid format"
+}
