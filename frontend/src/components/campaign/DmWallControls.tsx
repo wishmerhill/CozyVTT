@@ -58,6 +58,15 @@ const WALL_TYPE_COLORS: Record<WallType, string> = {
 
 const ALL_WALL_TYPES: WallType[] = ['wall', 'door-closed', 'door-open', 'door-locked', 'window'];
 
+/** i18next campaign.json uses camelCase keys under `walls.*`; WallType values are kebab-case. */
+const WALL_TYPE_I18N_KEY: Record<WallType, string> = {
+  'wall':        'wall',
+  'door-closed': 'doorClosed',
+  'door-open':   'doorOpen',
+  'door-locked': 'doorLocked',
+  'window':      'window',
+};
+
 export default function DmWallControls({
   wallMode,
   onWallModeChange,
@@ -233,9 +242,9 @@ export default function DmWallControls({
                         ? WALL_TYPE_COLORS[wt]
                         : 'bg-stone-700/50 text-stone-400 border-stone-600/50 hover:bg-stone-700'
                     }`}
-                    aria-label={`${t('walls.changeType')}: ${t(`walls.${wt}`)}`}
+                    aria-label={`${t('walls.changeType')}: ${t(`walls.${WALL_TYPE_I18N_KEY[wt]}`)}`}
                   >
-                    {t(`walls.${wt}`)}
+                    {t(`walls.${WALL_TYPE_I18N_KEY[wt]}`)}
                   </button>
                 ))}
               </div>
@@ -278,9 +287,9 @@ export default function DmWallControls({
                         ? WALL_TYPE_COLORS[wt]
                         : 'bg-stone-700/50 text-stone-400 border-stone-600/50 hover:bg-stone-700'
                     }`}
-                    aria-label={`${t('walls.drawType')}: ${t(`walls.${wt}`)}`}
+                    aria-label={`${t('walls.drawType')}: ${t(`walls.${WALL_TYPE_I18N_KEY[wt]}`)}`}
                   >
-                    {t(`walls.${wt}`)}
+                    {t(`walls.${WALL_TYPE_I18N_KEY[wt]}`)}
                   </button>
                 ))}
               </div>

@@ -18,9 +18,11 @@
   "success": "Operazione completata",
   "cancel": "Annulla",
   "save": "Salva",
+  "saveChanges": "Salva Modifiche",
   "delete": "Elimina",
   "edit": "Modifica",
   "create": "Crea",
+  "upload": "Carica",
   "close": "Chiudi",
   "confirm": "Conferma",
   "back": "Indietro",
@@ -184,6 +186,10 @@
     "light": "Chiaro",
     "dark": "Scuro",
     "system": "Di sistema"
+  },
+  "language": {
+    "label": "Lingua",
+    "selectAria": "Seleziona lingua"
   },
   "time": {
     "justNow": "Proprio ora",

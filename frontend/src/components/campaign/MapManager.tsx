@@ -233,7 +233,7 @@ function MapCard({
             type="button"
             onClick={() => onSetActive(map)}
             disabled={isActive || isSwitchingToThis}
-            title={isActive ? t('map.alreadyActive') : t('map.setAsActive')}
+            title={isActive ? t('map.alreadyActive') : t('map.setActive')}
             className={`flex-1 text-xs py-1.5 px-2 rounded-lg transition-colors flex items-center justify-center gap-1 ${
               isActive
                 ? 'bg-moss-green/10 text-brand-ink/50 cursor-not-allowed'

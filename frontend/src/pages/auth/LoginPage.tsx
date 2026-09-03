@@ -11,6 +11,7 @@ import { useAuth } from '@/contexts/AuthContext';
 import { isValidEmail } from '@/utils/validation';
 import { api } from '@/services/api';
 import Button from '@/components/ui/Button';
+import LanguageSelector from '@/components/common/LanguageSelector';
 
 export default function LoginPage() {
   const { t } = useTranslation(['auth', 'common']);
@@ -106,7 +107,10 @@ export default function LoginPage() {
   };
 
   return (
-    <div className="min-h-screen flex items-center justify-center bg-gradient-to-br from-soft-cream via-parchment to-warm-amber/20 px-4">
+    <div className="relative min-h-screen flex items-center justify-center bg-gradient-to-br from-soft-cream via-parchment to-warm-amber/20 px-4">
+      <div className="absolute top-4 right-4">
+        <LanguageSelector variant="compact" />
+      </div>
       <main id="main-content" className="glass-panel max-w-md w-full p-8 space-y-6">
         {/* Header */}
         <div className="text-center">

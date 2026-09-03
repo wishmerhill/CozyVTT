@@ -42,12 +42,12 @@ function CharacterCardInner({
     const diffMs = now.getTime() - date.getTime();
     const diffDays = Math.floor(diffMs / (1000 * 60 * 60 * 24));
 
-    if (diffDays === 0) return t('time.today');
-    if (diffDays === 1) return t('time.yesterday');
-    if (diffDays < 7) return t('time.daysAgo', { count: diffDays });
-    if (diffDays < 30) return t('time.weeksAgo', { count: Math.floor(diffDays / 7) });
-    if (diffDays < 365) return t('time.monthsAgo', { count: Math.floor(diffDays / 30) });
-    return t('time.yearsAgo', { count: Math.floor(diffDays / 365) });
+    if (diffDays === 0) return t('sheet.time.today');
+    if (diffDays === 1) return t('sheet.time.yesterday');
+    if (diffDays < 7) return t('sheet.time.daysAgo', { count: diffDays });
+    if (diffDays < 30) return t('sheet.time.weeksAgo', { count: Math.floor(diffDays / 7) });
+    if (diffDays < 365) return t('sheet.time.monthsAgo', { count: Math.floor(diffDays / 30) });
+    return t('sheet.time.yearsAgo', { count: Math.floor(diffDays / 365) });
   };
 
   // Handle card click — opens the sheet to read, not to edit. Editing is a

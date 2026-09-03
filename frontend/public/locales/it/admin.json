@@ -177,7 +177,9 @@
     "primaryColor": "Colore Primario",
     "accentColor": "Colore Accento",
     "backgroundColor": "Colore Sfondo",
-    "textColor": "Colore Testo"
+    "textColor": "Colore Testo",
+    "languageTitle": "Lingua dell'Interfaccia",
+    "languageDescription": "Cambia la lingua dell'interfaccia utente. Questa preferenza è personale e viene salvata solo su questo dispositivo."
   },
   "backups": {
     "title": "Backup dell'Istanza",

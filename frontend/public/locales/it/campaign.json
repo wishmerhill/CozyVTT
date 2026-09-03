@@ -18,6 +18,7 @@
   "settingsLabel": "Impostazioni Campagna",
   "removePlayer": "Rimuovi Giocatore",
   "removePlayerConfirm": "Rimuovere {{name}} da \"{{campaign}}\"? Perderà immediatamente l'accesso alla campagna.",
+  "thisPlayer": "questo giocatore",
   "deleteForever": "Elimina Definitivamente",
   "removeCharacter": "Rimuovi Personaggio",
   "removeCharacterConfirm": "Sei sicuro di voler rimuovere questo personaggio dalla campagna?",
@@ -470,7 +471,8 @@
     "importing": "Importazione campagna in corso...",
     "importingHint": "Questa operazione potrebbe richiedere alcuni secondi per archivi di grandi dimensioni.",
     "complete": "Importazione Completata!",
-    "failed": "Importazione Fallita"
+    "failed": "Importazione Fallita",
+    "open": "Apri Campagna"
   },
   "common": {
     "cancel": "Annulla",

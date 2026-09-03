@@ -18,6 +18,7 @@
   "settingsLabel": "Campaign Settings",
   "removePlayer": "Remove Player",
   "removePlayerConfirm": "Remove {{name}} from \"{{campaign}}\"? They will immediately lose access to the campaign.",
+  "thisPlayer": "this player",
   "deleteForever": "Delete Forever",
   "removeCharacter": "Remove Character",
   "removeCharacterConfirm": "Are you sure you want to remove this character from the campaign?",
@@ -470,7 +471,8 @@
     "importing": "Importing campaign...",
     "importingHint": "This may take a few seconds for large archives.",
     "complete": "Import Complete!",
-    "failed": "Import Failed"
+    "failed": "Import Failed",
+    "open": "Open Campaign"
   },
   "common": {
     "cancel": "Cancel",

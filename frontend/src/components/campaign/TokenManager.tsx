@@ -33,9 +33,9 @@ import AssetGrid from '@/components/assets/AssetGrid';
 // ============================================
 
 const SIZE_OPTIONS = [
-  { labelKey: 'size.smallMed', sublabel: '1×1', value: { width: 1, height: 1 } },
-  { labelKey: 'size.large', sublabel: '2×2', value: { width: 2, height: 2 } },
-  { labelKey: 'size.huge', sublabel: '3×3', value: { width: 3, height: 3 } },
+  { labelKey: 'token.size.smallMed', sublabel: '1×1', value: { width: 1, height: 1 } },
+  { labelKey: 'token.size.large', sublabel: '2×2', value: { width: 2, height: 2 } },
+  { labelKey: 'token.size.huge', sublabel: '3×3', value: { width: 3, height: 3 } },
 ];
 
 // ============================================

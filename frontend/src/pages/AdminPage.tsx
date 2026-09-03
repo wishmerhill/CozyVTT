@@ -76,6 +76,7 @@ import {
 import ThemePicker from '@/components/appearance/ThemePicker';
 import TableSkeleton from '@/components/skeletons/TableSkeleton';
 import ConfirmDialog from '@/components/common/ConfirmDialog';
+import LanguageSelector from '@/components/common/LanguageSelector';
 import Button from '@/components/ui/Button';
 
 // ============================================
@@ -465,12 +466,12 @@ export default function AdminPage() {
     try {
       const updated = await adminService.updateUser(u.id, { templateEditor: next });
       setUsers(prev => prev.map(x => x.id === u.id ? updated : x));
-      showToast(`${t('admin:templateEditor')} ${next ? t('common:enabled') : t('common:disabled')} — ${u.displayName}`, 'success');
+      showToast(`${t('admin:users.templateEditor')} ${next ? t('common:enabled') : t('common:disabled')} — ${u.displayName}`, 'success');
     } catch (err: unknown) {
       // Revert on error
       setUsers(prev => prev.map(x => x.id === u.id ? { ...x, templateEditor: !next } : x));
       const e = err as { response?: { data?: { message?: string } } };
-      showToast(e.response?.data?.message ?? t('admin:permissionUpdateFailed'), 'error');
+      showToast(e.response?.data?.message ?? t('admin:users.permissionUpdateFailed'), 'error');
     } finally {
       setTogglingTemplateEditor(null);
     }
@@ -484,12 +485,12 @@ export default function AdminPage() {
     try {
       const updated = await adminService.updateUser(u.id, { globalAssetManager: next });
       setUsers(prev => prev.map(x => x.id === u.id ? updated : x));
-      showToast(`${t('admin:globalAssets')} ${next ? t('common:enabled') : t('common:disabled')} — ${u.displayName}`, 'success');
+      showToast(`${t('admin:users.globalAssets')} ${next ? t('common:enabled') : t('common:disabled')} — ${u.displayName}`, 'success');
     } catch (err: unknown) {
       // Revert on error
       setUsers(prev => prev.map(x => x.id === u.id ? { ...x, globalAssetManager: !next } : x));
       const e = err as { response?: { data?: { message?: string } } };
-      showToast(e.response?.data?.message ?? t('admin:permissionUpdateFailed'), 'error');
+      showToast(e.response?.data?.message ?? t('admin:users.permissionUpdateFailed'), 'error');
     } finally {
       setTogglingGlobalAssets(null);
     }
@@ -503,7 +504,7 @@ export default function AdminPage() {
         : PlatformRole.ADMIN;
       const updated = await adminService.updateUser(u.id, { platformRole: newRole });
       setUsers(prev => prev.map(x => x.id === u.id ? updated : x));
-      showToast(`${t('admin:roleChanged')} ${newRole}`, 'success');
+      showToast(`${t('admin:users.roleChanged')} ${newRole}`, 'success');
     } catch (err: unknown) {
       const e = err as { response?: { data?: { message?: string } } };
       showToast(e.response?.data?.message ?? t('common:error'), 'error');
@@ -2115,6 +2116,17 @@ export default function AdminPage() {
                     }));
                   }}
                 />
+
+                {/* Language */}
+                <section className="glass-panel p-6 space-y-4">
+                  <div className="flex items-center gap-2 pb-2 border-b border-warm-gray/20">
+                    <Globe className="w-4 h-4 text-warm-amber" />
+                    <h3 className="font-semibold text-brand-ink text-sm">{t('admin:appearance.languageTitle')}</h3>
+                  </div>
+                  <p className="text-xs text-warm-gray">{t('admin:appearance.languageDescription')}</p>
+                  <LanguageSelector />
+                </section>
+
                 {/* Save Appearance */}
                 <div className="flex items-center gap-3">
                   {appearanceError && (

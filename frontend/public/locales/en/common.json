@@ -18,9 +18,11 @@
   "success": "Success",
   "cancel": "Cancel",
   "save": "Save",
+  "saveChanges": "Save Changes",
   "delete": "Delete",
   "edit": "Edit",
   "create": "Create",
+  "upload": "Upload",
   "close": "Close",
   "confirm": "Confirm",
   "back": "Back",
@@ -184,6 +186,10 @@
     "light": "Light",
     "dark": "Dark",
     "system": "System"
+  },
+  "language": {
+    "label": "Language",
+    "selectAria": "Select language"
   },
   "time": {
     "justNow": "Just now",

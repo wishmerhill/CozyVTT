@@ -509,7 +509,7 @@ export default function CampaignSettingsModal({
                                 <p className="text-sm font-semibold text-stone-gray truncate">
                                   {membership.user?.displayName ?? t('common:unknown')}
                                   {isSelf && (
-                                    <span className="ml-1.5 text-xs font-normal text-warm-gray">({t('common:you')})</span>
+                                    <span className="ml-1.5 text-xs font-normal text-warm-gray">({t('chat.you')})</span>
                                   )}
                                 </p>
                                 <p className="text-xs text-warm-gray truncate">
@@ -631,8 +631,8 @@ export default function CampaignSettingsModal({
       <ConfirmDialog
         isOpen={!!memberToRemove}
         title={t('removePlayer')}
-        message={t('removePlayerConfirm', { name: memberToRemove?.user?.displayName ?? t('common:thisPlayer'), campaign: campaign.name })}
-        confirmLabel={t('common:remove')}
+        message={t('removePlayerConfirm', { name: memberToRemove?.user?.displayName ?? t('thisPlayer'), campaign: campaign.name })}
+        confirmLabel={t('common:delete')}
         cancelLabel={t('common:cancel')}
         variant="danger"
         onConfirm={handleConfirmRemoveMember}

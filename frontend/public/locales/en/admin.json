@@ -177,7 +177,9 @@
     "primaryColor": "Primary Color",
     "accentColor": "Accent Color",
     "backgroundColor": "Background Color",
-    "textColor": "Text Color"
+    "textColor": "Text Color",
+    "languageTitle": "Interface Language",
+    "languageDescription": "Change the user interface language. This preference is personal and is saved only on this device."
   },
   "backups": {
     "title": "Instance Backups",

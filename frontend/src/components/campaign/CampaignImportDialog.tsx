@@ -321,7 +321,7 @@ export default function CampaignImportDialog({
                     }}
                     className="flex-1"
                   >
-                    {t('campaign.open')}
+                    {t('import.open')}
                   </Button>
                 </div>
               </div>
