@@ -9,6 +9,7 @@ import { AuthProvider, useAuth } from '@/contexts/AuthContext';
 import { ToastProvider } from '@/contexts/ToastContext';
 import { ThemeProvider, useTheme } from '@/contexts/ThemeContext';
 import ThemeSyncBridge from '@/contexts/ThemeSyncBridge';
+import { I18nProvider } from '@/i18n/I18nProvider';
 import { PlatformRole } from '@/types/user.types';
 import ProtectedRoute from '@/components/ProtectedRoute';
 import ErrorBoundary from '@/components/common/ErrorBoundary';
@@ -61,6 +62,7 @@ function App() {
       <MotionConfig reducedMotion="user">
       <QueryClientProvider client={queryClient}>
       <ThemeProvider>
+      <I18nProvider>
       <ToastProvider>
         <AuthProvider>
           {/* Sync per-user theme prefs with auth state */}
@@ -168,6 +170,7 @@ function App() {
           </div>
         </AuthProvider>
       </ToastProvider>
+      </I18nProvider>
       </ThemeProvider>
       </QueryClientProvider>
       </MotionConfig>

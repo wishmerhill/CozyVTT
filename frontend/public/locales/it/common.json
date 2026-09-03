@@ -1,0 +1,68 @@
+{
+  "app": {
+    "name": "CozyVTT",
+    "tagline": "Un Tavolo Virtuale self-hosted per campagne accoglienti e basate sulla narrazione"
+  },
+  "nav": {
+    "dashboard": "Dashboard",
+    "campaigns": "Campagne",
+    "characters": "Personaggi",
+    "assets": "Libreria Risorse",
+    "characterTemplates": "Modelli Personaggio",
+    "profile": "Profilo",
+    "admin": "Amministrazione",
+    "signOut": "Esci"
+  },
+  "common": {
+    "loading": "Caricamento...",
+    "error": "Errore",
+    "success": "Operazione completata",
+    "cancel": "Annulla",
+    "save": "Salva",
+    "delete": "Elimina",
+    "edit": "Modifica",
+    "create": "Crea",
+    "close": "Chiudi",
+    "confirm": "Conferma",
+    "back": "Indietro",
+    "next": "Avanti",
+    "search": "Cerca",
+    "filter": "Filtra",
+    "noResults": "Nessun risultato trovato",
+    "required": "Campo obbligatorio",
+    "optional": "Opzionale",
+    "yes": "Sì",
+    "no": "No",
+    "or": "oppure",
+    "and": "e",
+    "all": "Tutti",
+    "none": "Nessuno",
+    "unknown": "Sconosciuto",
+    "enabled": "Attivato",
+    "disabled": "Disattivato",
+    "on": "Attivo",
+    "off": "Spento",
+    "show": "Mostra",
+    "hide": "Nascondi",
+    "more": "Altro",
+    "less": "Meno",
+    "retry": "Riprova",
+    "goBack": "Torna indietro",
+    "pageNotFound": "Pagina non trovata",
+    "pageNotFoundDesc": "La pagina che stai cercando non esiste.",
+    "skipToContent": "Salta al contenuto principale"
+  },
+  "theme": {
+    "light": "Chiaro",
+    "dark": "Scuro",
+    "system": "Di sistema"
+  },
+  "time": {
+    "justNow": "Proprio ora",
+    "minutesAgo": "{minutes} minuti fa",
+    "hoursAgo": "{hours} ore fa",
+    "daysAgo": "{days} giorni fa",
+    "today": "Oggi",
+    "yesterday": "Ieri"
+  }
+}

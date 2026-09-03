@@ -1,0 +1,113 @@
+{
+  "admin": {
+    "title": "Pannello di Amministrazione",
+    "dashboard": "Dashboard Admin",
+    "settings": "Impostazioni",
+    "users": "Utenti",
+    "logs": "Log di Sistema",
+    "backups": "Backup",
+    "config": "Configurazione Server"
+  },
+  "stats": {
+    "title": "Statistiche",
+    "totalUsers": "Utenti Totali",
+    "totalCampaigns": "Campagne Totali",
+    "activeCampaigns": "Campagne Attive",
+    "activeSessions": "Sessioni Attive",
+    "totalCharacters": "Personaggi Totali",
+    "totalMaps": "Mappe Totali",
+    "totalStorage": "Spazio Occupato",
+    "assetBreakdown": "Ripartizione Risorse"
+  },
+  "settings": {
+    "title": "Impostazioni Istanza",
+    "instanceName": "Nome Istanza",
+    "timezone": "Fuso Orario",
+    "allowRegistration": "Permetti Registrazione",
+    "requireAdminApproval": "Richiedi Approvazione Admin",
+    "save": "Salva Impostazioni",
+    "success": "Impostazioni salvate con successo",
+    "error": "Errore nel salvare le impostazioni"
+  },
+  "appearance": {
+    "title": "Aspetto",
+    "theme": "Tema Predefinito",
+    "font": "Carattere",
+    "customLogo": "Logo Personalizzato",
+    "customFavicon": "Favicon Personalizzata",
+    "customMascot": "Mascotte Personalizzata",
+    "customColors": "Colori Personalizzati",
+    "primaryColor": "Colore Primario",
+    "accentColor": "Colore Accento",
+    "backgroundColor": "Colore Sfondo",
+    "textColor": "Colore Testo"
+  },
+  "users": {
+    "title": "Gestione Utenti",
+    "email": "Email",
+    "displayName": "Nome Visualizzato",
+    "role": "Ruolo",
+    "status": "Stato",
+    "lastLogin": "Ultimo Accesso",
+    "approved": "Approvato",
+    "pending": "In Attesa",
+    "approve": "Approva",
+    "suspend": "Sospendi",
+    "delete": "Elimina Utente",
+    "makeAdmin": "Rendi Admin",
+    "removeAdmin": "Rimuovi Admin",
+    "deleteConfirm": "Sei sicuro di voler eliminare questo utente?",
+    "noUsers": "Nessun utente trovato"
+  },
+  "logs": {
+    "title": "Log di Sistema",
+    "level": "Livello",
+    "message": "Messaggio",
+    "userId": "ID Utente",
+    "campaignId": "ID Campagna",
+    "timestamp": "Data/Ora",
+    "info": "Info",
+    "warning": "Avviso",
+    "error": "Errore",
+    "critical": "Critico",
+    "noLogs": "Nessun log trovato",
+    "clear": "Pulisci Log",
+    "clearConfirm": "Cancellare tutti i log?"
+  },
+  "backups": {
+    "title": "Backup",
+    "create": "Crea Backup",
+    "restore": "Ripristina",
+    "download": "Scarica",
+    "delete": "Elimina Backup",
+    "filename": "Nome File",
+    "size": "Dimensione",
+    "created": "Creato il",
+    "noBackups": "Nessun backup trovato",
+    "createSuccess": "Backup creato con successo",
+    "restoreConfirm": "Ripristinare questo backup? I dati correnti verranno sovrascritti.",
+    "deleteConfirm": "Eliminare questo backup?"
+  },
+  "config": {
+    "title": "Configurazione Server",
+    "uploadLimits": "Limiti di Upload",
+    "sessionTimeout": "Timeout Sessione (ms)",
+    "rememberMeTimeout": "Timeout Ricordami (ms)",
+    "smtp": "Configurazione SMTP",
+    "smtpHost": "Host SMTP",
+    "smtpPort": "Porta SMTP",
+    "smtpUser": "Utente SMTP",
+    "smtpSecure": "SMTP Sicuro (TLS)",
+    "save": "Salva Configurazione",
+    "success": "Configurazione salvata con successo",
+    "error": "Errore nel salvare la configurazione"
+  },
+  "onlineUsers": {
+    "title": "Utenti Online",
+    "noUsers": "Nessun utente online"
+  },
+  "recentActivity": {
+    "title": "Attività Recente",
+    "noActivity": "Nessuna attività recente"
+  }
+}
