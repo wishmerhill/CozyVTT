@@ -26,6 +26,9 @@ export interface LightingDrawState {
   enabledLights: readonly LightSource[];
   /** Precomputed via computeVisionState — order must match inputs. */
   tokenVision: readonly VisionSource[];
+  /** Walls-only line of sight (no distance cap) — gates light-source
+   *  visibility independently of tokenVision's capped sight radius. */
+  tokenLOS: readonly VisionSource[];
   lightVision: readonly VisionSource[];
   /** Darkvision polygons for tokens with darkvisionRadius set. */
   darkvision: readonly VisionSource[];
@@ -93,8 +96,45 @@ export function drawDynamicLighting(
     }
   }
 
-  // Light sources → clipped to visibility polygon for wall shadows.
-  // Dim circle at α 0.5; bright circle adds another α 0.5 on top.
+  // Raster mask of the token's walls-only line of sight (tokenLOS, no
+  // distance cap) — NOT tokenVision, which is capped to sightRadius. A
+  // light in the same room but beyond that short unaided-sight radius
+  // must still glow on its own as long as no wall blocks it; masking
+  // against the capped dome instead would silently swallow every light
+  // outside it. Built as a raster (not a `clip()` intersected with each
+  // light's own poly) because chaining two `clip()` paths on one context
+  // replaces the clip region with their intersection — if either path
+  // contributes zero subpaths (no owned token yet, or the polygons don't
+  // line up pixel-for-pixel) the region silently collapses to nothing and
+  // every light using it goes dark with no visible error. Multiplying two
+  // separately-rasterized alpha layers via 'destination-in' degrades
+  // gracefully instead: partial overlap yields partial light, not a
+  // blackout.
+  const visionMask = document.createElement('canvas');
+  visionMask.width = mapWidthPx;
+  visionMask.height = mapHeightPx;
+  const losMaskCtx = visionMask.getContext('2d')!;
+  losMaskCtx.fillStyle = 'rgba(255, 255, 255, 1)';
+  for (const { poly } of state.tokenLOS) {
+    if (poly.points.length >= 3) {
+      losMaskCtx.beginPath();
+      losMaskCtx.moveTo(poly.points[0].x, poly.points[0].y);
+      for (let i = 1; i < poly.points.length; i++) {
+        losMaskCtx.lineTo(poly.points[i].x, poly.points[i].y);
+      }
+      losMaskCtx.closePath();
+      losMaskCtx.fill();
+    }
+  }
+
+  // Light sources → own raycasted polygon for wall shadows, then masked
+  // to the player's field of view. Dim circle at α 0.5; bright circle
+  // adds another α 0.5 on top.
+  const lightScratch = document.createElement('canvas');
+  lightScratch.width = mapWidthPx;
+  lightScratch.height = mapHeightPx;
+  const scratchCtx = lightScratch.getContext('2d')!;
+
   for (let li = 0; li < state.enabledLights.length; li++) {
     const light = state.enabledLights[li];
     const poly = state.lightVision[li]?.poly;
@@ -102,43 +142,42 @@ export function drawDynamicLighting(
 
     const dimRadiusPx = light.dimRadius * viewport.gridSize;
     const brightRadiusPx = light.brightRadius * viewport.gridSize;
+    if (dimRadiusPx <= 0 && brightRadiusPx <= 0) continue;
 
-    covCtx.save();
-    // Clip to the light's own raycasted polygon (wall shadows).
-    covCtx.beginPath();
-    covCtx.moveTo(poly.points[0].x, poly.points[0].y);
+    scratchCtx.clearRect(0, 0, mapWidthPx, mapHeightPx);
+    scratchCtx.save();
+    // Clip to the light's own raycasted polygon (wall shadows) only —
+    // a single clip, never nested with another source's path.
+    scratchCtx.beginPath();
+    scratchCtx.moveTo(poly.points[0].x, poly.points[0].y);
     for (let i = 1; i < poly.points.length; i++) {
-      covCtx.lineTo(poly.points[i].x, poly.points[i].y);
+      scratchCtx.lineTo(poly.points[i].x, poly.points[i].y);
     }
-    covCtx.closePath();
-    covCtx.clip();
-    // Also clip to the player's field of view so lights don't reveal
-    // areas through walls that the player cannot see.
-    covCtx.beginPath();
-    for (const { poly: tvPoly } of state.tokenVision) {
-      if (tvPoly.points.length >= 3) {
-        covCtx.moveTo(tvPoly.points[0].x, tvPoly.points[0].y);
-        for (let i = 1; i < tvPoly.points.length; i++) {
-          covCtx.lineTo(tvPoly.points[i].x, tvPoly.points[i].y);
-        }
-        covCtx.closePath();
-      }
-    }
-    covCtx.clip();
+    scratchCtx.closePath();
+    scratchCtx.clip();
 
+    scratchCtx.fillStyle = 'rgba(255, 255, 255, 0.5)';
     if (dimRadiusPx > 0) {
-      covCtx.fillStyle = 'rgba(255, 255, 255, 0.5)';
-      covCtx.beginPath();
-      covCtx.arc(light.x, light.y, dimRadiusPx, 0, Math.PI * 2);
-      covCtx.fill();
+      scratchCtx.beginPath();
+      scratchCtx.arc(light.x, light.y, dimRadiusPx, 0, Math.PI * 2);
+      scratchCtx.fill();
     }
     if (brightRadiusPx > 0) {
-      covCtx.fillStyle = 'rgba(255, 255, 255, 0.5)';
-      covCtx.beginPath();
-      covCtx.arc(light.x, light.y, brightRadiusPx, 0, Math.PI * 2);
-      covCtx.fill();
+      scratchCtx.beginPath();
+      scratchCtx.arc(light.x, light.y, brightRadiusPx, 0, Math.PI * 2);
+      scratchCtx.fill();
     }
-    covCtx.restore();
+    scratchCtx.restore();
+
+    // Mask to the player's actual field of view — a light behind a wall
+    // the player can't see around must not reveal anything, even where
+    // its own raycast polygon geometrically reaches that area.
+    scratchCtx.globalCompositeOperation = 'destination-in';
+    scratchCtx.drawImage(visionMask, 0, 0);
+    scratchCtx.globalCompositeOperation = 'source-over';
+
+    // Add this light's masked contribution (still under 'lighter').
+    covCtx.drawImage(lightScratch, 0, 0);
   }
   covCtx.globalCompositeOperation = 'source-over';
 
@@ -230,54 +269,69 @@ export function drawDynamicLighting(
   }
 
   // Two-zone light glow: bright inner + dim outer. Additive compositing
-  // lets overlapping dim zones read as bright.
+  // lets overlapping dim zones read as bright. Same raster-mask approach
+  // as the coverage pass above: each light's bloom is drawn on the shared
+  // scratch canvas, clipped only to its own poly, then masked to the
+  // player's field of view via 'destination-in' before being composited
+  // onto the main canvas — never two chained clip() calls on one context.
   ctx.globalCompositeOperation = 'lighter';
 
-  // Clip light glows to player's field of view so they don't bleed
-  // through walls into adjacent rooms.
-  ctx.beginPath();
-  for (const { poly } of state.tokenVision) {
-    if (poly.points.length >= 3) {
-      ctx.moveTo(poly.points[0].x, poly.points[0].y);
-      for (let i = 1; i < poly.points.length; i++) {
-        ctx.lineTo(poly.points[i].x, poly.points[i].y);
-      }
-      ctx.closePath();
-    }
-  }
-  ctx.clip();
+  for (let li = 0; li < state.enabledLights.length; li++) {
+    const light = state.enabledLights[li];
+    const lightPoly = state.lightVision[li]?.poly;
+    if (!lightPoly || lightPoly.points.length < 3) continue;
 
-  for (const light of state.enabledLights) {
     const brightPx = light.brightRadius * viewport.gridSize;
     const dimPx = light.dimRadius * viewport.gridSize;
+    if (brightPx <= 0 && dimPx <= brightPx) continue;
     const r = parseInt(light.color.slice(1, 3), 16);
     const g = parseInt(light.color.slice(3, 5), 16);
     const b = parseInt(light.color.slice(5, 7), 16);
 
+    scratchCtx.clearRect(0, 0, mapWidthPx, mapHeightPx);
+    scratchCtx.save();
+    // Clip to the light's own raycasted polygon only — wall shadows.
+    scratchCtx.beginPath();
+    scratchCtx.moveTo(lightPoly.points[0].x, lightPoly.points[0].y);
+    for (let i = 1; i < lightPoly.points.length; i++) {
+      scratchCtx.lineTo(lightPoly.points[i].x, lightPoly.points[i].y);
+    }
+    scratchCtx.closePath();
+    scratchCtx.clip();
+
     if (brightPx > 0) {
-      const brightGlow = ctx.createRadialGradient(
+      const brightGlow = scratchCtx.createRadialGradient(
         light.x, light.y, 0, light.x, light.y, brightPx
       );
       brightGlow.addColorStop(0, `rgba(${r}, ${g}, ${b}, 0.12)`);
       brightGlow.addColorStop(0.7, `rgba(${r}, ${g}, ${b}, 0.06)`);
       brightGlow.addColorStop(1, `rgba(${r}, ${g}, ${b}, 0)`);
-      ctx.fillStyle = brightGlow;
-      ctx.beginPath();
-      ctx.arc(light.x, light.y, brightPx, 0, Math.PI * 2);
-      ctx.fill();
+      scratchCtx.fillStyle = brightGlow;
+      scratchCtx.beginPath();
+      scratchCtx.arc(light.x, light.y, brightPx, 0, Math.PI * 2);
+      scratchCtx.fill();
     }
 
     if (dimPx > brightPx) {
-      const dimGlow = ctx.createRadialGradient(
+      const dimGlow = scratchCtx.createRadialGradient(
         light.x, light.y, brightPx * 0.8, light.x, light.y, dimPx
       );
       dimGlow.addColorStop(0, `rgba(${r}, ${g}, ${b}, 0.05)`);
       dimGlow.addColorStop(1, `rgba(${r}, ${g}, ${b}, 0)`);
-      ctx.fillStyle = dimGlow;
-      ctx.beginPath();
-      ctx.arc(light.x, light.y, dimPx, 0, Math.PI * 2);
-      ctx.fill();
+      scratchCtx.fillStyle = dimGlow;
+      scratchCtx.beginPath();
+      scratchCtx.arc(light.x, light.y, dimPx, 0, Math.PI * 2);
+      scratchCtx.fill();
     }
+    scratchCtx.restore();
+
+    // Mask to the player's field of view so the bloom can't bleed through
+    // a wall into an adjacent room the token also happens to see into.
+    scratchCtx.globalCompositeOperation = 'destination-in';
+    scratchCtx.drawImage(visionMask, 0, 0);
+    scratchCtx.globalCompositeOperation = 'source-over';
+
+    ctx.drawImage(lightScratch, 0, 0);
   }
   ctx.globalCompositeOperation = 'source-over';
   ctx.restore();

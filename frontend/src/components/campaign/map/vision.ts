@@ -28,6 +28,15 @@ export interface VisionSource {
 export interface VisionState {
   /** One entry per viewer-controlled token (sight radius applied). */
   tokenVision: VisionSource[];
+  /** One entry per viewer-controlled token: walls-only line of sight, no
+   *  distance cap. Used to gate light sources — a light in the same room
+   *  but beyond the token's short unaided sightRadius must still show its
+   *  own glow as long as no wall blocks it, per D&D 5e (unaided sight
+   *  isn't distance-limited when something is actually lit; sightRadius
+   *  here only bounds how far darkness itself can be pierced). Keeping
+   *  this separate from tokenVision means the base "no light needed" dome
+   *  stays radius-capped while light visibility does not. */
+  tokenLOS: VisionSource[];
   /** One entry per enabled light source (dim radius applied). */
   lightVision: VisionSource[];
   /** Darkvision polygons for tokens that have darkvisionRadius set.
@@ -68,6 +77,14 @@ export function computeVisionState(
     return { poly, cx, cy };
   });
 
+  // Walls-only LOS (radius 0 = unlimited, per computeVisibility) — gates
+  // light-source visibility independently of the token's capped sight dome.
+  const tokenLOS: VisionSource[] = myTokens.map((token) => {
+    const { cx, cy } = tokenSource(token, viewport);
+    const poly = computeVisibility({ x: cx, y: cy }, wallSegments as WallSegment[], mapWidthPx, mapHeightPx, 0);
+    return { poly, cx, cy };
+  });
+
   const lightVision: VisionSource[] = enabledLights.map((light) => {
     const dimRadiusPx = light.dimRadius * viewport.gridSize;
     const poly = computeVisibility({ x: light.x, y: light.y }, wallSegments as WallSegment[], mapWidthPx, mapHeightPx, dimRadiusPx);
@@ -89,7 +106,7 @@ export function computeVisionState(
       return { poly, cx, cy };
     });
 
-  return { tokenVision, lightVision, darkvision, all: [...tokenVision, ...lightVision] };
+  return { tokenVision, tokenLOS, lightVision, darkvision, all: [...tokenVision, ...lightVision] };
 }
 
 /**
@@ -125,6 +142,7 @@ interface CachedSource {
 export function createVisionCache(): VisionCache {
   let lastWalls: readonly WallSegment[] | null = null;
   const tokenCache = new Map<string, CachedSource>();
+  const losCache = new Map<string, CachedSource>();
   const lightCache = new Map<string, CachedSource>();
   const darkvisionCache = new Map<string, CachedSource>();
 
@@ -135,6 +153,7 @@ export function createVisionCache(): VisionCache {
       // Any wall mutation (or a map switch) replaces the array reference.
       if (wallSegments !== lastWalls) {
         tokenCache.clear();
+        losCache.clear();
         lightCache.clear();
         darkvisionCache.clear();
         lastWalls = wallSegments;
@@ -152,6 +171,21 @@ export function createVisionCache(): VisionCache {
         return src;
       });
       for (const id of tokenCache.keys()) if (!seenTokens.has(id)) tokenCache.delete(id);
+
+      // Walls-only LOS (unlimited radius) — cached per token id, keyed on
+      // position only since the radius is always 0/unlimited.
+      const seenLOS = new Set<string>();
+      const tokenLOS: VisionSource[] = myTokens.map((token) => {
+        const { cx, cy } = tokenSource(token, viewport);
+        seenLOS.add(token.id);
+        const hit = losCache.get(token.id);
+        if (hit && hit.x === cx && hit.y === cy) return hit.src;
+        const poly = computeVisibility({ x: cx, y: cy }, wallSegments as WallSegment[], mapWidthPx, mapHeightPx, 0);
+        const src: VisionSource = { poly, cx, cy };
+        losCache.set(token.id, { x: cx, y: cy, r: 0, src });
+        return src;
+      });
+      for (const id of losCache.keys()) if (!seenLOS.has(id)) losCache.delete(id);
 
       const seenLights = new Set<string>();
       const lightVision: VisionSource[] = enabledLights.map((light) => {
@@ -187,7 +221,7 @@ export function createVisionCache(): VisionCache {
         });
       for (const id of darkvisionCache.keys()) if (!seenDv.has(id)) darkvisionCache.delete(id);
 
-      return { tokenVision, lightVision, darkvision, all: [...tokenVision, ...lightVision] };
+      return { tokenVision, tokenLOS, lightVision, darkvision, all: [...tokenVision, ...lightVision] };
     },
   };
 }

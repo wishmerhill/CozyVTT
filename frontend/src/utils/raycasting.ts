@@ -44,7 +44,12 @@ function raySegmentIntersect(
   const t = ((ax - ox) * (by - ay) - (ay - oy) * (bx - ax)) / denom;
   const u = ((ax - ox) * dy - (ay - oy) * dx) / denom;
 
-  if (t < 0 || u < 0 || u > 1) return null;
+  // A tiny positive epsilon (not just t < 0) guards against a source placed
+  // exactly on — or a hair's breadth from — a wall segment: floating-point
+  // rounding can put that segment's intersection at t≈0, which would
+  // otherwise truncate every ray leaving the source and collapse its whole
+  // visibility polygon onto its own position (a light that emits nothing).
+  if (t < 1e-4 || u < 0 || u > 1) return null;
   return { t, u };
 }
 
