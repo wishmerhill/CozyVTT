@@ -3,6 +3,7 @@
  */
 
 import React from 'react';
+import { useTranslation } from 'react-i18next';
 import { Plus, Trash2 } from 'lucide-react';
 import type { TableSection } from '../../../../../types/flexible-character-sheet';
 import { generateId } from '../../utils/section-helpers';
@@ -13,6 +14,8 @@ interface TableEditorProps {
 }
 
 export const TableEditor: React.FC<TableEditorProps> = ({ section, onUpdate }) => {
+  const { t } = useTranslation('character');
+
   const addColumn = () => {
     const newColumn = {
       id: generateId(),
@@ -78,13 +81,13 @@ export const TableEditor: React.FC<TableEditorProps> = ({ section, onUpdate }) =
                     value={column.name}
                     onChange={(e) => updateColumnName(column.id, e.target.value)}
                     className="flex-1 bg-transparent border-b border-moss-green/30 focus:border-moss-green focus:outline-none text-sm font-semibold text-brand-ink"
-                    placeholder="Column name"
+                    placeholder={t('sheet.flexible.columnNamePlaceholder')}
                   />
                   {section.columns.length > 1 && (
                     <button
                       onClick={() => removeColumn(column.id)}
                       className="p-1 rounded bg-red-50 text-red-600 opacity-0 group-hover:opacity-100 transition-opacity hover:bg-red-100"
-                      title="Remove column"
+                      title={t('sheet.flexible.removeColumn')}
                     >
                       <Trash2 className="w-3 h-3" />
                     </button>
@@ -96,7 +99,7 @@ export const TableEditor: React.FC<TableEditorProps> = ({ section, onUpdate }) =
               <button
                 onClick={addColumn}
                 className="p-1 rounded bg-moss-green/10 text-brand-ink hover:bg-moss-green/20"
-                title="Add column"
+                title={t('sheet.flexible.addColumn')}
               >
                 <Plus className="w-4 h-4" />
               </button>
@@ -126,7 +129,7 @@ export const TableEditor: React.FC<TableEditorProps> = ({ section, onUpdate }) =
                 <button
                   onClick={() => removeRow(row.id)}
                   className="p-1 rounded bg-red-50 text-red-600 opacity-0 group-hover:opacity-100 transition-opacity hover:bg-red-100"
-                  title="Remove row"
+                  title={t('sheet.flexible.removeRow')}
                 >
                   <Trash2 className="w-3 h-3" />
                 </button>
@@ -141,7 +144,7 @@ export const TableEditor: React.FC<TableEditorProps> = ({ section, onUpdate }) =
         className="flex items-center gap-2 px-4 py-2 bg-moss-green/10 text-brand-ink rounded-lg hover:bg-moss-green/20 transition-colors w-full justify-center"
       >
         <Plus className="w-4 h-4" />
-        Add Row
+        {t('sheet.flexible.addRow')}
       </button>
     </div>
   );

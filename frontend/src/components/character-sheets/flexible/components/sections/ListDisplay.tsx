@@ -3,6 +3,7 @@
  */
 
 import React from 'react';
+import { useTranslation } from 'react-i18next';
 import { CheckCircle2, Circle } from 'lucide-react';
 import type { ListSection } from '../../../../../types/flexible-character-sheet';
 
@@ -11,10 +12,12 @@ interface ListDisplayProps {
 }
 
 export const ListDisplay: React.FC<ListDisplayProps> = ({ section }) => {
+  const { t } = useTranslation('character');
+
   if (section.items.length === 0) {
     return (
       <div className="p-4 text-center text-stone-gray">
-        No items in this list. Switch to edit mode to add items.
+        {t('sheet.flexible.noItemsList')}
       </div>
     );
   }

@@ -6,6 +6,7 @@
  */
 
 import React, { useState, useEffect, useRef } from 'react';
+import { useTranslation } from 'react-i18next';
 import {
   Swords,
   Package,
@@ -44,30 +45,46 @@ interface Tab {
   icon: React.ElementType;
 }
 
-const TABS: Tab[] = [
-  { id: 'stats', label: 'Stats & Skills', icon: Target },
-  { id: 'combat', label: 'Combat', icon: Swords },
-  { id: 'spells', label: 'Spells', icon: Sparkles },
-  { id: 'inventory', label: 'Inventory', icon: Package },
-  { id: 'features', label: 'Features', icon: BookOpen },
-  { id: 'bio', label: 'Biography', icon: User },
+// Tab labels are looked up from `sheet.*` at render time since this is a
+// module-level constant without access to `t`.
+const getTabs = (t: (key: string) => string): Tab[] => [
+  { id: 'stats', label: t('sheet.statsAndSkills'), icon: Target },
+  { id: 'combat', label: t('sheet.combat'), icon: Swords },
+  { id: 'spells', label: t('sheet.spells'), icon: Sparkles },
+  { id: 'inventory', label: t('sheet.inventory'), icon: Package },
+  { id: 'features', label: t('sheet.features'), icon: BookOpen },
+  { id: 'bio', label: t('sheet.bio'), icon: User },
 ];
 
-// D&D 5e color presets for character sheets
+// D&D 5e color presets for character sheets.
+// `name` is also the stored value (character.data.themeColor) matched against
+// on load, so it stays a stable English identifier; `labelKey` looks up the
+// translated label shown in the picker UI.
 const COLOR_PRESETS = [
-  { name: 'Classic Red', from: 'from-red-700', to: 'to-red-900', accent: 'red-700', hex: '#b91c1c' },
-  { name: 'Royal Blue', from: 'from-blue-700', to: 'to-blue-900', accent: 'blue-700', hex: '#1d4ed8' },
-  { name: 'Forest Green', from: 'from-green-700', to: 'to-green-900', accent: 'green-700', hex: '#15803d' },
-  { name: 'Deep Purple', from: 'from-purple-700', to: 'to-purple-900', accent: 'purple-700', hex: '#7e22ce' },
-  { name: 'Amber Gold', from: 'from-amber-600', to: 'to-amber-800', accent: 'amber-600', hex: '#d97706' },
-  { name: 'Slate Gray', from: 'from-slate-700', to: 'to-slate-900', accent: 'slate-700', hex: '#334155' },
-  { name: 'Crimson', from: 'from-rose-700', to: 'to-rose-900', accent: 'rose-700', hex: '#be123c' },
-  { name: 'Teal', from: 'from-teal-700', to: 'to-teal-900', accent: 'teal-700', hex: '#0f766e' },
-  { name: 'Indigo', from: 'from-indigo-700', to: 'to-indigo-900', accent: 'indigo-700', hex: '#4338ca' },
-  { name: 'Emerald', from: 'from-emerald-700', to: 'to-emerald-900', accent: 'emerald-700', hex: '#047857' },
-  { name: 'Orange', from: 'from-orange-700', to: 'to-orange-900', accent: 'orange-700', hex: '#c2410c' },
-  { name: 'Pink', from: 'from-pink-700', to: 'to-pink-900', accent: 'pink-700', hex: '#be185d' },
+  { name: 'Classic Red', labelKey: 'classicRed', from: 'from-red-700', to: 'to-red-900', accent: 'red-700', hex: '#b91c1c' },
+  { name: 'Royal Blue', labelKey: 'royalBlue', from: 'from-blue-700', to: 'to-blue-900', accent: 'blue-700', hex: '#1d4ed8' },
+  { name: 'Forest Green', labelKey: 'forestGreen', from: 'from-green-700', to: 'to-green-900', accent: 'green-700', hex: '#15803d' },
+  { name: 'Deep Purple', labelKey: 'deepPurple', from: 'from-purple-700', to: 'to-purple-900', accent: 'purple-700', hex: '#7e22ce' },
+  { name: 'Amber Gold', labelKey: 'amberGold', from: 'from-amber-600', to: 'to-amber-800', accent: 'amber-600', hex: '#d97706' },
+  { name: 'Slate Gray', labelKey: 'slateGray', from: 'from-slate-700', to: 'to-slate-900', accent: 'slate-700', hex: '#334155' },
+  { name: 'Crimson', labelKey: 'crimson', from: 'from-rose-700', to: 'to-rose-900', accent: 'rose-700', hex: '#be123c' },
+  { name: 'Teal', labelKey: 'teal', from: 'from-teal-700', to: 'to-teal-900', accent: 'teal-700', hex: '#0f766e' },
+  { name: 'Indigo', labelKey: 'indigo', from: 'from-indigo-700', to: 'to-indigo-900', accent: 'indigo-700', hex: '#4338ca' },
+  { name: 'Emerald', labelKey: 'emerald', from: 'from-emerald-700', to: 'to-emerald-900', accent: 'emerald-700', hex: '#047857' },
+  { name: 'Orange', labelKey: 'orange', from: 'from-orange-700', to: 'to-orange-900', accent: 'orange-700', hex: '#c2410c' },
+  { name: 'Pink', labelKey: 'pink', from: 'from-pink-700', to: 'to-pink-900', accent: 'pink-700', hex: '#be185d' },
 ];
+
+// D&D 5e ability name -> abbreviation key used to look up translated ability
+// names/abbreviations from the `game-systems` namespace.
+const ABILITY_ABBR: Record<string, string> = {
+  strength: 'str',
+  dexterity: 'dex',
+  constitution: 'con',
+  intelligence: 'int',
+  wisdom: 'wis',
+  charisma: 'cha',
+};
 
 /**
  * Calculate ability modifier from ability score
@@ -112,6 +129,7 @@ export const DnD5eCharacterEditor: React.FC<DnD5eCharacterEditorProps> = ({
   onCancel,
   onDirtyChange,
 }) => {
+  const { t } = useTranslation(['character', 'common', 'game-systems']);
   const [activeTab, setActiveTab] = useState<TabId>('stats');
   const [isSaving, setIsSaving] = useState(false);
   const [showColorPicker, setShowColorPicker] = useState(false);
@@ -466,13 +484,13 @@ export const DnD5eCharacterEditor: React.FC<DnD5eCharacterEditorProps> = ({
     if (file) {
       // Validate file type
       if (!file.type.startsWith('image/')) {
-        setErrors({ ...errors, tokenImage: 'Please select an image file' });
+        setErrors({ ...errors, tokenImage: t('editor.errors.invalidImageType') });
         return;
       }
       // Validate file size against the server's token limit
       const tokenLimit = getUploadLimit(serverConfig, AssetType.TOKEN);
       if (file.size > tokenLimit) {
-        setErrors({ ...errors, tokenImage: `Image must be smaller than ${formatUploadLimit(tokenLimit)}` });
+        setErrors({ ...errors, tokenImage: t('editor.errors.imageTooLarge', { limit: formatUploadLimit(tokenLimit) }) });
         return;
       }
       setTokenImageFile(file);
@@ -492,21 +510,21 @@ export const DnD5eCharacterEditor: React.FC<DnD5eCharacterEditorProps> = ({
 
     // Validate level (1-20)
     if (!formData.level || formData.level < 1 || formData.level > 20) {
-      newErrors.level = 'Level must be between 1 and 20';
+      newErrors.level = t('editor.errors.levelRange');
     }
 
     // Validate ability scores (1-30)
     if (formData.stats) {
       Object.entries(formData.stats).forEach(([ability, data]: [string, any]) => {
         if (!data.score || data.score < 1 || data.score > 30) {
-          newErrors[`stats.${ability}`] = 'Ability score must be between 1 and 30';
+          newErrors[`stats.${ability}`] = t('editor.errors.abilityScoreRange');
         }
       });
     }
 
     // Validate character name
     if (!formData.characterName || formData.characterName.trim() === '') {
-      newErrors.characterName = 'Character name is required';
+      newErrors.characterName = t('editor.errors.nameRequired');
     }
 
     setErrors(newErrors);
@@ -592,7 +610,7 @@ export const DnD5eCharacterEditor: React.FC<DnD5eCharacterEditorProps> = ({
           newTokenImageUrl = `/api/assets/tokens/${assetId}`;
         } catch (uploadError: any) {
           console.error('Error uploading token image:', uploadError);
-          setErrors({ ...errors, tokenImage: uploadError.response?.data?.message || 'Failed to upload token image' });
+          setErrors({ ...errors, tokenImage: uploadError.response?.data?.message || t('editor.errors.tokenUploadFailed') });
           setIsSaving(false);
           return;
         }
@@ -603,7 +621,7 @@ export const DnD5eCharacterEditor: React.FC<DnD5eCharacterEditorProps> = ({
       markClean();
     } catch (error) {
       console.error('Error saving character:', error);
-      setErrors({ ...errors, submit: 'Failed to save character. Please try again.' });
+      setErrors({ ...errors, submit: t('editor.saveFailed') });
     } finally {
       setIsSaving(false);
     }
@@ -657,14 +675,14 @@ export const DnD5eCharacterEditor: React.FC<DnD5eCharacterEditorProps> = ({
             className="px-4 py-2 bg-green-600 hover:bg-green-700 text-white rounded-lg transition-colors flex items-center space-x-2 font-medium shadow-lg disabled:opacity-50"
           >
             <Save className="w-4 h-4" />
-            <span>{isSaving ? 'Saving...' : 'Save'}</span>
+            <span>{isSaving ? t('common:saving') : t('common:save')}</span>
           </button>
           <button
             onClick={onCancel}
             className="px-4 py-2 bg-red-600/80 hover:bg-red-600 text-white rounded-lg transition-colors flex items-center space-x-2 font-medium shadow-lg"
           >
             <X className="w-4 h-4" />
-            <span>Cancel</span>
+            <span>{t('common:cancel')}</span>
           </button>
         </div>
 
@@ -672,7 +690,7 @@ export const DnD5eCharacterEditor: React.FC<DnD5eCharacterEditorProps> = ({
         <button
           onClick={() => setShowColorPicker(!showColorPicker)}
           className="absolute top-4 right-4 p-2 bg-white/20 hover:bg-white/30 rounded-lg transition-colors"
-          title="Change theme color"
+          title={t('sheet.themeColor.changeTitle')}
         >
           <Palette className="w-5 h-5" />
         </button>
@@ -680,7 +698,7 @@ export const DnD5eCharacterEditor: React.FC<DnD5eCharacterEditorProps> = ({
         {/* Color Picker Dropdown */}
         {showColorPicker && (
           <div className="absolute top-16 right-4 bg-white text-stone-800 rounded-lg shadow-xl p-4 z-10 border-2 border-stone-200 max-w-md">
-            <h4 className="font-semibold mb-3">Theme Color</h4>
+            <h4 className="font-semibold mb-3">{t('sheet.themeColor.heading')}</h4>
 
             {/* Preset Colors */}
             <div className="grid grid-cols-3 gap-2 mb-4">
@@ -695,14 +713,14 @@ export const DnD5eCharacterEditor: React.FC<DnD5eCharacterEditorProps> = ({
                   }`}
                 >
                   <div className={`w-full h-6 rounded mb-1 bg-gradient-to-r ${color.from} ${color.to}`} />
-                  <div className="text-xs">{color.name}</div>
+                  <div className="text-xs">{t(`sheet.colorPresets.${color.labelKey}`)}</div>
                 </button>
               ))}
             </div>
 
             {/* Custom Color Section */}
             <div className="border-t pt-4 space-y-3">
-              <h5 className="text-sm font-semibold text-stone-700">Custom Color</h5>
+              <h5 className="text-sm font-semibold text-stone-700">{t('sheet.themeColor.customHeading')}</h5>
 
               <div className="flex items-center space-x-2">
                 {/* Native Color Picker */}
@@ -711,7 +729,7 @@ export const DnD5eCharacterEditor: React.FC<DnD5eCharacterEditorProps> = ({
                   value={customColorHex || '#b91c1c'}
                   onChange={(e) => handleCustomColorChange(e.target.value)}
                   className="w-12 h-12 rounded cursor-pointer border-2 border-stone-300"
-                  title="Pick a custom color"
+                  title={t('sheet.themeColor.pickerTitle')}
                 />
 
                 {/* Hex Code Input */}
@@ -729,7 +747,7 @@ export const DnD5eCharacterEditor: React.FC<DnD5eCharacterEditorProps> = ({
                     placeholder="#b91c1c"
                     className="w-full px-3 py-2 border border-stone-300 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
                   />
-                  <div className="text-xs text-stone-500 mt-1">Enter hex code (e.g., #b91c1c)</div>
+                  <div className="text-xs text-stone-500 mt-1">{t('sheet.themeColor.hexHint')}</div>
                 </div>
               </div>
 
@@ -740,7 +758,7 @@ export const DnD5eCharacterEditor: React.FC<DnD5eCharacterEditorProps> = ({
                     className="w-8 h-8 rounded"
                     style={{ background: `linear-gradient(to right, ${customColorHex}, ${customColorHex}dd)` }}
                   />
-                  <span className="text-sm font-medium">Custom: {customColorHex}</span>
+                  <span className="text-sm font-medium">{t('sheet.themeColor.customLabel', { hex: customColorHex })}</span>
                 </div>
               )}
             </div>
@@ -772,7 +790,7 @@ export const DnD5eCharacterEditor: React.FC<DnD5eCharacterEditorProps> = ({
               {tokenImagePreview ? (
                 <img
                   src={tokenImagePreview}
-                  alt={formData.characterName || 'Character'}
+                  alt={formData.characterName || t('sheet.unnamedCharacter')}
                   className="w-40 h-40 rounded-full border-4 border-white/20 object-cover"
                 />
               ) : (
@@ -791,7 +809,7 @@ export const DnD5eCharacterEditor: React.FC<DnD5eCharacterEditorProps> = ({
             )}
             {!character.campaignId && (
               <div className="absolute top-full mt-1 text-xs text-amber-200 whitespace-nowrap">
-                Saves as personal token
+                {t('sheet.personalTokenNote')}
               </div>
             )}
           </div>
@@ -802,7 +820,7 @@ export const DnD5eCharacterEditor: React.FC<DnD5eCharacterEditorProps> = ({
               type="text"
               value={formData.characterName || ''}
               onChange={(e) => updateField('characterName', e.target.value)}
-              placeholder="Character Name"
+              placeholder={t('modal.new.nameLabel')}
               className={`w-full text-3xl font-bold bg-white/10 border-2 ${
                 errors.characterName ? 'border-red-300' : 'border-white/20'
               } rounded px-3 py-1 ${headerTextColor} placeholder-current/50 focus:outline-none focus:border-white/40`}
@@ -817,7 +835,7 @@ export const DnD5eCharacterEditor: React.FC<DnD5eCharacterEditorProps> = ({
             </div>
             <div className={`flex items-center flex-wrap gap-2 opacity-80`}>
               <div className="flex items-center space-x-2">
-                <span className="text-xs">Level</span>
+                <span className="text-xs">{t('sheet.level')}</span>
                 <NumberField
 min={1}
                   max={20}
@@ -833,14 +851,14 @@ min={1}
                 type="text"
                 value={formData.race || ''}
                 onChange={(e) => updateField('race', e.target.value)}
-                placeholder="Race"
+                placeholder={t('sheet.race')}
                 className={`bg-white/10 border border-white/20 rounded px-2 py-0.5 text-sm ${headerTextColor} placeholder-current/50 focus:outline-none focus:border-white/40`}
               />
               <input
                 type="text"
                 value={formData.class || ''}
                 onChange={(e) => updateField('class', e.target.value)}
-                placeholder="Class"
+                placeholder={t('sheet.class')}
                 className={`bg-white/10 border border-white/20 rounded px-2 py-0.5 text-sm ${headerTextColor} placeholder-current/50 focus:outline-none focus:border-white/40`}
               />
             </div>
@@ -848,7 +866,7 @@ min={1}
         </div>
 
         <div className="text-right space-y-1">
-          <div className={`text-xs opacity-70`}>Experience Points</div>
+          <div className={`text-xs opacity-70`}>{t('sheet.experiencePoints')}</div>
           <NumberField
 min={0}
             value={formData.experiencePoints}
@@ -865,7 +883,7 @@ min={0}
   // Render tabs
   const renderTabs = () => (
     <div className="flex space-x-1 border-b-2 border-stone-200 bg-stone-50 px-4">
-      {TABS.map((tab) => {
+      {getTabs(t).map((tab) => {
         const Icon = tab.icon;
         const isActive = activeTab === tab.id;
         return (
@@ -894,22 +912,22 @@ min={0}
       {/* Character Details */}
       <div className="grid grid-cols-2 gap-4">
         <div>
-          <label className="block text-sm font-semibold text-stone-700 mb-1">Alignment</label>
+          <label className="block text-sm font-semibold text-stone-700 mb-1">{t('sheet.alignment')}</label>
           <input
             type="text"
             value={formData.alignment || ''}
             onChange={(e) => updateField('alignment', e.target.value)}
-            placeholder="e.g., Lawful Good"
+            placeholder={t('sheet.alignmentPlaceholder')}
             className="w-full px-3 py-2 border border-stone-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-red-500"
           />
         </div>
         <div>
-          <label className="block text-sm font-semibold text-stone-700 mb-1">Background</label>
+          <label className="block text-sm font-semibold text-stone-700 mb-1">{t('sheet.background')}</label>
           <input
             type="text"
             value={formData.background || ''}
             onChange={(e) => updateField('background', e.target.value)}
-            placeholder="e.g., Sage"
+            placeholder={t('sheet.backgroundPlaceholder')}
             className="w-full px-3 py-2 border border-stone-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-red-500"
           />
         </div>
@@ -918,7 +936,7 @@ min={0}
       {/* Proficiency Bonus and Inspiration */}
       <div className="grid grid-cols-2 gap-4">
         <div>
-          <label className="block text-sm font-semibold text-stone-700 mb-1">Proficiency Bonus</label>
+          <label className="block text-sm font-semibold text-stone-700 mb-1">{t('sheet.proficiencyBonus')}</label>
           <NumberField
 min={2}
             max={6}
@@ -937,14 +955,14 @@ min={2}
             className="w-5 h-5 text-red-700 border-stone-300 rounded focus:ring-2 focus:ring-red-500"
           />
           <label htmlFor="inspiration" className="text-sm font-semibold text-stone-700">
-            Inspiration
+            {t('sheet.inspiration')}
           </label>
         </div>
       </div>
 
       {/* Ability Scores */}
       <div className="bg-stone-50 border-2 border-stone-300 rounded-lg p-4">
-        <h3 className="text-lg font-semibold text-stone-800 mb-4">Ability Scores</h3>
+        <h3 className="text-lg font-semibold text-stone-800 mb-4">{t('sheet.abilityScores')}</h3>
         <div className="grid grid-cols-3 md:grid-cols-6 gap-4">
           {['strength', 'dexterity', 'constitution', 'intelligence', 'wisdom', 'charisma'].map((ability) => {
             const abilityData = formData.stats?.[ability] || { score: 10, modifier: 0 };
@@ -970,7 +988,7 @@ min={2}
             return (
               <div key={ability} className="flex flex-col items-center space-y-1">
                 <div className="text-xs font-semibold text-stone-600 uppercase tracking-wide">
-                  {ability.slice(0, 3)}
+                  {t(`game-systems:dnd5e.abilityAbbr.${ABILITY_ABBR[ability]}`)}
                 </div>
                 <div className={circleClasses} style={{ ...circleStyle, ...borderStyle }}>
                   <span className={`text-xl font-bold ${textColor}`}>
@@ -997,7 +1015,7 @@ min={1}
 
       {/* Saving Throws */}
       <div className="bg-stone-50 border border-stone-200 rounded-lg p-4">
-        <h3 className="text-lg font-semibold text-stone-800 mb-3">Saving Throws</h3>
+        <h3 className="text-lg font-semibold text-stone-800 mb-3">{t('sheet.savingThrows')}</h3>
         <div className="grid grid-cols-2 gap-2">
           {['strength', 'dexterity', 'constitution', 'intelligence', 'wisdom', 'charisma'].map((ability) => {
             const saveData = formData.savingThrows?.[ability] || { proficient: false, bonus: 0 };
@@ -1014,7 +1032,7 @@ min={1}
                     className="w-4 h-4 text-red-700 border-stone-300 rounded focus:ring-2 focus:ring-red-500"
                   />
                   <label htmlFor={`save-${ability}`} className="text-sm font-medium text-stone-800 capitalize">
-                    {ability}
+                    {t(`game-systems:dnd5e.abilities.${ABILITY_ABBR[ability]}`)}
                   </label>
                 </div>
                 <span className={`text-sm font-semibold ${saveData.proficient ? 'text-red-700' : 'text-stone-600'}`}>
@@ -1028,16 +1046,13 @@ min={1}
 
       {/* Skills */}
       <div className="bg-stone-50 border border-stone-200 rounded-lg p-4">
-        <h3 className="text-lg font-semibold text-stone-800 mb-3">Skills</h3>
+        <h3 className="text-lg font-semibold text-stone-800 mb-3">{t('sheet.skillList')}</h3>
         <div className="grid grid-cols-1 md:grid-cols-2 gap-1">
           {Object.keys(skillAbilities).map((skill) => {
             const skillData = formData.skills?.[skill] || { proficient: false, expertise: false, bonus: 0 };
-            const skillLabel = skill
-              .replace(/([A-Z])/g, ' $1')
-              .replace(/^./, (str) => str.toUpperCase())
-              .trim();
+            const skillLabel = t(`sheet.skills.${skill}`);
             const ability = skillAbilities[skill];
-            const abilityAbbr = ability.slice(0, 3).toUpperCase();
+            const abilityAbbr = t(`game-systems:dnd5e.abilityAbbr.${ABILITY_ABBR[ability]}`);
 
             return (
               <div key={skill} className="flex items-center justify-between p-2 hover:bg-stone-100 rounded">
@@ -1064,7 +1079,7 @@ min={1}
                     disabled={!skillData.proficient}
                     onChange={(e) => updateField(`skills.${skill}.expertise`, e.target.checked)}
                     className="w-4 h-4 text-red-700 border-stone-300 rounded-full focus:ring-2 focus:ring-red-500 disabled:opacity-30"
-                    title="Expertise (double proficiency)"
+                    title={t('sheet.skills.expertiseHint')}
                   />
                   <label
                     htmlFor={`skill-prof-${skill}`}
@@ -1095,7 +1110,7 @@ min={1}
           that is not the skill itself, never from the stored field, so this
           matches the view exactly. */}
       <div className="bg-stone-50 border border-stone-200 rounded-lg p-4">
-        <h3 className="text-lg font-semibold text-stone-800 mb-2">Passive Perception</h3>
+        <h3 className="text-lg font-semibold text-stone-800 mb-2">{t('sheet.passivePerception')}</h3>
         <div className="flex items-end gap-4">
           <div className="text-2xl font-bold text-stone-800">
             {passiveScore(
@@ -1104,7 +1119,7 @@ min={1}
           </div>
           <div>
             <label className="block text-xs font-semibold text-stone-600 mb-1">
-              Other bonus
+              {t('sheet.otherBonus')}
             </label>
             <NumberField
               value={formData.passivePerceptionBonus ?? 0}
@@ -1115,8 +1130,7 @@ min={1}
           </div>
         </div>
         <p className="mt-2 text-xs text-stone-500">
-          10 + your Perception bonus, plus anything that raises passive scores
-          without changing the skill — the Observant feat (+5), for instance.
+          {t('sheet.passivePerceptionHint')}
         </p>
       </div>
     </div>
@@ -1135,7 +1149,7 @@ min={1}
       {/* Combat Stats */}
       <div className="grid grid-cols-3 gap-4">
         <div>
-          <label className="block text-sm font-semibold text-stone-700 mb-1">Armor Class</label>
+          <label className="block text-sm font-semibold text-stone-700 mb-1">{t('sheet.armorClass')}</label>
           <NumberField
 min={0}
             value={formData.armorClass}
@@ -1149,18 +1163,18 @@ min={0}
               "Other bonus" below — it used to be a single hand-typed number
               that nothing kept in step with Dexterity, and that the roll then
               ignored entirely. */}
-          <label className="block text-sm font-semibold text-stone-700 mb-1">Initiative</label>
+          <label className="block text-sm font-semibold text-stone-700 mb-1">{t('sheet.initiative')}</label>
           <div
             className="w-full px-3 py-2 border border-stone-300 rounded-lg text-center text-xl font-bold bg-stone-100 text-stone-800"
-            title={`Dexterity ${formatModifier(formData.stats?.dexterity?.modifier ?? 0)}${
-              formData.initiativeBonus ? `, other ${formatModifier(formData.initiativeBonus)}` : ''
+            title={`${t('sheet.initiativeTooltip', { mod: formatModifier(formData.stats?.dexterity?.modifier ?? 0) })}${
+              formData.initiativeBonus ? t('sheet.initiativeTooltipOther', { mod: formatModifier(formData.initiativeBonus) }) : ''
             }`}
           >
             {formatModifier(initiativeModifier)}
           </div>
         </div>
         <div>
-          <label className="block text-sm font-semibold text-stone-700 mb-1">Speed (ft)</label>
+          <label className="block text-sm font-semibold text-stone-700 mb-1">{t('sheet.speed')} (ft)</label>
           <NumberField
 min={0}
             value={formData.speed}
@@ -1178,7 +1192,7 @@ min={0}
       <div className="grid grid-cols-3 gap-4">
         <div>
           <label className="block text-sm font-semibold text-stone-700 mb-1">
-            Initiative — other bonus
+            {t('sheet.initiativeOtherBonusLabel')}
           </label>
           <NumberField
             value={formData.initiativeBonus ?? 0}
@@ -1187,18 +1201,17 @@ min={0}
             fallback={0}
           />
           <p className="mt-1 text-xs text-stone-500">
-            Alert (+5), Jack of All Trades, Remarkable Athlete, and anything else
-            beyond your Dexterity modifier.
+            {t('sheet.initiativeOtherBonusHint')}
           </p>
         </div>
       </div>
 
       {/* Hit Points */}
       <div className="bg-stone-50 border-2 border-stone-300 rounded-lg p-4">
-        <h3 className="text-lg font-semibold text-stone-800 mb-3">Hit Points</h3>
+        <h3 className="text-lg font-semibold text-stone-800 mb-3">{t('sheet.hitPoints')}</h3>
         <div className="grid grid-cols-3 gap-4">
           <div>
-            <label className="block text-xs font-semibold text-stone-600 mb-1">Maximum</label>
+            <label className="block text-xs font-semibold text-stone-600 mb-1">{t('sheet.maximum')}</label>
             <NumberField
 min={0}
               value={formData.hp?.maximum}
@@ -1208,7 +1221,7 @@ min={0}
             />
           </div>
           <div>
-            <label className="block text-xs font-semibold text-stone-600 mb-1">Current</label>
+            <label className="block text-xs font-semibold text-stone-600 mb-1">{t('sheet.current')}</label>
             <NumberField
 min={0}
               value={formData.hp?.current}
@@ -1218,7 +1231,7 @@ min={0}
             />
           </div>
           <div>
-            <label className="block text-xs font-semibold text-stone-600 mb-1">Temporary</label>
+            <label className="block text-xs font-semibold text-stone-600 mb-1 capitalize">{t('sheet.temporary')}</label>
             <NumberField
 min={0}
               value={formData.hp?.temporary}
@@ -1233,7 +1246,7 @@ min={0}
       {/* Hit Dice */}
       <div className="bg-stone-50 border border-stone-200 rounded-lg p-4">
         <div className="flex items-center justify-between mb-3">
-          <h3 className="text-lg font-semibold text-stone-800">Hit Dice</h3>
+          <h3 className="text-lg font-semibold text-stone-800">{t('sheet.hitDice')}</h3>
           <button
             onClick={() => {
               const newHitDice = [
@@ -1244,7 +1257,7 @@ min={0}
             }}
             className="px-3 py-1 text-sm font-medium text-white bg-red-700 hover:bg-red-800 rounded-lg transition-colors"
           >
-            + Add Hit Die
+            {t('sheet.addHitDie')}
           </button>
         </div>
         <div className="space-y-2">
@@ -1254,7 +1267,7 @@ min={0}
                 type="text"
                 value={die.class || ''}
                 onChange={(e) => updateField(`hitDice.${index}.class`, e.target.value)}
-                placeholder="Class"
+                placeholder={t('sheet.class')}
                 className="flex-1 px-2 py-1 border border-stone-300 rounded focus:outline-none focus:ring-2 focus:ring-red-500"
               />
               <input
@@ -1268,7 +1281,7 @@ min={0}
 min={0}
                 value={die.remaining}
                 onChange={(v: number) => updateField(`hitDice.${index}.remaining`, v)}
-                placeholder="Remaining"
+                placeholder={t('sheet.remaining')}
                 className="w-20 px-2 py-1 border border-stone-300 rounded text-center focus:outline-none focus:ring-2 focus:ring-red-500"
               fallback={0}
               />
@@ -1284,17 +1297,17 @@ min={0}
             </div>
           ))}
           {(!formData.hitDice || formData.hitDice.length === 0) && (
-            <div className="text-sm text-stone-500 italic">No hit dice added yet</div>
+            <div className="text-sm text-stone-500 italic">{t('sheet.noHitDice')}</div>
           )}
         </div>
       </div>
 
       {/* Death Saves */}
       <div className="bg-stone-50 border border-stone-200 rounded-lg p-4">
-        <h3 className="text-lg font-semibold text-stone-800 mb-3">Death Saves</h3>
+        <h3 className="text-lg font-semibold text-stone-800 mb-3">{t('sheet.deathSaves')}</h3>
         <div className="grid grid-cols-2 gap-4">
           <div>
-            <label className="block text-sm font-semibold text-green-700 mb-2">Successes</label>
+            <label className="block text-sm font-semibold text-green-700 mb-2">{t('sheet.successes')}</label>
             <div className="flex space-x-2">
               {[1, 2, 3].map((i) => (
                 <input
@@ -1314,7 +1327,7 @@ min={0}
             </div>
           </div>
           <div>
-            <label className="block text-sm font-semibold text-red-700 mb-2">Failures</label>
+            <label className="block text-sm font-semibold text-red-700 mb-2">{t('sheet.failures')}</label>
             <div className="flex space-x-2">
               {[1, 2, 3].map((i) => (
                 <input
@@ -1338,7 +1351,7 @@ min={0}
 
       {/* Conditions */}
       <div className="bg-stone-50 border border-stone-200 rounded-lg p-4">
-        <h3 className="text-lg font-semibold text-stone-800 mb-3">Conditions</h3>
+        <h3 className="text-lg font-semibold text-stone-800 mb-3">{t('sheet.conditions')}</h3>
         <div className="grid grid-cols-3 gap-2">
           {conditions.map((condition) => (
             <label key={condition} className="flex items-center space-x-2 cursor-pointer hover:bg-stone-100 p-1 rounded">
@@ -1364,7 +1377,7 @@ min={0}
       {/* Attacks */}
       <div className="bg-stone-50 border-2 border-stone-300 rounded-lg p-4">
         <div className="flex items-center justify-between mb-3">
-          <h3 className="text-lg font-semibold text-stone-800">Attacks & Spellcasting</h3>
+          <h3 className="text-lg font-semibold text-stone-800">{t('sheet.attacksAndSpellcasting')}</h3>
           <button
             onClick={() => {
               const newAttacks = [
@@ -1375,7 +1388,7 @@ min={0}
             }}
             className="px-3 py-1 text-sm font-medium text-white bg-red-700 hover:bg-red-800 rounded-lg transition-colors"
           >
-            + Add Attack
+            {t('sheet.addAttack')}
           </button>
         </div>
         <div className="space-y-4">
@@ -1386,7 +1399,7 @@ min={0}
                   type="text"
                   value={attack.name || ''}
                   onChange={(e) => updateField(`attacks.${index}.name`, e.target.value)}
-                  placeholder="Attack Name"
+                  placeholder={t('sheet.attackNamePlaceholder')}
                   className="flex-1 px-2 py-1 border border-stone-300 rounded font-semibold focus:outline-none focus:ring-2 focus:ring-red-500"
                 />
                 <button
@@ -1401,7 +1414,7 @@ min={0}
               </div>
               <div className="grid grid-cols-2 gap-2">
                 <div>
-                  <label className="block text-xs font-semibold text-stone-600 mb-1">Attack Bonus</label>
+                  <label className="block text-xs font-semibold text-stone-600 mb-1">{t('sheet.attackBonus')}</label>
                   <NumberField
 value={attack.attackBonus}
                     onChange={(v: number) => updateField(`attacks.${index}.attackBonus`, v)}
@@ -1410,7 +1423,7 @@ value={attack.attackBonus}
                   />
                 </div>
                 <div>
-                  <label className="block text-xs font-semibold text-stone-600 mb-1">Damage Roll</label>
+                  <label className="block text-xs font-semibold text-stone-600 mb-1">{t('sheet.damageRoll')}</label>
                   <input
                     type="text"
                     value={attack.damageRoll || ''}
@@ -1420,17 +1433,17 @@ value={attack.attackBonus}
                   />
                 </div>
                 <div>
-                  <label className="block text-xs font-semibold text-stone-600 mb-1">Damage Type</label>
+                  <label className="block text-xs font-semibold text-stone-600 mb-1">{t('sheet.damageType')}</label>
                   <input
                     type="text"
                     value={attack.damageType || ''}
                     onChange={(e) => updateField(`attacks.${index}.damageType`, e.target.value)}
-                    placeholder="e.g., slashing"
+                    placeholder={t('sheet.damageTypePlaceholder')}
                     className="w-full px-2 py-1 border border-stone-300 rounded focus:outline-none focus:ring-2 focus:ring-red-500"
                   />
                 </div>
                 <div>
-                  <label className="block text-xs font-semibold text-stone-600 mb-1">Range (ft)</label>
+                  <label className="block text-xs font-semibold text-stone-600 mb-1">{t('sheet.range')} (ft)</label>
                   <NumberField
 min={0}
                     value={attack.range}
@@ -1441,19 +1454,19 @@ min={0}
                 </div>
               </div>
               <div>
-                <label className="block text-xs font-semibold text-stone-600 mb-1">Properties/Notes</label>
+                <label className="block text-xs font-semibold text-stone-600 mb-1">{t('sheet.propertiesNotes')}</label>
                 <input
                   type="text"
                   value={attack.notes || ''}
                   onChange={(e) => updateField(`attacks.${index}.notes`, e.target.value)}
-                  placeholder="e.g., Versatile, Finesse"
+                  placeholder={t('sheet.weaponPropertiesPlaceholder')}
                   className="w-full px-2 py-1 border border-stone-300 rounded focus:outline-none focus:ring-2 focus:ring-red-500"
                 />
               </div>
             </div>
           ))}
           {(!formData.attacks || formData.attacks.length === 0) && (
-            <div className="text-sm text-stone-500 italic">No attacks added yet</div>
+            <div className="text-sm text-stone-500 italic">{t('sheet.noAttacksAdded')}</div>
           )}
         </div>
       </div>
@@ -1466,17 +1479,17 @@ min={0}
       {/* Spellcasting Ability */}
       <div className="grid grid-cols-3 gap-4">
         <div>
-          <label className="block text-sm font-semibold text-stone-700 mb-1">Spellcasting Ability</label>
+          <label className="block text-sm font-semibold text-stone-700 mb-1">{t('sheet.spellcastingAbility')}</label>
           <input
             type="text"
             value={formData.spellcasting?.ability || ''}
             onChange={(e) => updateField('spellcasting.ability', e.target.value)}
-            placeholder="e.g., Intelligence"
+            placeholder={t('sheet.spellcastingAbilityPlaceholder')}
             className="w-full px-3 py-2 border border-stone-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-red-500"
           />
         </div>
         <div>
-          <label className="block text-sm font-semibold text-stone-700 mb-1">Spell Save DC</label>
+          <label className="block text-sm font-semibold text-stone-700 mb-1">{t('sheet.spellSaveDC')}</label>
           <NumberField
 min={0}
             value={formData.spellcasting?.spellSaveDC}
@@ -1486,7 +1499,7 @@ min={0}
           />
         </div>
         <div>
-          <label className="block text-sm font-semibold text-stone-700 mb-1">Spell Attack Bonus</label>
+          <label className="block text-sm font-semibold text-stone-700 mb-1">{t('sheet.spellAttackBonus')}</label>
           <NumberField
 value={formData.spellcasting?.spellAttackBonus}
             onChange={(v: number) => updateField('spellcasting.spellAttackBonus', v)}
@@ -1498,13 +1511,13 @@ value={formData.spellcasting?.spellAttackBonus}
 
       {/* Cantrips */}
       <div className="bg-stone-50 border border-stone-200 rounded-lg p-4">
-        <h3 className="text-lg font-semibold text-stone-800 mb-3">Cantrips</h3>
+        <h3 className="text-lg font-semibold text-stone-800 mb-3">{t('sheet.cantrips')}</h3>
         <textarea
           value={typeof formData.spellcasting?.cantrips === 'string'
             ? formData.spellcasting.cantrips
             : (formData.spellcasting?.cantrips || []).join(', ')}
           onChange={(e) => updateField('spellcasting.cantrips', e.target.value)}
-          placeholder="Enter cantrips separated by commas (e.g., Fire Bolt, Mage Hand, Prestidigitation)"
+          placeholder={t('sheet.cantripsPlaceholder')}
           rows={2}
           className="w-full px-3 py-2 border border-stone-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-red-500"
         />
@@ -1512,16 +1525,16 @@ value={formData.spellcasting?.spellAttackBonus}
 
       {/* Spell Slots */}
       <div className="bg-stone-50 border-2 border-stone-300 rounded-lg p-4">
-        <h3 className="text-lg font-semibold text-stone-800 mb-3">Spell Slots</h3>
+        <h3 className="text-lg font-semibold text-stone-800 mb-3">{t('sheet.spellSlots')}</h3>
         <div className="grid grid-cols-3 gap-3">
           {[1, 2, 3, 4, 5, 6, 7, 8, 9].map((level) => {
             const slotData = formData.spellcasting?.slots?.[level] || { total: 0, expended: 0 };
             return (
               <div key={level} className="bg-white border border-stone-300 rounded-lg p-3">
-                <div className="text-sm font-semibold text-stone-700 mb-2 text-center">Level {level}</div>
+                <div className="text-sm font-semibold text-stone-700 mb-2 text-center">{t('sheet.level')} {level}</div>
                 <div className="grid grid-cols-2 gap-2">
                   <div>
-                    <label className="block text-xs text-stone-600 mb-1">Total</label>
+                    <label className="block text-xs text-stone-600 mb-1">{t('sheet.total')}</label>
                     <NumberField
 min={0}
                       value={slotData.total}
@@ -1531,7 +1544,7 @@ min={0}
                     />
                   </div>
                   <div>
-                    <label className="block text-xs text-stone-600 mb-1">Used</label>
+                    <label className="block text-xs text-stone-600 mb-1">{t('sheet.used')}</label>
                     <NumberField
 min={0}
                       value={slotData.expended}
@@ -1550,7 +1563,7 @@ min={0}
       {/* Spells List */}
       <div className="bg-stone-50 border-2 border-stone-300 rounded-lg p-4">
         <div className="flex items-center justify-between mb-3">
-          <h3 className="text-lg font-semibold text-stone-800">Spells</h3>
+          <h3 className="text-lg font-semibold text-stone-800">{t('sheet.spells')}</h3>
           <button
             onClick={() => {
               const newSpells = [
@@ -1561,7 +1574,7 @@ min={0}
             }}
             className="px-3 py-1 text-sm font-medium text-white bg-red-700 hover:bg-red-800 rounded-lg transition-colors"
           >
-            + Add Spell
+            {t('sheet.addSpell')}
           </button>
         </div>
         <div className="space-y-2">
@@ -1573,42 +1586,42 @@ min={1}
                 value={spell.level}
                 onChange={(v: number) => updateField(`spellcasting.spells.${index}.level`, v)}
                 className="w-14 px-2 py-1 border border-stone-300 rounded text-center font-semibold focus:outline-none focus:ring-2 focus:ring-red-500"
-                title="Spell Level"
+                title={t('sheet.spellLevel')}
               fallback={1}
               />
               <input
                 type="text"
                 value={spell.name || ''}
                 onChange={(e) => updateField(`spellcasting.spells.${index}.name`, e.target.value)}
-                placeholder="Spell Name"
+                placeholder={t('sheet.spellNamePlaceholder')}
                 className="flex-1 px-2 py-1 border border-stone-300 rounded font-medium focus:outline-none focus:ring-2 focus:ring-red-500"
               />
-              <label className="flex items-center space-x-1 cursor-pointer" title="Prepared">
+              <label className="flex items-center space-x-1 cursor-pointer" title={t('sheet.prepared')}>
                 <input
                   type="checkbox"
                   checked={spell.prepared || false}
                   onChange={(e) => updateField(`spellcasting.spells.${index}.prepared`, e.target.checked)}
                   className="w-4 h-4 text-red-700 border-stone-300 rounded focus:ring-2 focus:ring-red-500"
                 />
-                <span className="text-xs text-stone-600">Prep</span>
+                <span className="text-xs text-stone-600">{t('sheet.prepAbbr')}</span>
               </label>
-              <label className="flex items-center space-x-1 cursor-pointer" title="Ritual">
+              <label className="flex items-center space-x-1 cursor-pointer" title={t('sheet.ritual')}>
                 <input
                   type="checkbox"
                   checked={spell.ritual || false}
                   onChange={(e) => updateField(`spellcasting.spells.${index}.ritual`, e.target.checked)}
                   className="w-4 h-4 text-blue-700 border-stone-300 rounded focus:ring-2 focus:ring-blue-500"
                 />
-                <span className="text-xs text-stone-600">Rit</span>
+                <span className="text-xs text-stone-600">{t('sheet.ritAbbr')}</span>
               </label>
-              <label className="flex items-center space-x-1 cursor-pointer" title="Concentration">
+              <label className="flex items-center space-x-1 cursor-pointer" title={t('sheet.concentration')}>
                 <input
                   type="checkbox"
                   checked={spell.concentration || false}
                   onChange={(e) => updateField(`spellcasting.spells.${index}.concentration`, e.target.checked)}
                   className="w-4 h-4 text-purple-700 border-stone-300 rounded focus:ring-2 focus:ring-purple-500"
                 />
-                <span className="text-xs text-stone-600">Con</span>
+                <span className="text-xs text-stone-600">{t('sheet.conAbbr')}</span>
               </label>
               <button
                 onClick={() => {
@@ -1622,7 +1635,7 @@ min={1}
             </div>
           ))}
           {(!formData.spellcasting?.spells || formData.spellcasting.spells.length === 0) && (
-            <div className="text-sm text-stone-500 italic">No spells added yet</div>
+            <div className="text-sm text-stone-500 italic">{t('sheet.noSpellsAdded')}</div>
           )}
         </div>
       </div>
@@ -1634,14 +1647,14 @@ min={1}
     <div className="space-y-6">
       {/* Currency */}
       <div className="bg-stone-50 border-2 border-stone-300 rounded-lg p-4">
-        <h3 className="text-lg font-semibold text-stone-800 mb-3">Currency</h3>
+        <h3 className="text-lg font-semibold text-stone-800 mb-3">{t('sheet.currency')}</h3>
         <div className="grid grid-cols-5 gap-3">
           {[
-            { key: 'cp', label: 'Copper (CP)', color: 'text-amber-700' },
-            { key: 'sp', label: 'Silver (SP)', color: 'text-stone-500' },
-            { key: 'ep', label: 'Electrum (EP)', color: 'text-green-600' },
-            { key: 'gp', label: 'Gold (GP)', color: 'text-yellow-600' },
-            { key: 'pp', label: 'Platinum (PP)', color: 'text-slate-300' },
+            { key: 'cp', label: t('sheet.currencyLabels.copper'), color: 'text-amber-700' },
+            { key: 'sp', label: t('sheet.currencyLabels.silver'), color: 'text-stone-500' },
+            { key: 'ep', label: t('sheet.currencyLabels.electrum'), color: 'text-green-600' },
+            { key: 'gp', label: t('sheet.currencyLabels.gold'), color: 'text-yellow-600' },
+            { key: 'pp', label: t('sheet.currencyLabels.platinum'), color: 'text-slate-300' },
           ].map((currency) => (
             <div key={currency.key}>
               <label className={`block text-xs font-semibold ${currency.color} mb-1`}>
@@ -1662,7 +1675,7 @@ min={0}
       {/* Inventory Items */}
       <div className="bg-stone-50 border-2 border-stone-300 rounded-lg p-4">
         <div className="flex items-center justify-between mb-3">
-          <h3 className="text-lg font-semibold text-stone-800">Inventory</h3>
+          <h3 className="text-lg font-semibold text-stone-800">{t('sheet.inventory')}</h3>
           <button
             onClick={() => {
               const newInventory = [
@@ -1683,7 +1696,7 @@ min={0}
             }}
             className="px-3 py-1 text-sm font-medium text-white bg-red-700 hover:bg-red-800 rounded-lg transition-colors"
           >
-            + Add Item
+            {t('sheet.addItem')}
           </button>
         </div>
         <div className="space-y-3">
@@ -1694,7 +1707,7 @@ min={0}
                   type="text"
                   value={item.name || ''}
                   onChange={(e) => updateField(`inventory.${index}.name`, e.target.value)}
-                  placeholder="Item Name"
+                  placeholder={t('sheet.itemNamePlaceholder')}
                   className="flex-1 px-2 py-1 border border-stone-300 rounded font-semibold focus:outline-none focus:ring-2 focus:ring-red-500"
                 />
                 <button
@@ -1709,7 +1722,7 @@ min={0}
               </div>
               <div className="grid grid-cols-3 gap-2">
                 <div>
-                  <label className="block text-xs font-semibold text-stone-600 mb-1">Quantity</label>
+                  <label className="block text-xs font-semibold text-stone-600 mb-1">{t('sheet.quantity')}</label>
                   <NumberField
 min={0}
                     value={item.quantity}
@@ -1719,7 +1732,7 @@ min={0}
                   />
                 </div>
                 <div>
-                  <label className="block text-xs font-semibold text-stone-600 mb-1">Weight (lb)</label>
+                  <label className="block text-xs font-semibold text-stone-600 mb-1">{t('sheet.weight')} (lb)</label>
                   <NumberField
 min={0}
                     step="0.1"
@@ -1733,7 +1746,7 @@ min={0}
                   />
                 </div>
                 <div>
-                  <label className="block text-xs font-semibold text-stone-600 mb-1">Value (gp)</label>
+                  <label className="block text-xs font-semibold text-stone-600 mb-1">{t('sheet.value')} (gp)</label>
                   <NumberField
 min={0}
                     value={item.value}
@@ -1744,12 +1757,12 @@ min={0}
                 </div>
               </div>
               <div>
-                <label className="block text-xs font-semibold text-stone-600 mb-1">Notes</label>
+                <label className="block text-xs font-semibold text-stone-600 mb-1">{t('sheet.notes')}</label>
                 <input
                   type="text"
                   value={item.notes || ''}
                   onChange={(e) => updateField(`inventory.${index}.notes`, e.target.value)}
-                  placeholder="Item description or notes"
+                  placeholder={t('sheet.itemNotesPlaceholder')}
                   className="w-full px-2 py-1 border border-stone-300 rounded focus:outline-none focus:ring-2 focus:ring-red-500"
                 />
               </div>
@@ -1761,7 +1774,7 @@ min={0}
                     onChange={(e) => updateField(`inventory.${index}.equipped`, e.target.checked)}
                     className="w-4 h-4 text-red-700 border-stone-300 rounded focus:ring-2 focus:ring-red-500"
                   />
-                  <span className="text-stone-700">Equipped</span>
+                  <span className="text-stone-700">{t('sheet.equipped')}</span>
                 </label>
                 <label className="flex items-center space-x-1 cursor-pointer">
                   <input
@@ -1770,7 +1783,7 @@ min={0}
                     onChange={(e) => updateField(`inventory.${index}.requiresAttunement`, e.target.checked)}
                     className="w-4 h-4 text-purple-700 border-stone-300 rounded focus:ring-2 focus:ring-purple-500"
                   />
-                  <span className="text-stone-700">Requires Attunement</span>
+                  <span className="text-stone-700">{t('sheet.requiresAttunement')}</span>
                 </label>
                 {item.requiresAttunement && (
                   <label className="flex items-center space-x-1 cursor-pointer">
@@ -1780,14 +1793,14 @@ min={0}
                       onChange={(e) => updateField(`inventory.${index}.attuned`, e.target.checked)}
                       className="w-4 h-4 text-purple-700 border-stone-300 rounded focus:ring-2 focus:ring-purple-500"
                     />
-                    <span className="text-stone-700">Attuned</span>
+                    <span className="text-stone-700">{t('sheet.attuned')}</span>
                   </label>
                 )}
               </div>
             </div>
           ))}
           {(!formData.inventory || formData.inventory.length === 0) && (
-            <div className="text-sm text-stone-500 italic">No items in inventory yet</div>
+            <div className="text-sm text-stone-500 italic">{t('sheet.noItems')}</div>
           )}
         </div>
       </div>
@@ -1833,16 +1846,16 @@ min={0}
       <div className="space-y-6">
         {/* Proficiencies */}
         <div className="bg-stone-50 border-2 border-stone-300 rounded-lg p-4">
-          <h3 className="text-lg font-semibold text-stone-800 mb-4">Proficiencies & Training</h3>
+          <h3 className="text-lg font-semibold text-stone-800 mb-4">{t('sheet.proficienciesAndTraining')}</h3>
 
           <div className="space-y-4">
             {/* Armor */}
             <div>
-              <label className="block text-sm font-bold text-stone-700 mb-2 uppercase tracking-wide">Armor</label>
+              <label className="block text-sm font-bold text-stone-700 mb-2 uppercase tracking-wide">{t('sheet.armor')}</label>
               <textarea
                 value={profs.armor}
                 onChange={(e) => updateField('proficiencies.armor', e.target.value)}
-                placeholder="Light Armor, Medium Armor, Shields"
+                placeholder={t('sheet.armorProficienciesPlaceholder')}
                 rows={2}
                 className="w-full px-3 py-2 border border-stone-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-red-500 text-sm"
               />
@@ -1850,11 +1863,11 @@ min={0}
 
             {/* Weapons */}
             <div>
-              <label className="block text-sm font-bold text-stone-700 mb-2 uppercase tracking-wide">Weapons</label>
+              <label className="block text-sm font-bold text-stone-700 mb-2 uppercase tracking-wide">{t('sheet.weapons')}</label>
               <textarea
                 value={profs.weapons}
                 onChange={(e) => updateField('proficiencies.weapons', e.target.value)}
-                placeholder="Simple Weapons, Martial Weapons, or specific weapons (Daggers, Longswords, Shortbows)"
+                placeholder={t('sheet.weaponProficienciesPlaceholder')}
                 rows={2}
                 className="w-full px-3 py-2 border border-stone-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-red-500 text-sm"
               />
@@ -1862,11 +1875,11 @@ min={0}
 
             {/* Tools */}
             <div>
-              <label className="block text-sm font-bold text-stone-700 mb-2 uppercase tracking-wide">Tools</label>
+              <label className="block text-sm font-bold text-stone-700 mb-2 uppercase tracking-wide">{t('sheet.tools')}</label>
               <textarea
                 value={profs.tools}
                 onChange={(e) => updateField('proficiencies.tools', e.target.value)}
-                placeholder="Thieves' Tools, Smith's Tools, Calligrapher's Supplies, Musical Instruments, Vehicles (Land/Water)"
+                placeholder={t('sheet.toolProficienciesPlaceholder')}
                 rows={2}
                 className="w-full px-3 py-2 border border-stone-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-red-500 text-sm"
               />
@@ -1874,11 +1887,11 @@ min={0}
 
             {/* Languages */}
             <div>
-              <label className="block text-sm font-bold text-stone-700 mb-2 uppercase tracking-wide">Languages</label>
+              <label className="block text-sm font-bold text-stone-700 mb-2 uppercase tracking-wide">{t('sheet.languages')}</label>
               <textarea
                 value={profs.languages}
                 onChange={(e) => updateField('proficiencies.languages', e.target.value)}
-                placeholder="Common, Elvish, Dwarvish, Draconic"
+                placeholder={t('sheet.languageProficienciesPlaceholder')}
                 rows={2}
                 className="w-full px-3 py-2 border border-stone-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-red-500 text-sm"
               />
@@ -1888,14 +1901,14 @@ min={0}
 
         {/* Features & Traits */}
         <div className="bg-stone-50 border-2 border-stone-300 rounded-lg p-4">
-          <h3 className="text-lg font-semibold text-stone-800 mb-3">Features & Traits</h3>
-          <p className="text-xs text-stone-600 mb-3">Class features, racial traits, and feats (comma-separated)</p>
+          <h3 className="text-lg font-semibold text-stone-800 mb-3">{t('sheet.featuresAndTraits')}</h3>
+          <p className="text-xs text-stone-600 mb-3">{t('sheet.featuresHint')}</p>
           <textarea
             value={typeof formData.featuresAndTraits === 'string'
               ? formData.featuresAndTraits
               : (formData.featuresAndTraits || []).join(', ')}
             onChange={(e) => updateField('featuresAndTraits', e.target.value)}
-            placeholder="Darkvision, Fey Ancestry, Sneak Attack, Rage, Spellcasting, Action Surge"
+            placeholder={t('sheet.featuresPlaceholder')}
             rows={5}
             className="w-full px-3 py-2 border border-stone-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-red-500"
           />
@@ -1903,12 +1916,12 @@ min={0}
 
         {/* Additional Features & Traits */}
         <div className="bg-stone-50 border border-stone-200 rounded-lg p-4">
-          <h3 className="text-lg font-semibold text-stone-800 mb-3">Additional Features & Traits</h3>
-          <p className="text-xs text-stone-600 mb-3">Detailed descriptions of features, special abilities, or notes</p>
+          <h3 className="text-lg font-semibold text-stone-800 mb-3">{t('sheet.additionalFeaturesAndTraits')}</h3>
+          <p className="text-xs text-stone-600 mb-3">{t('sheet.additionalFeaturesHint')}</p>
           <textarea
             value={formData.additionalFeaturesAndTraits || ''}
             onChange={(e) => updateField('additionalFeaturesAndTraits', e.target.value)}
-            placeholder="Describe any additional features, traits, or special abilities in detail..."
+            placeholder={t('sheet.additionalFeaturesPlaceholder')}
             rows={8}
             className="w-full px-3 py-2 border border-stone-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-red-500"
           />
@@ -1922,10 +1935,10 @@ min={0}
     <div className="space-y-6">
       {/* Appearance */}
       <div className="bg-stone-50 border-2 border-stone-300 rounded-lg p-4">
-        <h3 className="text-lg font-semibold text-stone-800 mb-3">Appearance</h3>
+        <h3 className="text-lg font-semibold text-stone-800 mb-3">{t('sheet.appearance')}</h3>
         <div className="grid grid-cols-2 md:grid-cols-3 gap-3">
           <div>
-            <label className="block text-xs font-semibold text-stone-600 mb-1">Age</label>
+            <label className="block text-xs font-semibold text-stone-600 mb-1">{t('sheet.age')}</label>
             <input
               type="text"
               value={formData.appearance?.age || ''}
@@ -1934,7 +1947,7 @@ min={0}
             />
           </div>
           <div>
-            <label className="block text-xs font-semibold text-stone-600 mb-1">Height</label>
+            <label className="block text-xs font-semibold text-stone-600 mb-1">{t('sheet.height')}</label>
             <input
               type="text"
               value={formData.appearance?.height || ''}
@@ -1944,7 +1957,7 @@ min={0}
             />
           </div>
           <div>
-            <label className="block text-xs font-semibold text-stone-600 mb-1">Weight</label>
+            <label className="block text-xs font-semibold text-stone-600 mb-1">{t('sheet.weight')}</label>
             <input
               type="text"
               value={formData.appearance?.weight || ''}
@@ -1954,7 +1967,7 @@ min={0}
             />
           </div>
           <div>
-            <label className="block text-xs font-semibold text-stone-600 mb-1">Eyes</label>
+            <label className="block text-xs font-semibold text-stone-600 mb-1">{t('sheet.eyes')}</label>
             <input
               type="text"
               value={formData.appearance?.eyes || ''}
@@ -1963,7 +1976,7 @@ min={0}
             />
           </div>
           <div>
-            <label className="block text-xs font-semibold text-stone-600 mb-1">Skin</label>
+            <label className="block text-xs font-semibold text-stone-600 mb-1">{t('sheet.skin')}</label>
             <input
               type="text"
               value={formData.appearance?.skin || ''}
@@ -1972,7 +1985,7 @@ min={0}
             />
           </div>
           <div>
-            <label className="block text-xs font-semibold text-stone-600 mb-1">Hair</label>
+            <label className="block text-xs font-semibold text-stone-600 mb-1">{t('sheet.hair')}</label>
             <input
               type="text"
               value={formData.appearance?.hair || ''}
@@ -1985,44 +1998,44 @@ min={0}
 
       {/* Personality */}
       <div className="bg-stone-50 border-2 border-stone-300 rounded-lg p-4">
-        <h3 className="text-lg font-semibold text-stone-800 mb-3">Personality</h3>
+        <h3 className="text-lg font-semibold text-stone-800 mb-3">{t('sheet.personality')}</h3>
         <div className="space-y-3">
           <div>
-            <label className="block text-sm font-semibold text-stone-700 mb-1">Personality Traits</label>
+            <label className="block text-sm font-semibold text-stone-700 mb-1">{t('sheet.personalityTraits')}</label>
             <textarea
               value={formData.personality?.traits || ''}
               onChange={(e) => updateField('personality.traits', e.target.value)}
-              placeholder="Describe your character's personality traits..."
+              placeholder={t('sheet.personalityTraitsPlaceholder')}
               rows={2}
               className="w-full px-3 py-2 border border-stone-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-red-500"
             />
           </div>
           <div>
-            <label className="block text-sm font-semibold text-stone-700 mb-1">Ideals</label>
+            <label className="block text-sm font-semibold text-stone-700 mb-1">{t('sheet.ideals')}</label>
             <textarea
               value={formData.personality?.ideals || ''}
               onChange={(e) => updateField('personality.ideals', e.target.value)}
-              placeholder="What drives your character? What do they believe in?"
+              placeholder={t('sheet.idealsPlaceholder')}
               rows={2}
               className="w-full px-3 py-2 border border-stone-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-red-500"
             />
           </div>
           <div>
-            <label className="block text-sm font-semibold text-stone-700 mb-1">Bonds</label>
+            <label className="block text-sm font-semibold text-stone-700 mb-1">{t('sheet.bonds')}</label>
             <textarea
               value={formData.personality?.bonds || ''}
               onChange={(e) => updateField('personality.bonds', e.target.value)}
-              placeholder="What connections does your character have?"
+              placeholder={t('sheet.bondsPlaceholder')}
               rows={2}
               className="w-full px-3 py-2 border border-stone-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-red-500"
             />
           </div>
           <div>
-            <label className="block text-sm font-semibold text-stone-700 mb-1">Flaws</label>
+            <label className="block text-sm font-semibold text-stone-700 mb-1">{t('sheet.flaws')}</label>
             <textarea
               value={formData.personality?.flaws || ''}
               onChange={(e) => updateField('personality.flaws', e.target.value)}
-              placeholder="What are your character's weaknesses or flaws?"
+              placeholder={t('sheet.flawsPlaceholder')}
               rows={2}
               className="w-full px-3 py-2 border border-stone-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-red-500"
             />
@@ -2032,11 +2045,11 @@ min={0}
 
       {/* Backstory */}
       <div className="bg-stone-50 border border-stone-200 rounded-lg p-4">
-        <h3 className="text-lg font-semibold text-stone-800 mb-3">Backstory</h3>
+        <h3 className="text-lg font-semibold text-stone-800 mb-3">{t('sheet.backstory')}</h3>
         <textarea
           value={formData.backstory || ''}
           onChange={(e) => updateField('backstory', e.target.value)}
-          placeholder="Tell your character's story..."
+          placeholder={t('sheet.backstoryPlaceholder')}
           rows={6}
           className="w-full px-3 py-2 border border-stone-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-red-500"
         />
@@ -2044,24 +2057,24 @@ min={0}
 
       {/* Allies & Organizations */}
       <div className="bg-stone-50 border border-stone-200 rounded-lg p-4">
-        <h3 className="text-lg font-semibold text-stone-800 mb-3">Allies & Organizations</h3>
+        <h3 className="text-lg font-semibold text-stone-800 mb-3">{t('sheet.alliesAndOrganizations')}</h3>
         <div className="space-y-2">
           <div>
-            <label className="block text-xs font-semibold text-stone-600 mb-1">Name</label>
+            <label className="block text-xs font-semibold text-stone-600 mb-1">{t('sheet.name')}</label>
             <input
               type="text"
               value={formData.alliesAndOrganizations?.name || ''}
               onChange={(e) => updateField('alliesAndOrganizations.name', e.target.value)}
-              placeholder="e.g., The Arcane Brotherhood"
+              placeholder={t('sheet.alliesNamePlaceholder')}
               className="w-full px-2 py-1 border border-stone-300 rounded focus:outline-none focus:ring-2 focus:ring-red-500"
             />
           </div>
           <div>
-            <label className="block text-xs font-semibold text-stone-600 mb-1">Description</label>
+            <label className="block text-xs font-semibold text-stone-600 mb-1">{t('modal.import.descriptionLabel')}</label>
             <textarea
               value={formData.alliesAndOrganizations?.description || ''}
               onChange={(e) => updateField('alliesAndOrganizations.description', e.target.value)}
-              placeholder="Describe your allies and organizations..."
+              placeholder={t('sheet.alliesDescriptionPlaceholder')}
               rows={3}
               className="w-full px-2 py-1 border border-stone-300 rounded focus:outline-none focus:ring-2 focus:ring-red-500"
             />
@@ -2071,11 +2084,11 @@ min={0}
 
       {/* Treasure */}
       <div className="bg-stone-50 border border-stone-200 rounded-lg p-4">
-        <h3 className="text-lg font-semibold text-stone-800 mb-3">Treasure & Other Notes</h3>
+        <h3 className="text-lg font-semibold text-stone-800 mb-3">{t('sheet.treasureAndNotes')}</h3>
         <textarea
           value={formData.treasure || ''}
           onChange={(e) => updateField('treasure', e.target.value)}
-          placeholder="Special items, treasure, or other important notes..."
+          placeholder={t('sheet.treasurePlaceholder')}
           rows={4}
           className="w-full px-3 py-2 border border-stone-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-red-500"
         />

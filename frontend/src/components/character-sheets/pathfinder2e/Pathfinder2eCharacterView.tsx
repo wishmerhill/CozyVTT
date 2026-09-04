@@ -6,6 +6,8 @@
  */
 
 import React, { useState, useEffect, useRef } from 'react';
+import { useTranslation } from 'react-i18next';
+import type { TFunction } from 'i18next';
 import {
   Heart,
   Shield,
@@ -51,13 +53,48 @@ const formatModifier = (mod: number): string => {
 };
 
 /**
- * Format spell rank
+ * Format spell rank. Rank 0 is a cantrip; ranks 1-10 use the same
+ * "Rank {{rank}}" phrasing as the editor's spell rank selectors, rather than
+ * English ordinal suffixes that don't translate.
  */
-const formatSpellRank = (rank: number): string => {
-  if (rank === 0) return 'Cantrip';
-  const suffixes = ['th', 'st', 'nd', 'rd'];
-  const v = rank % 100;
-  return rank + (suffixes[(v - 20) % 10] || suffixes[v] || suffixes[0]);
+const formatSpellRank = (rank: number, t: TFunction): string => {
+  if (rank === 0) return t('sheet.pf2e.cantripRank');
+  return t('sheet.pf2e.rankLabel', { rank });
+};
+
+// Maps ability score full names (as used in character data) to the
+// abbreviation used by the `game-systems:pathfinder2e.abilities.*` keys.
+const ABILITY_ABBR: Record<string, string> = {
+  strength: 'str',
+  dexterity: 'dex',
+  constitution: 'con',
+  intelligence: 'int',
+  wisdom: 'wis',
+  charisma: 'cha',
+};
+
+// `sheet.skills.*` vocabulary covers skills shared with dnd5e; PF2e-only
+// skills (crafting, diplomacy, occultism, society, thievery) use the
+// `sheet.pf2e.skills.*` vocabulary instead. Mirrors the map of the same name
+// in Pathfinder2eCharacterEditor.tsx.
+const PF2E_SKILL_KEY: Record<string, string> = {
+  acrobatics: 'sheet.skills.acrobatics',
+  arcana: 'sheet.skills.arcana',
+  athletics: 'sheet.skills.athletics',
+  crafting: 'sheet.pf2e.skills.crafting',
+  deception: 'sheet.skills.deception',
+  diplomacy: 'sheet.pf2e.skills.diplomacy',
+  intimidation: 'sheet.skills.intimidation',
+  medicine: 'sheet.skills.medicine',
+  nature: 'sheet.skills.nature',
+  occultism: 'sheet.pf2e.skills.occultism',
+  perception: 'sheet.skills.perception',
+  performance: 'sheet.skills.performance',
+  religion: 'sheet.skills.religion',
+  society: 'sheet.pf2e.skills.society',
+  stealth: 'sheet.skills.stealth',
+  survival: 'sheet.skills.survival',
+  thievery: 'sheet.pf2e.skills.thievery',
 };
 
 // Pathfinder 2e color presets (matching editor)
@@ -86,6 +123,7 @@ export const Pathfinder2eCharacterView: React.FC<Pathfinder2eCharacterViewProps>
   onEdit,
   onRoll,
 }) => {
+  const { t } = useTranslation(['character', 'common', 'game-systems']);
   const data = character.data;
   const [selectedColor, setSelectedColor] = useState(COLOR_PRESETS[0]);
   const [isCustomColor, setIsCustomColor] = useState(false);
@@ -150,10 +188,10 @@ export const Pathfinder2eCharacterView: React.FC<Pathfinder2eCharacterViewProps>
           <button
             onClick={onEdit}
             className="absolute top-4 right-4 px-4 py-2 bg-white/20 hover:bg-white/30 rounded-lg transition-colors flex items-center space-x-2 font-medium"
-            title="Edit character"
+            title={t('sheet.edit')}
           >
             <Edit className="w-4 h-4" />
-            <span>Edit</span>
+            <span>{t('sheet.edit')}</span>
           </button>
         )}
 
@@ -163,17 +201,17 @@ export const Pathfinder2eCharacterView: React.FC<Pathfinder2eCharacterViewProps>
           {character.tokenImageUrl && (
             <img
               src={character.tokenImageUrl}
-              alt={data.characterName}
+              alt={data.characterName || t('sheet.unnamedCharacter')}
               className="w-24 h-24 rounded-full border-4 border-white/20 object-cover"
             />
           )}
 
           {/* Character Info */}
           <div>
-            <h2 className="text-3xl font-bold mb-2">{data.characterName}</h2>
+            <h2 className="text-3xl font-bold mb-2">{data.characterName || t('sheet.unnamedCharacter')}</h2>
             <div className="flex items-center flex-wrap gap-2 opacity-90">
               <span className="px-3 py-1 bg-white/20 rounded-full text-sm font-medium">
-                Level {data.level} {data.class}
+                {t('sheet.level')} {data.level} {data.class}
               </span>
               <span className="px-3 py-1 bg-white/10 rounded-full text-sm">
                 {data.ancestry} ({data.heritage})
@@ -184,18 +222,18 @@ export const Pathfinder2eCharacterView: React.FC<Pathfinder2eCharacterViewProps>
             </div>
             {data.playerName && (
               <div className="mt-2 text-sm opacity-80">
-                Player: {data.playerName}
+                {t('viewer.playerLabel', { name: data.playerName })}
               </div>
             )}
           </div>
         </div>
 
         <div className="text-right">
-          <div className="text-xs opacity-70 mb-1">Experience Points</div>
+          <div className="text-xs opacity-70 mb-1">{t('sheet.experiencePoints')}</div>
           <div className="text-2xl font-bold">{data.experiencePoints || 0}</div>
           {data.heroPoints !== undefined && (
             <div className="mt-2">
-              <div className="text-xs opacity-70 mb-1">Hero Points</div>
+              <div className="text-xs opacity-70 mb-1">{t('sheet.pf2e.heroPoints')}</div>
               <div className="text-xl font-bold">
                 {data.heroPoints} / 3
               </div>
@@ -212,20 +250,21 @@ export const Pathfinder2eCharacterView: React.FC<Pathfinder2eCharacterViewProps>
     <div className="bg-stone-50 border-2 border-stone-200 rounded-lg p-4">
       <h3 className="text-lg font-bold text-stone-800 mb-4 flex items-center">
         <User className="w-5 h-5 mr-2" />
-        Ability Scores
+        {t('sheet.abilityScores')}
       </h3>
       <div className="grid grid-cols-3 md:grid-cols-6 gap-4">
         {['strength', 'dexterity', 'constitution', 'intelligence', 'wisdom', 'charisma'].map((ability) => {
           const abilityData = data.attributes?.[ability] || { score: 10, modifier: 0 };
           const expr = abilityData.modifier >= 0 ? `1d20+${abilityData.modifier}` : `1d20${abilityData.modifier}`;
-          const purpose = `${ability.charAt(0).toUpperCase() + ability.slice(1)} Check`;
+          const fullName = t(`game-systems:pathfinder2e.abilities.${ABILITY_ABBR[ability]}`);
+          const purpose = t('sheet.abilityCheckPurpose', { ability: fullName });
           return (
             <div
               key={ability}
               className={`flex flex-col items-center rounded-lg p-1 transition-colors group ${onRoll ? 'cursor-pointer hover:bg-stone-100 select-none' : ''}`}
               onClick={onRoll ? () => handleRoll(expr, purpose) : undefined}
               onContextMenu={onRoll ? (e) => showRollPopup(e, expr, purpose) : undefined}
-              title={onRoll ? `Left-click: roll ${ability} check  |  Right-click: Fortune / Misfortune` : undefined}
+              title={onRoll ? t('sheet.pf2e.rollHintCheck', { label: fullName }) : undefined}
             >
               <div className="text-xs font-semibold text-stone-600 uppercase tracking-wide mb-1">
                 {ability.slice(0, 3)}
@@ -257,7 +296,7 @@ export const Pathfinder2eCharacterView: React.FC<Pathfinder2eCharacterViewProps>
     <div className="bg-stone-50 border-2 border-stone-200 rounded-lg p-4">
       <h3 className="text-lg font-bold text-stone-800 mb-3 flex items-center">
         <Shield className="w-5 h-5 mr-2" />
-        Saving Throws
+        {t('sheet.savingThrows')}
       </h3>
       <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
         {['fortitude', 'reflex', 'will'].map((save) => {
@@ -267,18 +306,19 @@ export const Pathfinder2eCharacterView: React.FC<Pathfinder2eCharacterViewProps>
             itemBonus: 0,
           };
           const expr = saveData.bonus >= 0 ? `1d20+${saveData.bonus}` : `1d20${saveData.bonus}`;
-          const purpose = `${save.charAt(0).toUpperCase() + save.slice(1)} Save`;
+          const saveName = t(`sheet.pf2e.savingThrows.${save}`);
+          const purpose = `${saveName} ${t('sheet.save')}`;
           return (
             <div
               key={save}
               className={`bg-white border border-stone-200 rounded-lg p-3 flex items-center justify-between group ${onRoll ? 'cursor-pointer hover:bg-blue-50 hover:border-blue-300 select-none' : ''}`}
               onClick={onRoll ? () => handleRoll(expr, purpose) : undefined}
               onContextMenu={onRoll ? (e) => showRollPopup(e, expr, purpose) : undefined}
-              title={onRoll ? `Left-click: roll  |  Right-click: Fortune / Misfortune` : undefined}
+              title={onRoll ? t('sheet.pf2e.rollHintGeneric') : undefined}
             >
               <div className="flex items-center space-x-2">
                 <ProficiencyIndicator rank={saveData.proficiencyRank as ProficiencyRank} />
-                <span className="font-semibold text-stone-800 capitalize">{save}</span>
+                <span className="font-semibold text-stone-800">{saveName}</span>
                 {onRoll && <Dices className="w-3.5 h-3.5 text-blue-600 opacity-0 group-hover:opacity-60 transition-opacity" />}
               </div>
               <span className="text-2xl font-bold text-blue-700">
@@ -303,22 +343,23 @@ export const Pathfinder2eCharacterView: React.FC<Pathfinder2eCharacterViewProps>
       <div className="bg-stone-50 border-2 border-stone-200 rounded-lg p-4">
         <h3 className="text-lg font-bold text-stone-800 mb-3 flex items-center">
           <Eye className="w-5 h-5 mr-2" />
-          Perception
+          {t('sheet.skills.perception')}
         </h3>
         {(() => {
           const expr = perception.bonus >= 0 ? `1d20+${perception.bonus}` : `1d20${perception.bonus}`;
+          const perceptionLabel = t('sheet.skills.perception');
           return (
             <div
               className={`bg-white border border-stone-200 rounded-lg p-4 flex items-center justify-between group ${onRoll ? 'cursor-pointer hover:bg-blue-50 hover:border-blue-300 select-none' : ''}`}
-              onClick={onRoll ? () => handleRoll(expr, 'Perception') : undefined}
-              onContextMenu={onRoll ? (e) => showRollPopup(e, expr, 'Perception') : undefined}
-              title={onRoll ? `Left-click: roll Perception  |  Right-click: Fortune / Misfortune` : undefined}
+              onClick={onRoll ? () => handleRoll(expr, perceptionLabel) : undefined}
+              onContextMenu={onRoll ? (e) => showRollPopup(e, expr, perceptionLabel) : undefined}
+              title={onRoll ? t('sheet.pf2e.rollHintFor', { label: perceptionLabel }) : undefined}
             >
               <div className="flex items-center space-x-3">
                 <ProficiencyIndicator rank={perception.proficiencyRank as ProficiencyRank} size="lg" />
                 <div>
                   <div className="flex items-center gap-1 text-xs text-stone-600 uppercase tracking-wide">
-                    Perception
+                    {perceptionLabel}
                     {onRoll && <Dices className="w-3 h-3 text-blue-600 opacity-0 group-hover:opacity-60 transition-opacity" />}
                   </div>
                   {perception.senses && perception.senses.length > 0 && (
@@ -345,7 +386,7 @@ export const Pathfinder2eCharacterView: React.FC<Pathfinder2eCharacterViewProps>
       <div className="bg-gradient-to-br from-blue-50 to-blue-100 border-2 border-blue-300 rounded-lg p-4">
         <h3 className="text-sm font-bold text-blue-800 mb-2 flex items-center">
           <Shield className="w-4 h-4 mr-2" />
-          Armor Class
+          {t('sheet.armorClass')}
         </h3>
         <div className="flex items-center justify-between">
           <ProficiencyIndicator
@@ -357,7 +398,7 @@ export const Pathfinder2eCharacterView: React.FC<Pathfinder2eCharacterViewProps>
         </div>
         {data.armorClass?.capDex !== null && data.armorClass?.capDex !== undefined && (
           <div className="text-xs text-blue-700 mt-2">
-            DEX Cap: +{data.armorClass.capDex}
+            {t('sheet.pf2e.dexCapLabel')} +{data.armorClass.capDex}
           </div>
         )}
       </div>
@@ -366,7 +407,7 @@ export const Pathfinder2eCharacterView: React.FC<Pathfinder2eCharacterViewProps>
       <div className="bg-gradient-to-br from-purple-50 to-purple-100 border-2 border-purple-300 rounded-lg p-4">
         <h3 className="text-sm font-bold text-purple-800 mb-2 flex items-center">
           <Target className="w-4 h-4 mr-2" />
-          Class DC
+          {t('sheet.pf2e.classDCHeading')}
         </h3>
         <div className="flex items-center justify-between">
           <ProficiencyIndicator
@@ -377,8 +418,8 @@ export const Pathfinder2eCharacterView: React.FC<Pathfinder2eCharacterViewProps>
           </span>
         </div>
         {data.classDC?.keyAttribute && (
-          <div className="text-xs text-purple-700 mt-2 capitalize">
-            Key: {data.classDC.keyAttribute}
+          <div className="text-xs text-purple-700 mt-2">
+            {t('sheet.pf2e.keyAttributeLabel')} {t(`game-systems:pathfinder2e.abilities.${ABILITY_ABBR[data.classDC.keyAttribute] || data.classDC.keyAttribute}`, { defaultValue: data.classDC.keyAttribute })}
           </div>
         )}
       </div>
@@ -387,11 +428,14 @@ export const Pathfinder2eCharacterView: React.FC<Pathfinder2eCharacterViewProps>
       <div className="bg-gradient-to-br from-amber-50 to-amber-100 border-2 border-amber-300 rounded-lg p-4">
         <h3 className="text-sm font-bold text-amber-800 mb-2 flex items-center">
           <Zap className="w-4 h-4 mr-2" />
-          Initiative
+          {t('sheet.initiative')}
         </h3>
         <div className="flex items-center justify-between">
-          <span className="text-xs text-amber-700 capitalize">
-            {data.initiative?.usedStat || 'perception'}
+          <span className="text-xs text-amber-700">
+            {(() => {
+              const usedStat = data.initiative?.usedStat || 'perception';
+              return t(PF2E_SKILL_KEY[usedStat] || usedStat, { defaultValue: usedStat });
+            })()}
           </span>
           <span className="text-4xl font-bold text-amber-800">
             {formatModifier(data.initiative?.bonus || 0)}
@@ -401,7 +445,7 @@ export const Pathfinder2eCharacterView: React.FC<Pathfinder2eCharacterViewProps>
 
       {/* Speed */}
       <div className="bg-gradient-to-br from-green-50 to-green-100 border-2 border-green-300 rounded-lg p-4">
-        <h3 className="text-sm font-bold text-green-800 mb-2">Speed</h3>
+        <h3 className="text-sm font-bold text-green-800 mb-2">{t('sheet.speed')}</h3>
         <div className="text-3xl font-bold text-green-800">
           {data.speed?.land || 30} ft.
         </div>
@@ -419,19 +463,19 @@ export const Pathfinder2eCharacterView: React.FC<Pathfinder2eCharacterViewProps>
     <div className="bg-gradient-to-r from-red-50 to-red-100 border-2 border-red-300 rounded-lg p-4">
       <h3 className="text-lg font-bold text-red-800 mb-3 flex items-center">
         <Heart className="w-5 h-5 mr-2" />
-        Hit Points
+        {t('sheet.hitPoints')}
       </h3>
       <div className="grid grid-cols-3 gap-4 mb-3">
         <div>
-          <div className="text-xs font-semibold text-red-700 mb-1">Maximum</div>
+          <div className="text-xs font-semibold text-red-700 mb-1">{t('sheet.maximum')}</div>
           <div className="text-3xl font-bold text-red-800">{data.hp?.maximum || 0}</div>
         </div>
         <div>
-          <div className="text-xs font-semibold text-red-700 mb-1">Current</div>
+          <div className="text-xs font-semibold text-red-700 mb-1">{t('sheet.current')}</div>
           <div className="text-3xl font-bold text-red-700">{data.hp?.current || 0}</div>
         </div>
         <div>
-          <div className="text-xs font-semibold text-red-700 mb-1">Temporary</div>
+          <div className="text-xs font-semibold text-red-700 mb-1 capitalize">{t('sheet.temporary')}</div>
           <div className="text-3xl font-bold text-blue-700">{data.hp?.temporary || 0}</div>
         </div>
       </div>
@@ -440,19 +484,19 @@ export const Pathfinder2eCharacterView: React.FC<Pathfinder2eCharacterViewProps>
       <div className="grid grid-cols-3 gap-2 text-xs">
         {data.hp?.resistances && data.hp.resistances.length > 0 && (
           <div>
-            <span className="font-semibold text-green-700">Resistances:</span>{' '}
+            <span className="font-semibold text-green-700">{t('sheet.pf2e.resistances')}:</span>{' '}
             {data.hp.resistances.join(', ')}
           </div>
         )}
         {data.hp?.immunities && data.hp.immunities.length > 0 && (
           <div>
-            <span className="font-semibold text-blue-700">Immunities:</span>{' '}
+            <span className="font-semibold text-blue-700">{t('sheet.pf2e.immunities')}:</span>{' '}
             {data.hp.immunities.join(', ')}
           </div>
         )}
         {data.hp?.weaknesses && data.hp.weaknesses.length > 0 && (
           <div>
-            <span className="font-semibold text-red-700">Weaknesses:</span>{' '}
+            <span className="font-semibold text-red-700">{t('sheet.pf2e.weaknesses')}:</span>{' '}
             {data.hp.weaknesses.join(', ')}
           </div>
         )}
@@ -466,15 +510,15 @@ export const Pathfinder2eCharacterView: React.FC<Pathfinder2eCharacterViewProps>
           <div className="flex items-center space-x-4 text-sm">
             <div className="flex items-center space-x-1">
               <Skull className="w-4 h-4 text-red-700" />
-              <span className="font-semibold text-red-700">Dying:</span>
+              <span className="font-semibold text-red-700">{t('sheet.pf2e.dying')}:</span>
               <span className="text-red-800">{data.deathAndDying?.dying || 0}</span>
             </div>
             <div>
-              <span className="font-semibold text-amber-700">Wounded:</span>
+              <span className="font-semibold text-amber-700">{t('sheet.pf2e.wounded')}:</span>
               <span className="text-amber-800"> {data.deathAndDying?.wounded || 0}</span>
             </div>
             <div>
-              <span className="font-semibold text-purple-700">Doomed:</span>
+              <span className="font-semibold text-purple-700">{t('sheet.pf2e.doomed')}:</span>
               <span className="text-purple-800"> {data.deathAndDying?.doomed || 0}</span>
             </div>
           </div>
@@ -490,15 +534,16 @@ export const Pathfinder2eCharacterView: React.FC<Pathfinder2eCharacterViewProps>
 
     return (
       <div className="bg-stone-50 border-2 border-stone-200 rounded-lg p-4">
-        <h3 className="text-lg font-bold text-stone-800 mb-3">Skills</h3>
+        <h3 className="text-lg font-bold text-stone-800 mb-3">{t('sheet.skillList')}</h3>
         <div className="grid grid-cols-1 md:grid-cols-2 gap-2">
           {Object.entries(skills).map(([skillName, skillData]: [string, any]) => {
-            const displayName = skillName
+            const fallbackName = skillName
               .replace(/([A-Z])/g, ' $1')
               .replace(/^./, (str) => str.toUpperCase())
               .trim();
+            const displayName = t(PF2E_SKILL_KEY[skillName] || skillName, { defaultValue: fallbackName });
             const expr = skillData.bonus >= 0 ? `1d20+${skillData.bonus}` : `1d20${skillData.bonus}`;
-            const purpose = `${displayName} Check`;
+            const purpose = t('sheet.skills.rollPurpose', { skill: displayName });
 
             return (
               <div
@@ -506,7 +551,7 @@ export const Pathfinder2eCharacterView: React.FC<Pathfinder2eCharacterViewProps>
                 className={`bg-white border border-stone-200 rounded p-2 flex items-center justify-between group ${onRoll ? 'cursor-pointer hover:bg-blue-50 hover:border-blue-300 select-none' : ''}`}
                 onClick={onRoll ? () => handleRoll(expr, purpose) : undefined}
                 onContextMenu={onRoll ? (e) => showRollPopup(e, expr, purpose) : undefined}
-                title={onRoll ? `Left-click: roll  |  Right-click: Fortune / Misfortune` : undefined}
+                title={onRoll ? t('sheet.pf2e.rollHintGeneric') : undefined}
               >
                 <div className="flex items-center space-x-2">
                   <ProficiencyIndicator rank={skillData.proficiencyRank as ProficiencyRank} size="sm" />
@@ -527,18 +572,18 @@ export const Pathfinder2eCharacterView: React.FC<Pathfinder2eCharacterViewProps>
         {/* Lore Skills */}
         {loreSkills.length > 0 && (
           <div className="mt-4">
-            <h4 className="text-md font-semibold text-stone-700 mb-2">Lore Skills</h4>
+            <h4 className="text-md font-semibold text-stone-700 mb-2">{t('sheet.pf2e.loreSkillsHeading')}</h4>
             <div className="grid grid-cols-1 md:grid-cols-2 gap-2">
               {loreSkills.map((lore: any, index: number) => {
                 const expr = lore.bonus >= 0 ? `1d20+${lore.bonus}` : `1d20${lore.bonus}`;
-                const purpose = `${lore.name} Lore Check`;
+                const purpose = t('sheet.pf2e.loreCheckPurpose', { name: lore.name });
                 return (
                   <div
                     key={index}
                     className={`bg-amber-50 border border-amber-200 rounded p-2 flex items-center justify-between group ${onRoll ? 'cursor-pointer hover:bg-blue-50 hover:border-blue-300 select-none' : ''}`}
                     onClick={onRoll ? () => handleRoll(expr, purpose) : undefined}
                     onContextMenu={onRoll ? (e) => showRollPopup(e, expr, purpose) : undefined}
-                    title={onRoll ? `Left-click: roll  |  Right-click: Fortune / Misfortune` : undefined}
+                    title={onRoll ? t('sheet.pf2e.rollHintGeneric') : undefined}
                   >
                     <div className="flex items-center space-x-2">
                       <ProficiencyIndicator rank={lore.proficiencyRank as ProficiencyRank} size="sm" />
@@ -561,7 +606,7 @@ export const Pathfinder2eCharacterView: React.FC<Pathfinder2eCharacterViewProps>
   // Render strikes/attacks
   const renderStrikes = () => (
     <div className="bg-stone-50 border-2 border-stone-200 rounded-lg p-4">
-      <h3 className="text-lg font-bold text-stone-800 mb-3">Strikes & Attacks</h3>
+      <h3 className="text-lg font-bold text-stone-800 mb-3">{t('sheet.pf2e.strikesAndAttacksHeading')}</h3>
       <StrikesList
         strikes={data.strikes || []}
         onRoll={onRoll ? (expr, purpose) => handleRoll(expr, purpose) : undefined}
@@ -575,7 +620,7 @@ export const Pathfinder2eCharacterView: React.FC<Pathfinder2eCharacterViewProps>
     <div className="bg-stone-50 border-2 border-stone-200 rounded-lg p-4">
       <h3 className="text-lg font-bold text-stone-800 mb-4 flex items-center">
         <Package className="w-5 h-5 mr-2" />
-        Inventory & Equipment
+        {t('sheet.pf2e.inventoryAndEquipmentHeading')}
       </h3>
 
       {/* Currency */}
@@ -583,13 +628,13 @@ export const Pathfinder2eCharacterView: React.FC<Pathfinder2eCharacterViewProps>
         <div className="flex items-center justify-between">
           <div className="flex items-center space-x-2">
             <Coins className="w-5 h-5 text-amber-600" />
-            <span className="font-semibold text-stone-800">Currency</span>
+            <span className="font-semibold text-stone-800">{t('sheet.currency')}</span>
           </div>
           <div className="flex items-center space-x-4 text-sm">
-            <span><strong>{data.currency?.pp || 0}</strong> pp</span>
-            <span><strong>{data.currency?.gp || 0}</strong> gp</span>
-            <span><strong>{data.currency?.sp || 0}</strong> sp</span>
-            <span><strong>{data.currency?.cp || 0}</strong> cp</span>
+            <span><strong>{data.currency?.pp || 0}</strong> {t('sheet.pf2e.currencyAbbr.pp')}</span>
+            <span><strong>{data.currency?.gp || 0}</strong> {t('sheet.pf2e.currencyAbbr.gp')}</span>
+            <span><strong>{data.currency?.sp || 0}</strong> {t('sheet.pf2e.currencyAbbr.sp')}</span>
+            <span><strong>{data.currency?.cp || 0}</strong> {t('sheet.pf2e.currencyAbbr.cp')}</span>
           </div>
         </div>
       </div>
@@ -606,7 +651,7 @@ export const Pathfinder2eCharacterView: React.FC<Pathfinder2eCharacterViewProps>
     <div className="bg-stone-50 border-2 border-stone-200 rounded-lg p-4">
       <h3 className="text-lg font-bold text-stone-800 mb-4 flex items-center">
         <BookOpen className="w-5 h-5 mr-2" />
-        Feats
+        {t('sheet.pf2e.featsHeading')}
       </h3>
       <FeatsList feats={data.feats || {}} />
     </div>
@@ -618,7 +663,7 @@ export const Pathfinder2eCharacterView: React.FC<Pathfinder2eCharacterViewProps>
 
     return (
       <div className="bg-stone-50 border-2 border-stone-200 rounded-lg p-4">
-        <h3 className="text-lg font-bold text-stone-800 mb-3">Class Features</h3>
+        <h3 className="text-lg font-bold text-stone-800 mb-3">{t('sheet.pf2e.classFeaturesHeading')}</h3>
         <div className="grid grid-cols-1 md:grid-cols-2 gap-2">
           {data.classFeatures.map((feature: string, index: number) => (
             <div
@@ -643,22 +688,28 @@ export const Pathfinder2eCharacterView: React.FC<Pathfinder2eCharacterViewProps>
       <div className="bg-gradient-to-br from-purple-50 to-purple-100 border-2 border-purple-300 rounded-lg p-4">
         <h3 className="text-lg font-bold text-purple-800 mb-4 flex items-center">
           <Sparkles className="w-5 h-5 mr-2" />
-          Spellcasting
+          {t('sheet.spellcasting')}
         </h3>
 
         {/* Spellcasting Info */}
         <div className="grid grid-cols-3 gap-4 mb-4">
           <div className="bg-white border border-purple-200 rounded-lg p-3">
-            <div className="text-xs font-semibold text-purple-600 mb-1">Tradition</div>
-            <div className="font-bold text-purple-800 capitalize">{spellcasting.tradition}</div>
+            <div className="text-xs font-semibold text-purple-600 mb-1">{t('sheet.pf2e.traditionLabel')}</div>
+            <div className="font-bold text-purple-800">
+              {t(`sheet.pf2e.traditions.${spellcasting.tradition}`, { defaultValue: spellcasting.tradition })}
+            </div>
           </div>
           <div className="bg-white border border-purple-200 rounded-lg p-3">
-            <div className="text-xs font-semibold text-purple-600 mb-1">Type</div>
-            <div className="font-bold text-purple-800 capitalize">{spellcasting.type}</div>
+            <div className="text-xs font-semibold text-purple-600 mb-1">{t('sheet.type')}</div>
+            <div className="font-bold text-purple-800">
+              {spellcasting.type === 'prepared' ? t('sheet.prepared') : t('sheet.pf2e.spontaneous')}
+            </div>
           </div>
           <div className="bg-white border border-purple-200 rounded-lg p-3">
-            <div className="text-xs font-semibold text-purple-600 mb-1">Key Attribute</div>
-            <div className="font-bold text-purple-800 capitalize">{spellcasting.keyAttribute}</div>
+            <div className="text-xs font-semibold text-purple-600 mb-1">{t('sheet.pf2e.keyAttributeHeading')}</div>
+            <div className="font-bold text-purple-800">
+              {t(`game-systems:pathfinder2e.abilities.${ABILITY_ABBR[spellcasting.keyAttribute] || spellcasting.keyAttribute}`, { defaultValue: spellcasting.keyAttribute })}
+            </div>
           </div>
         </div>
 
@@ -670,7 +721,7 @@ export const Pathfinder2eCharacterView: React.FC<Pathfinder2eCharacterViewProps>
                 rank={spellcasting.spellAttackBonus?.proficiencyRank as ProficiencyRank || 'untrained'}
                 size="sm"
               />
-              <span className="text-sm font-semibold text-purple-800">Spell Attack</span>
+              <span className="text-sm font-semibold text-purple-800">{t('sheet.spellAttack')}</span>
             </div>
             <span className="text-2xl font-bold text-purple-700">
               {formatModifier(spellcasting.spellAttackBonus?.bonus || 0)}
@@ -682,7 +733,7 @@ export const Pathfinder2eCharacterView: React.FC<Pathfinder2eCharacterViewProps>
                 rank={spellcasting.spellDC?.proficiencyRank as ProficiencyRank || 'untrained'}
                 size="sm"
               />
-              <span className="text-sm font-semibold text-purple-800">Spell DC</span>
+              <span className="text-sm font-semibold text-purple-800">{t('sheet.pf2e.spellDCHeading')}</span>
             </div>
             <span className="text-2xl font-bold text-purple-700">
               {spellcasting.spellDC?.dc || 10}
@@ -694,7 +745,7 @@ export const Pathfinder2eCharacterView: React.FC<Pathfinder2eCharacterViewProps>
         {spellcasting.cantrips && spellcasting.cantrips.length > 0 && (
           <div className="mb-4">
             <h4 className="font-semibold text-purple-800 mb-2">
-              Cantrips ({formatSpellRank(spellcasting.cantrips[0]?.rank || 0)})
+              {t('sheet.cantrips')} ({formatSpellRank(spellcasting.cantrips[0]?.rank || 0, t)})
             </h4>
             <div className="flex flex-wrap gap-2">
               {spellcasting.cantrips.map((cantrip: any, index: number) => (
@@ -711,7 +762,7 @@ export const Pathfinder2eCharacterView: React.FC<Pathfinder2eCharacterViewProps>
 
         {/* Spell Slots */}
         <div className="mb-4">
-          <h4 className="font-semibold text-purple-800 mb-2">Spell Slots</h4>
+          <h4 className="font-semibold text-purple-800 mb-2">{t('sheet.spellSlots')}</h4>
           <div className="grid grid-cols-5 gap-2">
             {[1, 2, 3, 4, 5, 6, 7, 8, 9, 10].map((rank) => {
               const slot = spellcasting.slots?.[rank.toString()] || { total: 0, expended: 0 };
@@ -722,7 +773,7 @@ export const Pathfinder2eCharacterView: React.FC<Pathfinder2eCharacterViewProps>
               return (
                 <div key={rank} className="bg-white border border-purple-200 rounded-lg p-2">
                   <div className="text-xs font-semibold text-purple-600 text-center mb-1">
-                    {formatSpellRank(rank)}
+                    {formatSpellRank(rank, t)}
                   </div>
                   <div className="text-center">
                     <span className={`text-lg font-bold ${remaining > 0 ? 'text-purple-700' : 'text-stone-500'}`}>
@@ -739,7 +790,7 @@ export const Pathfinder2eCharacterView: React.FC<Pathfinder2eCharacterViewProps>
         {/* Spells by Rank */}
         {spellcasting.spells && spellcasting.spells.length > 0 && (
           <div className="mb-4">
-            <h4 className="font-semibold text-purple-800 mb-2">Spells</h4>
+            <h4 className="font-semibold text-purple-800 mb-2">{t('sheet.spells')}</h4>
             {[1, 2, 3, 4, 5, 6, 7, 8, 9, 10].map((rank) => {
               const rankSpells = spellcasting.spells.filter((s: any) => s.rank === rank);
               if (rankSpells.length === 0) return null;
@@ -747,7 +798,7 @@ export const Pathfinder2eCharacterView: React.FC<Pathfinder2eCharacterViewProps>
               return (
                 <div key={rank} className="mb-3">
                   <div className="text-sm font-semibold text-purple-700 mb-1">
-                    {formatSpellRank(rank)}
+                    {formatSpellRank(rank, t)}
                   </div>
                   <div className="grid grid-cols-2 gap-2">
                     {rankSpells.map((spell: any, index: number) => (
@@ -760,8 +811,8 @@ export const Pathfinder2eCharacterView: React.FC<Pathfinder2eCharacterViewProps>
                         }`}
                       >
                         {spell.name}
-                        {spell.heightened && <span className="ml-1 text-xs">(H)</span>}
-                        {spell.ritual && <span className="ml-1 text-xs">(R)</span>}
+                        {spell.heightened && <span className="ml-1 text-xs">({t('sheet.pf2e.heightenedAbbr')})</span>}
+                        {spell.ritual && <span className="ml-1 text-xs">({t('sheet.ritAbbr')})</span>}
                       </div>
                     ))}
                   </div>
@@ -777,10 +828,12 @@ export const Pathfinder2eCharacterView: React.FC<Pathfinder2eCharacterViewProps>
           spellcasting.focusSpells.spells.length > 0 && (
           <div className="mb-4">
             <div className="flex items-center justify-between mb-2">
-              <h4 className="font-semibold text-purple-800">Focus Spells</h4>
+              <h4 className="font-semibold text-purple-800">{t('sheet.pf2e.focusSpellsHeading')}</h4>
               <span className="text-sm font-medium text-purple-700">
-                {spellcasting.focusSpells.focusPoints?.current || 0} /{' '}
-                {spellcasting.focusSpells.focusPoints?.total || 0} Focus Points
+                {t('sheet.pf2e.focusPointsCount', {
+                  current: spellcasting.focusSpells.focusPoints?.current || 0,
+                  total: spellcasting.focusSpells.focusPoints?.total || 0,
+                })}
               </span>
             </div>
             <div className="flex flex-wrap gap-2">
@@ -799,7 +852,7 @@ export const Pathfinder2eCharacterView: React.FC<Pathfinder2eCharacterViewProps>
         {/* Innate Spells */}
         {spellcasting.innateSpells && spellcasting.innateSpells.length > 0 && (
           <div>
-            <h4 className="font-semibold text-purple-800 mb-2">Innate Spells</h4>
+            <h4 className="font-semibold text-purple-800 mb-2">{t('sheet.pf2e.innateSpellsHeading')}</h4>
             <div className="space-y-2">
               {spellcasting.innateSpells.map((spell: any, index: number) => (
                 <div key={index} className="bg-white border border-purple-200 rounded p-2 text-sm">
@@ -822,32 +875,32 @@ export const Pathfinder2eCharacterView: React.FC<Pathfinder2eCharacterViewProps>
   // Render character background/bio
   const renderBio = () => (
     <div className="bg-stone-50 border-2 border-stone-200 rounded-lg p-4">
-      <h3 className="text-lg font-bold text-stone-800 mb-4">Character Background</h3>
+      <h3 className="text-lg font-bold text-stone-800 mb-4">{t('sheet.pf2e.characterBackgroundHeading')}</h3>
 
       {/* Personality */}
       {data.personality && (
         <div className="space-y-3 mb-4">
           {data.personality.traits && (
             <div>
-              <h4 className="text-sm font-semibold text-stone-700 mb-1">Personality Traits</h4>
+              <h4 className="text-sm font-semibold text-stone-700 mb-1">{t('sheet.personalityTraits')}</h4>
               <p className="text-sm text-stone-600">{data.personality.traits}</p>
             </div>
           )}
           {data.personality.ideals && (
             <div>
-              <h4 className="text-sm font-semibold text-stone-700 mb-1">Ideals</h4>
+              <h4 className="text-sm font-semibold text-stone-700 mb-1">{t('sheet.ideals')}</h4>
               <p className="text-sm text-stone-600">{data.personality.ideals}</p>
             </div>
           )}
           {data.personality.bonds && (
             <div>
-              <h4 className="text-sm font-semibold text-stone-700 mb-1">Bonds</h4>
+              <h4 className="text-sm font-semibold text-stone-700 mb-1">{t('sheet.bonds')}</h4>
               <p className="text-sm text-stone-600">{data.personality.bonds}</p>
             </div>
           )}
           {data.personality.flaws && (
             <div>
-              <h4 className="text-sm font-semibold text-stone-700 mb-1">Flaws</h4>
+              <h4 className="text-sm font-semibold text-stone-700 mb-1">{t('sheet.flaws')}</h4>
               <p className="text-sm text-stone-600">{data.personality.flaws}</p>
             </div>
           )}
@@ -857,7 +910,7 @@ export const Pathfinder2eCharacterView: React.FC<Pathfinder2eCharacterViewProps>
       {/* Backstory */}
       {data.backstory && (
         <div className="mb-4">
-          <h4 className="text-sm font-semibold text-stone-700 mb-1">Backstory</h4>
+          <h4 className="text-sm font-semibold text-stone-700 mb-1">{t('sheet.backstory')}</h4>
           <p className="text-sm text-stone-600">{data.backstory}</p>
         </div>
       )}
@@ -865,14 +918,14 @@ export const Pathfinder2eCharacterView: React.FC<Pathfinder2eCharacterViewProps>
       {/* Appearance */}
       {data.appearance && (
         <div className="bg-white border border-stone-200 rounded-lg p-3 mb-4">
-          <h4 className="text-sm font-semibold text-stone-700 mb-2">Appearance</h4>
+          <h4 className="text-sm font-semibold text-stone-700 mb-2">{t('sheet.appearance')}</h4>
           <div className="grid grid-cols-3 gap-2 text-xs text-stone-600">
-            {data.appearance.age && <div><strong>Age:</strong> {data.appearance.age}</div>}
-            {data.appearance.height && <div><strong>Height:</strong> {data.appearance.height}</div>}
-            {data.appearance.weight && <div><strong>Weight:</strong> {data.appearance.weight}</div>}
-            {data.appearance.eyes && <div><strong>Eyes:</strong> {data.appearance.eyes}</div>}
-            {data.appearance.skin && <div><strong>Skin:</strong> {data.appearance.skin}</div>}
-            {data.appearance.hair && <div><strong>Hair:</strong> {data.appearance.hair}</div>}
+            {data.appearance.age && <div><strong>{t('sheet.age')}:</strong> {data.appearance.age}</div>}
+            {data.appearance.height && <div><strong>{t('sheet.height')}:</strong> {data.appearance.height}</div>}
+            {data.appearance.weight && <div><strong>{t('sheet.weight')}:</strong> {data.appearance.weight}</div>}
+            {data.appearance.eyes && <div><strong>{t('sheet.eyes')}:</strong> {data.appearance.eyes}</div>}
+            {data.appearance.skin && <div><strong>{t('sheet.skin')}:</strong> {data.appearance.skin}</div>}
+            {data.appearance.hair && <div><strong>{t('sheet.hair')}:</strong> {data.appearance.hair}</div>}
           </div>
         </div>
       )}
@@ -880,7 +933,7 @@ export const Pathfinder2eCharacterView: React.FC<Pathfinder2eCharacterViewProps>
       {/* Languages */}
       {data.languages && data.languages.length > 0 && (
         <div className="mb-4">
-          <h4 className="text-sm font-semibold text-stone-700 mb-1">Languages</h4>
+          <h4 className="text-sm font-semibold text-stone-700 mb-1">{t('sheet.languages')}</h4>
           <div className="flex flex-wrap gap-1">
             {data.languages.map((lang: string, index: number) => (
               <span
@@ -907,7 +960,7 @@ export const Pathfinder2eCharacterView: React.FC<Pathfinder2eCharacterViewProps>
       {/* Notes */}
       {data.notes && (
         <div className="bg-amber-50 border border-amber-200 rounded-lg p-3">
-          <h4 className="text-sm font-semibold text-amber-800 mb-1">Notes</h4>
+          <h4 className="text-sm font-semibold text-amber-800 mb-1">{t('sheet.notes')}</h4>
           <p className="text-sm text-stone-700">{data.notes}</p>
         </div>
       )}
@@ -944,12 +997,12 @@ export const Pathfinder2eCharacterView: React.FC<Pathfinder2eCharacterViewProps>
             {rollPopup.purpose}
           </div>
           {[
-            { label: 'Normal', expr: rollPopup.expression, suffix: '' },
-            { label: 'Fortune', expr: withAdvantage(rollPopup.expression), suffix: ' (Fortune)' },
-            { label: 'Misfortune', expr: withDisadvantage(rollPopup.expression), suffix: ' (Misfortune)' },
-          ].map(({ label, expr, suffix }) => (
+            { key: 'normal', label: t('sheet.normal'), expr: rollPopup.expression, suffix: '' },
+            { key: 'fortune', label: t('sheet.pf2e.fortune'), expr: withAdvantage(rollPopup.expression), suffix: ` (${t('sheet.pf2e.fortune')})` },
+            { key: 'misfortune', label: t('sheet.pf2e.misfortune'), expr: withDisadvantage(rollPopup.expression), suffix: ` (${t('sheet.pf2e.misfortune')})` },
+          ].map(({ key, label, expr, suffix }) => (
             <button
-              key={label}
+              key={key}
               onClick={() => handleRoll(expr, rollPopup.purpose + suffix)}
               className="w-full flex items-center gap-2 px-3 py-2 text-sm text-stone-700 hover:bg-blue-50 transition-colors text-left"
             >

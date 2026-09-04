@@ -3,6 +3,7 @@
  */
 
 import React from 'react';
+import { useTranslation } from 'react-i18next';
 import { GripVertical, Trash2 } from 'lucide-react';
 import type { FlexibleSection } from '../../../../types/flexible-character-sheet';
 
@@ -19,6 +20,7 @@ export const SectionEditor: React.FC<SectionEditorProps> = ({
   onRemove,
   children,
 }) => {
+  const { t } = useTranslation('character');
   const updateTitle = (title: string) => {
     onUpdate({ title });
   };
@@ -36,13 +38,13 @@ export const SectionEditor: React.FC<SectionEditorProps> = ({
           value={section.title}
           onChange={(e) => updateTitle(e.target.value)}
           className="flex-1 text-lg font-semibold bg-transparent border-b border-transparent focus:border-moss-green focus:outline-none text-brand-ink"
-          placeholder="Section title"
+          placeholder={t('sheet.flexible.sectionTitlePlaceholder')}
         />
 
         <button
           onClick={onRemove}
           className="flex-shrink-0 p-2 rounded bg-red-50 text-red-600 opacity-0 group-hover:opacity-100 transition-opacity hover:bg-red-100"
-          title="Remove section"
+          title={t('sheet.flexible.removeSection')}
         >
           <Trash2 className="w-4 h-4" />
         </button>

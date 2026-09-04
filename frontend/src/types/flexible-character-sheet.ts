@@ -85,8 +85,8 @@ export interface FlexibleCharacterData {
  */
 export interface SectionTemplate {
   id: string;
-  name: string;
-  description: string;
+  name: string; // i18n key (character namespace), not display text
+  description: string; // i18n key (character namespace), not display text
   icon: string; // Lucide icon name
   create: () => FlexibleSection;
 }

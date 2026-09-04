@@ -3,6 +3,7 @@
  */
 
 import React from 'react';
+import { useTranslation } from 'react-i18next';
 import type { TableSection } from '../../../../../types/flexible-character-sheet';
 
 interface TableDisplayProps {
@@ -10,10 +11,12 @@ interface TableDisplayProps {
 }
 
 export const TableDisplay: React.FC<TableDisplayProps> = ({ section }) => {
+  const { t } = useTranslation('character');
+
   if (section.rows.length === 0) {
     return (
       <div className="p-4 text-center text-stone-gray">
-        No rows in this table. Switch to edit mode to add rows.
+        {t('sheet.flexible.noRowsTable')}
       </div>
     );
   }

@@ -49,6 +49,7 @@ interface SpellcastingBlockProps {
  * SpellSlotIndicator - Visual representation of spell slots
  */
 const SpellSlotIndicator: React.FC<{ slot: SpellSlot }> = ({ slot }) => {
+  const { t } = useTranslation('character');
   const filled = slot.expended;
   const remaining = slot.total - slot.expended;
   const dots = Math.max(slot.total, 1);
@@ -63,7 +64,7 @@ const SpellSlotIndicator: React.FC<{ slot: SpellSlot }> = ({ slot }) => {
               ? 'bg-blue-500 border-blue-600'
               : 'bg-white border-stone-300'
           }`}
-          title={`${remaining}/${slot.total} remaining`}
+          title={t('sheet.spellSlotsRemaining', { remaining, total: slot.total })}
         />
       ))}
     </div>
@@ -88,12 +89,12 @@ const SpellRow: React.FC<{ spell: Spell }> = ({ spell }) => {
       <div className="flex items-center space-x-3 text-xs">
         {spell.ritual && (
           <span className="px-1.5 py-0.5 bg-blue-100 text-blue-700 rounded font-medium">
-            {t('sheet.preparedSpell')}
+            {t('sheet.ritual')}
           </span>
         )}
         {spell.concentration && (
           <span className="px-1.5 py-0.5 bg-amber-100 text-amber-700 rounded font-medium">
-            {t('sheet.ritual')}
+            {t('sheet.concentration')}
           </span>
         )}
         {spell.ritual && spell.concentration && (

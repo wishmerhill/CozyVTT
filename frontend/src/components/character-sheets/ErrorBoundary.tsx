@@ -4,6 +4,7 @@
 
 import React, { Component, ReactNode } from 'react';
 import { AlertCircle } from 'lucide-react';
+import i18n from '@/i18n/i18n';
 
 interface Props {
   children: ReactNode;
@@ -42,16 +43,16 @@ export class CharacterSheetErrorBoundary extends Component<Props, State> {
               <AlertCircle className="w-8 h-8 text-red-600" />
             </div>
             <h3 className="text-lg font-semibold text-warm-gray">
-              Error Loading Character Sheet
+              {i18n.t('character:editor.errorBoundaryTitle')}
             </h3>
             <p className="text-sm text-stone-gray text-center max-w-md">
-              {this.state.error?.message || 'An unexpected error occurred while loading the character sheet.'}
+              {this.state.error?.message || i18n.t('character:editor.errorBoundaryDefaultMessage')}
             </p>
             <button
               onClick={() => this.setState({ hasError: false, error: null })}
               className="px-4 py-2 bg-moss-green text-white rounded-lg hover:bg-moss-green/90 transition-colors"
             >
-              Try Again
+              {i18n.t('common:tryAgain')}
             </button>
           </div>
         </div>

@@ -6,6 +6,7 @@
  */
 
 import React from 'react';
+import { useTranslation } from 'react-i18next';
 
 export type ProficiencyRank = 'untrained' | 'trained' | 'expert' | 'master' | 'legendary';
 
@@ -15,42 +16,36 @@ interface ProficiencyIndicatorProps {
 }
 
 const PROFICIENCY_CONFIG: Record<ProficiencyRank, {
-  label: string;
   abbr: string;
   color: string;
   bgColor: string;
   textColor: string;
 }> = {
   untrained: {
-    label: 'Untrained',
     abbr: 'U',
     color: 'stone-400',
     bgColor: 'bg-stone-100',
     textColor: 'text-stone-600',
   },
   trained: {
-    label: 'Trained',
     abbr: 'T',
     color: 'blue-500',
     bgColor: 'bg-blue-100',
     textColor: 'text-blue-700',
   },
   expert: {
-    label: 'Expert',
     abbr: 'E',
     color: 'green-500',
     bgColor: 'bg-green-100',
     textColor: 'text-green-700',
   },
   master: {
-    label: 'Master',
     abbr: 'M',
     color: 'purple-500',
     bgColor: 'bg-purple-100',
     textColor: 'text-purple-700',
   },
   legendary: {
-    label: 'Legendary',
     abbr: 'L',
     color: 'amber-500',
     bgColor: 'bg-amber-100',
@@ -68,13 +63,14 @@ export const ProficiencyIndicator: React.FC<ProficiencyIndicatorProps> = ({
   rank,
   size = 'md',
 }) => {
+  const { t } = useTranslation('character');
   const config = PROFICIENCY_CONFIG[rank];
   const sizeClass = SIZE_CLASSES[size];
 
   return (
     <div
       className={`${sizeClass} ${config.bgColor} ${config.textColor} rounded-full flex items-center justify-center font-bold`}
-      title={config.label}
+      title={t(`sheet.pf2e.proficiency.${rank}`)}
     >
       {config.abbr}
     </div>

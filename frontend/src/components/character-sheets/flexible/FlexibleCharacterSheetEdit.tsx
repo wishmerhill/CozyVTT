@@ -3,6 +3,7 @@
  */
 
 import React, { useState } from 'react';
+import { useTranslation } from 'react-i18next';
 import { Save, X, Plus, User, Upload } from 'lucide-react';
 import { Reorder } from 'framer-motion';
 import type { Character } from '../../../types';
@@ -30,6 +31,7 @@ export const FlexibleCharacterSheetEdit: React.FC<FlexibleCharacterSheetEditProp
   onSave,
   onCancel,
 }) => {
+  const { t } = useTranslation(['character', 'common']);
   const initialData = initializeFlexibleData(character.data);
   const [sections, setSections] = useState<FlexibleSection[]>(initialData.sections || []);
   const [isSaving, setIsSaving] = useState(false);
@@ -46,12 +48,12 @@ export const FlexibleCharacterSheetEdit: React.FC<FlexibleCharacterSheetEditProp
     const file = e.target.files?.[0];
     if (file) {
       if (!file.type.startsWith('image/')) {
-        setTokenError('Please select an image file');
+        setTokenError(t('sheet.flexible.selectImageFile'));
         return;
       }
       const tokenLimit = getUploadLimit(serverConfig, AssetType.TOKEN);
       if (file.size > tokenLimit) {
-        setTokenError(`Image must be smaller than ${formatUploadLimit(tokenLimit)}`);
+        setTokenError(t('sheet.flexible.imageTooLarge', { limit: formatUploadLimit(tokenLimit) }));
         return;
       }
       setTokenImageFile(file);
@@ -88,7 +90,7 @@ export const FlexibleCharacterSheetEdit: React.FC<FlexibleCharacterSheetEditProp
           newTokenImageUrl = `/api/assets/tokens/${assetId}`;
         } catch (uploadError: any) {
           console.error('Error uploading token image:', uploadError);
-          setTokenError(uploadError.response?.data?.message || 'Failed to upload token image');
+          setTokenError(uploadError.response?.data?.message || t('sheet.flexible.uploadTokenFailed'));
           setIsSaving(false);
           return;
         }
@@ -186,17 +188,17 @@ export const FlexibleCharacterSheetEdit: React.FC<FlexibleCharacterSheetEditProp
             )}
             {!character.campaignId && (
               <div className="absolute top-full mt-1 text-xs text-amber-600 whitespace-nowrap">
-                Saves as personal token
+                {t('sheet.flexible.personalTokenNote')}
               </div>
             )}
           </div>
 
           <div>
             <h2 className="text-2xl font-bold text-brand-ink">
-              Editing: {character.name}
+              {t('sheet.flexible.editingTitle', { name: character.name })}
             </h2>
             <p className="text-sm text-stone-gray">
-              Drag sections to reorder • Add, edit, or remove sections
+              {t('sheet.flexible.dragToReorderHint')}
             </p>
           </div>
         </div>
@@ -207,14 +209,14 @@ export const FlexibleCharacterSheetEdit: React.FC<FlexibleCharacterSheetEditProp
             className="flex items-center gap-2 px-4 py-2 bg-moss-green text-white rounded-lg hover:bg-moss-green/90 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
           >
             <Save className="w-4 h-4" />
-            {isSaving ? 'Saving...' : 'Save'}
+            {isSaving ? t('common:saving') : t('common:save')}
           </button>
           <button
             onClick={onCancel}
             className="flex items-center gap-2 px-4 py-2 bg-stone-gray/10 text-stone-gray rounded-lg hover:bg-stone-gray/20 transition-colors"
           >
             <X className="w-4 h-4" />
-            Cancel
+            {t('common:cancel')}
           </button>
         </div>
       </div>
@@ -230,8 +232,10 @@ export const FlexibleCharacterSheetEdit: React.FC<FlexibleCharacterSheetEditProp
         </Reorder.Group>
       ) : (
         <div className="text-center py-12 mb-4">
-          <p className="text-stone-gray mb-2">No sections yet.</p>
-          <p className="text-sm text-stone-gray">Click "Add Section" below to get started.</p>
+          <p className="text-stone-gray mb-2">{t('sheet.flexible.noSectionsYetEdit')}</p>
+          <p className="text-sm text-stone-gray">
+            {t('sheet.flexible.clickAddSectionHint', { action: t('sheet.flexible.addSection') })}
+          </p>
         </div>
       )}
 
@@ -242,7 +246,7 @@ export const FlexibleCharacterSheetEdit: React.FC<FlexibleCharacterSheetEditProp
           className="flex items-center gap-2 px-4 py-2 bg-moss-green/10 text-brand-ink rounded-lg hover:bg-moss-green/20 transition-colors w-full justify-center"
         >
           <Plus className="w-4 h-4" />
-          Add Section
+          {t('sheet.flexible.addSection')}
         </button>
         {showAddMenu && <AddSectionMenu onSelect={addSection} onClose={() => setShowAddMenu(false)} />}
       </div>

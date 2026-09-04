@@ -12,14 +12,15 @@ import type {
 import { generateId } from './section-helpers';
 
 /**
- * All available section templates
+ * All available section templates.
+ * name/description hold i18n keys (character namespace), not display text — translate with t() at render time.
  */
 export const SECTION_TEMPLATES: SectionTemplate[] = [
   // Common Templates
   {
     id: 'attributes',
-    name: 'Attributes',
-    description: 'Standard D&D-style attributes',
+    name: 'sheet.flexible.templates.attributes.name',
+    description: 'sheet.flexible.templates.attributes.description',
     icon: 'Target',
     create: (): StatsSection => ({
       id: generateId(),
@@ -37,8 +38,8 @@ export const SECTION_TEMPLATES: SectionTemplate[] = [
   },
   {
     id: 'skills',
-    name: 'Skills',
-    description: 'Custom skills list',
+    name: 'sheet.flexible.templates.skills.name',
+    description: 'sheet.flexible.templates.skills.description',
     icon: 'Target',
     create: (): StatsSection => ({
       id: generateId(),
@@ -49,8 +50,8 @@ export const SECTION_TEMPLATES: SectionTemplate[] = [
   },
   {
     id: 'inventory',
-    name: 'Inventory',
-    description: 'List of items and equipment',
+    name: 'sheet.flexible.templates.inventory.name',
+    description: 'sheet.flexible.templates.inventory.description',
     icon: 'Package',
     create: (): ListSection => ({
       id: generateId(),
@@ -61,8 +62,8 @@ export const SECTION_TEMPLATES: SectionTemplate[] = [
   },
   {
     id: 'spells',
-    name: 'Spells',
-    description: 'List of spells or abilities',
+    name: 'sheet.flexible.templates.spells.name',
+    description: 'sheet.flexible.templates.spells.description',
     icon: 'Sparkles',
     create: (): ListSection => ({
       id: generateId(),
@@ -73,8 +74,8 @@ export const SECTION_TEMPLATES: SectionTemplate[] = [
   },
   {
     id: 'equipment',
-    name: 'Equipment',
-    description: 'Equipment table with stats',
+    name: 'sheet.flexible.templates.equipment.name',
+    description: 'sheet.flexible.templates.equipment.description',
     icon: 'Sword',
     create: (): TableSection => ({
       id: generateId(),
@@ -91,8 +92,8 @@ export const SECTION_TEMPLATES: SectionTemplate[] = [
   },
   {
     id: 'background',
-    name: 'Background',
-    description: 'Character backstory and history',
+    name: 'sheet.flexible.templates.background.name',
+    description: 'sheet.flexible.templates.background.description',
     icon: 'BookOpen',
     create: (): TextSection => ({
       id: generateId(),
@@ -103,8 +104,8 @@ export const SECTION_TEMPLATES: SectionTemplate[] = [
   },
   {
     id: 'notes',
-    name: 'Notes',
-    description: 'General notes and information',
+    name: 'sheet.flexible.templates.notes.name',
+    description: 'sheet.flexible.templates.notes.description',
     icon: 'FileText',
     create: (): TextSection => ({
       id: generateId(),
@@ -117,8 +118,8 @@ export const SECTION_TEMPLATES: SectionTemplate[] = [
   // Blank Templates
   {
     id: 'blank-stats',
-    name: 'Blank Stats',
-    description: 'Empty stats section',
+    name: 'sheet.flexible.templates.blankStats.name',
+    description: 'sheet.flexible.templates.blankStats.description',
     icon: 'Hash',
     create: (): StatsSection => ({
       id: generateId(),
@@ -129,8 +130,8 @@ export const SECTION_TEMPLATES: SectionTemplate[] = [
   },
   {
     id: 'blank-list',
-    name: 'Blank List',
-    description: 'Empty list section',
+    name: 'sheet.flexible.templates.blankList.name',
+    description: 'sheet.flexible.templates.blankList.description',
     icon: 'List',
     create: (): ListSection => ({
       id: generateId(),
@@ -141,8 +142,8 @@ export const SECTION_TEMPLATES: SectionTemplate[] = [
   },
   {
     id: 'blank-text',
-    name: 'Blank Text',
-    description: 'Empty text section',
+    name: 'sheet.flexible.templates.blankText.name',
+    description: 'sheet.flexible.templates.blankText.description',
     icon: 'FileText',
     create: (): TextSection => ({
       id: generateId(),
@@ -153,8 +154,8 @@ export const SECTION_TEMPLATES: SectionTemplate[] = [
   },
   {
     id: 'blank-table',
-    name: 'Blank Table',
-    description: 'Empty table section',
+    name: 'sheet.flexible.templates.blankTable.name',
+    description: 'sheet.flexible.templates.blankTable.description',
     icon: 'Table',
     create: (): TableSection => ({
       id: generateId(),

@@ -48,13 +48,14 @@ export const SanityTracker: React.FC<SanityTrackerProps> = ({
   // Calculate percentage for progress bar
   const percentage = maximum > 0 ? Math.round((current / maximum) * 100) : 0;
 
-  // Determine danger level and color
+  // Determine danger level and color. `id` drives the icon choice (stable
+  // across locales); `label` is the translated text shown to the user.
   const getDangerLevel = () => {
     const ratio = current / maximum;
-    if (ratio > 0.75) return { level: t('sheet.coc7e.sanity.stable'), color: 'bg-green-600', text: 'text-green-600' };
-    if (ratio > 0.5) return { level: t('sheet.coc7e.sanity.shaken'), color: 'bg-yellow-500', text: 'text-yellow-600' };
-    if (ratio > 0.25) return { level: t('sheet.coc7e.sanity.fragile'), color: 'bg-orange-500', text: 'text-orange-600' };
-    return { level: t('sheet.coc7e.sanity.breaking'), color: 'bg-red-600', text: 'text-red-600' };
+    if (ratio > 0.75) return { id: 'stable', label: t('sheet.coc7e.sanity.stable'), color: 'bg-green-600', text: 'text-green-600' };
+    if (ratio > 0.5) return { id: 'shaken', label: t('sheet.coc7e.sanity.shaken'), color: 'bg-yellow-500', text: 'text-yellow-600' };
+    if (ratio > 0.25) return { id: 'fragile', label: t('sheet.coc7e.sanity.fragile'), color: 'bg-orange-500', text: 'text-orange-600' };
+    return { id: 'breaking', label: t('sheet.coc7e.sanity.breaking'), color: 'bg-red-600', text: 'text-red-600' };
   };
 
   const dangerLevel = getDangerLevel();
@@ -68,9 +69,9 @@ export const SanityTracker: React.FC<SanityTrackerProps> = ({
           <h3 className="text-lg font-bold text-purple-100">{t('sheet.coc7e.sanity.title')}</h3>
         </div>
         <div className={`flex items-center space-x-1 ${dangerLevel.text}`}>
-          {dangerLevel.level === 'Breaking' && <Skull className="w-4 h-4" />}
-          {dangerLevel.level === 'Fragile' && <AlertTriangle className="w-4 h-4" />}
-          <span className="text-sm font-semibold">{dangerLevel.level}</span>
+          {dangerLevel.id === 'breaking' && <Skull className="w-4 h-4" />}
+          {dangerLevel.id === 'fragile' && <AlertTriangle className="w-4 h-4" />}
+          <span className="text-sm font-semibold">{dangerLevel.label}</span>
         </div>
       </div>
 
@@ -94,7 +95,7 @@ export const SanityTracker: React.FC<SanityTrackerProps> = ({
       <div className="grid grid-cols-3 gap-3">
         {/* Current */}
         <div className="bg-black/20 rounded-md p-2 border border-purple-700/30">
-          <div className="text-xs text-purple-300 uppercase tracking-wide mb-1">Current</div>
+          <div className="text-xs text-purple-300 uppercase tracking-wide mb-1">{t('sheet.coc7e.sanity.current')}</div>
           {editable ? (
             <input
               type="number"
@@ -111,7 +112,7 @@ export const SanityTracker: React.FC<SanityTrackerProps> = ({
 
         {/* Starting */}
         <div className="bg-black/20 rounded-md p-2 border border-purple-700/30">
-          <div className="text-xs text-purple-300 uppercase tracking-wide mb-1">Start</div>
+          <div className="text-xs text-purple-300 uppercase tracking-wide mb-1">{t('sheet.coc7e.sanity.start')}</div>
           {editable ? (
             <input
               type="number"
@@ -128,11 +129,11 @@ export const SanityTracker: React.FC<SanityTrackerProps> = ({
 
         {/* Maximum */}
         <div className="bg-black/20 rounded-md p-2 border border-purple-700/30">
-          <div className="text-xs text-purple-300 uppercase tracking-wide mb-1">Max</div>
+          <div className="text-xs text-purple-300 uppercase tracking-wide mb-1">{t('sheet.coc7e.sanity.max')}</div>
           <div className="text-xl font-bold text-purple-100">{maximum}</div>
           {cthulhuMythos > 0 && (
             <div className="text-[10px] text-purple-400 mt-0.5">
-              (99 - {cthulhuMythos} Mythos)
+              {t('sheet.coc7e.sanity.mythos', { value: cthulhuMythos })}
             </div>
           )}
         </div>
@@ -144,7 +145,7 @@ export const SanityTracker: React.FC<SanityTrackerProps> = ({
           <div className="flex items-center space-x-2 text-red-200 text-xs">
             <AlertTriangle className="w-4 h-4 flex-shrink-0" />
             <span>
-              Warning: Your investigator is approaching total madness. Losing more SAN may result in indefinite insanity.
+              {t('sheet.coc7e.sanity.warning')}
             </span>
           </div>
         </div>

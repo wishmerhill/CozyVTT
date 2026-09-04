@@ -3,6 +3,7 @@
  */
 
 import React, { useEffect, useRef } from 'react';
+import { useTranslation } from 'react-i18next';
 import {
   Target,
   Package,
@@ -36,6 +37,7 @@ const ICON_MAP: Record<string, React.ComponentType<{ className?: string }>> = {
 };
 
 export const AddSectionMenu: React.FC<AddSectionMenuProps> = ({ onSelect, onClose }) => {
+  const { t } = useTranslation('character');
   const menuRef = useRef<HTMLDivElement>(null);
 
   // Close menu when clicking outside
@@ -67,8 +69,8 @@ export const AddSectionMenu: React.FC<AddSectionMenuProps> = ({ onSelect, onClos
             <Icon className="w-5 h-5 text-brand-ink" />
           </div>
           <div className="flex-1 min-w-0">
-            <div className="font-semibold text-brand-ink">{template.name}</div>
-            <div className="text-sm text-stone-gray">{template.description}</div>
+            <div className="font-semibold text-brand-ink">{t(template.name)}</div>
+            <div className="text-sm text-stone-gray">{t(template.description)}</div>
           </div>
         </div>
       </button>
@@ -82,7 +84,7 @@ export const AddSectionMenu: React.FC<AddSectionMenuProps> = ({ onSelect, onClos
     >
       <div className="p-2">
         <div className="px-3 py-2 text-xs font-semibold text-stone-gray uppercase tracking-wide">
-          Common Templates
+          {t('sheet.flexible.commonTemplates')}
         </div>
         <div className="space-y-1">
           {commonTemplates.map(renderTemplate)}
@@ -91,7 +93,7 @@ export const AddSectionMenu: React.FC<AddSectionMenuProps> = ({ onSelect, onClos
         <div className="my-2 border-t border-stone-gray/20"></div>
 
         <div className="px-3 py-2 text-xs font-semibold text-stone-gray uppercase tracking-wide">
-          Blank Templates
+          {t('sheet.flexible.blankTemplates')}
         </div>
         <div className="space-y-1">
           {blankTemplates.map(renderTemplate)}

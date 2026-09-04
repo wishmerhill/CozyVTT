@@ -62,6 +62,17 @@ const TABS: Tab[] = [
   { id: 'bio', label: 'character:sheet.bio', icon: User },
 ];
 
+// Maps the full ability names used as data.savingThrows keys to the
+// abbreviated keys used by game-systems:dnd5e.abilities translations.
+const SAVING_THROW_ABILITY_ABBR: Record<string, string> = {
+  strength: 'str',
+  dexterity: 'dex',
+  constitution: 'con',
+  intelligence: 'int',
+  wisdom: 'wis',
+  charisma: 'cha',
+};
+
 // D&D 5e color presets for character sheets (same as editor)
 const COLOR_PRESETS = [
   { name: 'Classic Red', from: 'from-red-700', to: 'to-red-900', accent: 'red-700', hex: '#b91c1c' },
@@ -165,7 +176,7 @@ export const DnD5eCharacterView: React.FC<DnD5eCharacterViewProps> = ({ characte
             {character.tokenImageUrl ? (
               <img
                 src={character.tokenImageUrl}
-                alt={data.characterName || 'Character'}
+                alt={data.characterName || t('sheet.unnamedCharacter')}
                 className="w-20 h-20 rounded-full border-4 border-white/20 object-cover"
               />
             ) : (
@@ -244,7 +255,7 @@ export const DnD5eCharacterView: React.FC<DnD5eCharacterViewProps> = ({ characte
             return statEntries.map(([label, fullName, key]) => {
               const stat = data.stats[key];
               const expr = stat.modifier >= 0 ? `1d20+${stat.modifier}` : `1d20${stat.modifier}`;
-              const purpose = `${fullName} Check`;
+              const purpose = t('sheet.abilityCheckPurpose', { ability: fullName });
               return (
                 <StatBlock
                   key={key as string}
@@ -270,8 +281,9 @@ export const DnD5eCharacterView: React.FC<DnD5eCharacterViewProps> = ({ characte
           <h3 className="text-lg font-semibold text-stone-800 mb-3">{t('sheet.savingThrows')}</h3>
           <div className="grid grid-cols-2 md:grid-cols-3 gap-2 bg-stone-50 border border-stone-200 rounded-lg p-4">
             {Object.entries(data.savingThrows).map(([key, save]: [string, any]) => {
+              const fullName = t(`game-systems:dnd5e.abilities.${SAVING_THROW_ABILITY_ABBR[key] ?? key}`, { defaultValue: key });
               const expr = save.bonus >= 0 ? `1d20+${save.bonus}` : `1d20${save.bonus}`;
-              const purpose = `${key.charAt(0).toUpperCase() + key.slice(1)} ${t('sheet.save')}`;
+              const purpose = `${fullName} ${t('sheet.save')}`;
               return (
                 <div
                   key={key}
@@ -282,7 +294,7 @@ export const DnD5eCharacterView: React.FC<DnD5eCharacterViewProps> = ({ characte
                 >
                   <div className="flex items-center gap-1">
                     {onRoll && <Dices className="w-3 h-3 text-red-700 opacity-0 group-hover:opacity-60 transition-opacity" />}
-                    <span className="text-sm capitalize">{key}</span>
+                    <span className="text-sm">{fullName}</span>
                   </div>
                   <span className={`text-sm font-semibold ${save.proficient ? 'text-red-700' : 'text-stone-600'}`}>
                     {formatModifier(save.bonus)}
@@ -451,7 +463,7 @@ export const DnD5eCharacterView: React.FC<DnD5eCharacterViewProps> = ({ characte
                 key={idx}
                 className="px-3 py-1 bg-orange-100 text-orange-800 border border-orange-300 rounded-full capitalize"
               >
-                {condition}
+                {t(`game-systems:dnd5e.conditions.${condition}`, { defaultValue: condition })}
               </span>
             ))}
           </div>

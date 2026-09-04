@@ -3,6 +3,7 @@
  */
 
 import React from 'react';
+import { useTranslation } from 'react-i18next';
 import { ChevronDown, ChevronUp } from 'lucide-react';
 
 interface SectionHeaderProps {
@@ -18,6 +19,7 @@ export const SectionHeader: React.FC<SectionHeaderProps> = ({
   onToggle,
   showToggle = true,
 }) => {
+  const { t } = useTranslation('character');
   return (
     <div
       className={`flex items-center justify-between p-3 border-b border-moss-green/20 ${
@@ -30,7 +32,7 @@ export const SectionHeader: React.FC<SectionHeaderProps> = ({
         <button
           type="button"
           className="p-1 rounded hover:bg-moss-green/10 transition-colors"
-          aria-label={isCollapsed ? 'Expand section' : 'Collapse section'}
+          aria-label={isCollapsed ? t('sheet.flexible.expandSection') : t('sheet.flexible.collapseSection')}
         >
           {isCollapsed ? (
             <ChevronDown className="w-5 h-5 text-brand-ink" />

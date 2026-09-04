@@ -7,6 +7,7 @@
 
 import React from 'react';
 import { Sword, Target, Zap, Dices } from 'lucide-react';
+import { useTranslation } from 'react-i18next';
 import ProficiencyIndicator, { ProficiencyRank } from './ProficiencyIndicator';
 
 export interface Strike {
@@ -47,10 +48,12 @@ const getStrikeIcon = (type: string, savingThrow?: string) => {
 };
 
 export const StrikesList: React.FC<StrikesListProps> = ({ strikes, onRoll, onRollContext }) => {
+  const { t } = useTranslation('character');
+
   if (!strikes || strikes.length === 0) {
     return (
       <div className="text-center py-8 text-stone-500 italic">
-        No strikes/attacks recorded
+        {t('sheet.pf2e.noStrikes')}
       </div>
     );
   }
@@ -64,7 +67,7 @@ export const StrikesList: React.FC<StrikesListProps> = ({ strikes, onRoll, onRol
         const attackExpr = strike.attackBonus !== null
           ? (strike.attackBonus >= 0 ? `1d20+${strike.attackBonus}` : `1d20${strike.attackBonus}`)
           : '';
-        const attackPurpose = `${strike.name} Strike`;
+        const attackPurpose = t('sheet.pf2e.strikePurpose', { name: strike.name });
 
         return (
           <div
@@ -72,7 +75,7 @@ export const StrikesList: React.FC<StrikesListProps> = ({ strikes, onRoll, onRol
             className={`bg-white border-2 border-stone-200 rounded-lg p-4 shadow-sm transition-shadow group ${isClickable ? 'cursor-pointer hover:bg-blue-50 hover:border-blue-300 hover:shadow-md select-none' : 'hover:shadow-md'}`}
             onClick={isClickable ? () => onRoll!(attackExpr, attackPurpose) : undefined}
             onContextMenu={isClickable && onRollContext ? (e) => { e.preventDefault(); onRollContext(e, attackExpr, attackPurpose); } : undefined}
-            title={isClickable ? `Left-click: roll attack  |  Right-click: Fortune / Misfortune` : undefined}
+            title={isClickable ? t('sheet.pf2e.rollHint') : undefined}
           >
             {/* Strike Header */}
             <div className="flex items-start justify-between mb-2">
@@ -84,7 +87,7 @@ export const StrikesList: React.FC<StrikesListProps> = ({ strikes, onRoll, onRol
               </div>
               <div className="text-right">
                 <div className="text-xs text-stone-500 uppercase tracking-wide">
-                  {strike.type}
+                  {t(`sheet.pf2e.strikeType.${strike.type}`, { defaultValue: strike.type })}
                   {strike.range !== null && ` (${strike.range} ft.)`}
                 </div>
               </div>
@@ -95,7 +98,7 @@ export const StrikesList: React.FC<StrikesListProps> = ({ strikes, onRoll, onRol
               {/* Attack Bonus or Saving Throw */}
               <div>
                 <div className="text-xs font-semibold text-stone-600 uppercase tracking-wide mb-1">
-                  {strike.savingThrow ? 'Saving Throw' : 'Attack'}
+                  {strike.savingThrow ? t('sheet.save') : t('sheet.attack')}
                 </div>
                 <div className="text-2xl font-bold text-blue-700">
                   {strike.savingThrow ? (
@@ -109,11 +112,11 @@ export const StrikesList: React.FC<StrikesListProps> = ({ strikes, onRoll, onRol
               {/* Damage — click separately */}
               <div
                 className={onRoll && strike.damageRoll ? 'cursor-pointer hover:text-red-700' : ''}
-                onClick={onRoll && strike.damageRoll ? (e) => { e.stopPropagation(); onRoll(strike.damageRoll, `${strike.name} Damage`); } : undefined}
-                title={onRoll && strike.damageRoll ? `Click to roll damage: ${strike.damageRoll}` : undefined}
+                onClick={onRoll && strike.damageRoll ? (e) => { e.stopPropagation(); onRoll(strike.damageRoll, t('sheet.pf2e.damagePurpose', { name: strike.name })); } : undefined}
+                title={onRoll && strike.damageRoll ? t('sheet.attackRow.clickForDamage', { roll: strike.damageRoll }) : undefined}
               >
                 <div className="text-xs font-semibold text-stone-600 uppercase tracking-wide mb-1">
-                  Damage
+                  {t('sheet.damage')}
                 </div>
                 <div className="text-xl font-bold text-red-700">
                   {strike.damageRoll}
@@ -128,7 +131,7 @@ export const StrikesList: React.FC<StrikesListProps> = ({ strikes, onRoll, onRol
             {strike.traits && strike.traits.length > 0 && (
               <div className="mb-2">
                 <div className="text-xs font-semibold text-stone-600 uppercase tracking-wide mb-1">
-                  Traits
+                  {t('sheet.traits')}
                 </div>
                 <div className="flex flex-wrap gap-1">
                   {strike.traits.map((trait, idx) => (

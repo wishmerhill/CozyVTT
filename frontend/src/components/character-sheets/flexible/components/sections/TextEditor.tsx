@@ -3,6 +3,7 @@
  */
 
 import React, { useEffect, useRef } from 'react';
+import { useTranslation } from 'react-i18next';
 import type { TextSection } from '../../../../../types/flexible-character-sheet';
 
 interface TextEditorProps {
@@ -11,6 +12,7 @@ interface TextEditorProps {
 }
 
 export const TextEditor: React.FC<TextEditorProps> = ({ section, onUpdate }) => {
+  const { t } = useTranslation('character');
   const textareaRef = useRef<HTMLTextAreaElement>(null);
 
   // Auto-resize textarea based on content
@@ -33,10 +35,10 @@ export const TextEditor: React.FC<TextEditorProps> = ({ section, onUpdate }) => 
         value={section.value}
         onChange={handleChange}
         className="w-full min-h-[150px] p-4 bg-parchment/20 border border-moss-green/20 rounded-lg focus:border-moss-green focus:outline-none text-warm-gray resize-none"
-        placeholder="Enter text content..."
+        placeholder={t('sheet.flexible.textContentPlaceholder')}
       />
       <div className="mt-2 text-sm text-stone-gray text-right">
-        {section.value.length} characters
+        {t('sheet.flexible.charactersCount', { count: section.value.length })}
       </div>
     </div>
   );

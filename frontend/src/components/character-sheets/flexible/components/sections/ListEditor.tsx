@@ -3,6 +3,7 @@
  */
 
 import React from 'react';
+import { useTranslation } from 'react-i18next';
 import { Plus, Trash2, GripVertical, CheckSquare, Square } from 'lucide-react';
 import { Reorder } from 'framer-motion';
 import type { ListSection } from '../../../../../types/flexible-character-sheet';
@@ -14,6 +15,8 @@ interface ListEditorProps {
 }
 
 export const ListEditor: React.FC<ListEditorProps> = ({ section, onUpdate }) => {
+  const { t } = useTranslation('character');
+
   const addItem = () => {
     const newItem = {
       id: generateId(),
@@ -66,13 +69,13 @@ export const ListEditor: React.FC<ListEditorProps> = ({ section, onUpdate }) => 
                   value={item.text}
                   onChange={(e) => updateItem(item.id, { text: e.target.value })}
                   className="flex-1 bg-transparent border-none focus:outline-none text-warm-gray"
-                  placeholder="Enter item text..."
+                  placeholder={t('sheet.flexible.itemTextPlaceholder')}
                 />
 
                 <button
                   onClick={() => removeItem(item.id)}
                   className="flex-shrink-0 p-1 rounded bg-red-50 text-red-600 opacity-0 group-hover:opacity-100 transition-opacity hover:bg-red-100"
-                  title="Remove item"
+                  title={t('sheet.flexible.removeItem')}
                 >
                   <Trash2 className="w-4 h-4" />
                 </button>
@@ -82,7 +85,7 @@ export const ListEditor: React.FC<ListEditorProps> = ({ section, onUpdate }) => 
         </Reorder.Group>
       ) : (
         <div className="text-center py-4 text-stone-gray">
-          No items yet. Click "Add Item" to get started.
+          {t('sheet.flexible.noItemsYetHint', { action: t('sheet.flexible.addItem') })}
         </div>
       )}
 
@@ -91,7 +94,7 @@ export const ListEditor: React.FC<ListEditorProps> = ({ section, onUpdate }) => 
         className="flex items-center gap-2 px-4 py-2 bg-moss-green/10 text-brand-ink rounded-lg hover:bg-moss-green/20 transition-colors w-full justify-center"
       >
         <Plus className="w-4 h-4" />
-        Add Item
+        {t('sheet.flexible.addItem')}
       </button>
     </div>
   );

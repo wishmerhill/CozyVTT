@@ -3,6 +3,7 @@
  */
 
 import React from 'react';
+import { useTranslation } from 'react-i18next';
 import type { StatsSection } from '../../../../../types/flexible-character-sheet';
 import { formatModifier } from '../../utils/section-helpers';
 
@@ -11,10 +12,12 @@ interface StatsDisplayProps {
 }
 
 export const StatsDisplay: React.FC<StatsDisplayProps> = ({ section }) => {
+  const { t } = useTranslation('character');
+
   if (section.fields.length === 0) {
     return (
       <div className="p-4 text-center text-stone-gray">
-        No stats defined. Switch to edit mode to add stats.
+        {t('sheet.flexible.noStatsDefined')}
       </div>
     );
   }

@@ -3,6 +3,7 @@
  */
 
 import React, { useState } from 'react';
+import { useTranslation } from 'react-i18next';
 import { Edit, User } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
 import type { Character } from '../../../types';
@@ -23,6 +24,7 @@ export const FlexibleCharacterSheetView: React.FC<FlexibleCharacterSheetViewProp
   character,
   onEdit,
 }) => {
+  const { t } = useTranslation(['character', 'common']);
   const data = initializeFlexibleData(character.data);
   const [collapsedSections, setCollapsedSections] = useState<Set<string>>(new Set());
 
@@ -83,7 +85,7 @@ export const FlexibleCharacterSheetView: React.FC<FlexibleCharacterSheetViewProp
           )}
           <div>
             <h2 className="text-2xl font-bold text-brand-ink">{character.name}</h2>
-            <p className="text-sm text-stone-gray">Flexible Character Sheet</p>
+            <p className="text-sm text-stone-gray">{t('sheet.flexible.characterSheetTitle')}</p>
           </div>
         </div>
         {onEdit && (
@@ -92,7 +94,7 @@ export const FlexibleCharacterSheetView: React.FC<FlexibleCharacterSheetViewProp
             className="flex items-center gap-2 px-4 py-2 bg-moss-green text-white rounded-lg hover:bg-moss-green/90 transition-colors"
           >
             <Edit className="w-4 h-4" />
-            Edit
+            {t('common:edit')}
           </button>
         )}
       </div>
@@ -101,14 +103,14 @@ export const FlexibleCharacterSheetView: React.FC<FlexibleCharacterSheetViewProp
       {data.sections.length === 0 ? (
         <div className="text-center py-12">
           <p className="text-stone-gray mb-4">
-            This character sheet has no sections yet.
+            {t('sheet.flexible.noSectionsYetView')}
           </p>
           {onEdit && (
             <button
               onClick={onEdit}
               className="px-4 py-2 bg-moss-green text-white rounded-lg hover:bg-moss-green/90 transition-colors"
             >
-              Add Sections
+              {t('sheet.flexible.addSections')}
             </button>
           )}
         </div>

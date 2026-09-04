@@ -5,6 +5,7 @@
  */
 
 import React from 'react';
+import { useTranslation } from 'react-i18next';
 import { Swords, Plus, Trash2, Dices } from 'lucide-react';
 import Button from '@/components/ui/Button';
 
@@ -43,6 +44,8 @@ export const WeaponsList: React.FC<WeaponsListProps> = ({
   onChange,
   onRoll,
 }) => {
+  const { t } = useTranslation('character');
+
   const handleWeaponChange = (index: number, field: keyof Weapon, value: any) => {
     if (!onChange) return;
     const updated = [...weapons];
@@ -53,11 +56,11 @@ export const WeaponsList: React.FC<WeaponsListProps> = ({
   const handleAddWeapon = () => {
     if (!onChange) return;
     const newWeapon: Weapon = {
-      name: 'New Weapon',
-      skill: 'Fighting (Brawl)',
+      name: t('sheet.coc7e.weapons.newWeaponName'),
+      skill: t('sheet.coc7e.skillNames.fightingBrawl'),
       skillValue: 25,
       damage: '1d3',
-      range: 'Touch',
+      range: t('sheet.coc7e.weapons.rangeTouch'),
       attacks: 1,
       ammo: null,
       malfunction: null,
@@ -78,7 +81,7 @@ export const WeaponsList: React.FC<WeaponsListProps> = ({
       <div className="flex items-center justify-between">
         <div className="flex items-center space-x-2">
           <Swords className="w-5 h-5 text-sepia-700" />
-          <h3 className="text-lg font-bold text-sepia-900">Weapons</h3>
+          <h3 className="text-lg font-bold text-sepia-900">{t('sheet.coc7e.weapons.heading')}</h3>
         </div>
         {editable && (
           <Button
@@ -86,7 +89,7 @@ export const WeaponsList: React.FC<WeaponsListProps> = ({
             variant="secondary" className="text-sm py-1 px-3 flex items-center space-x-1"
           >
             <Plus className="w-4 h-4" />
-            <span>Add Weapon</span>
+            <span>{t('sheet.coc7e.weapons.addButton')}</span>
           </Button>
         )}
       </div>
@@ -95,9 +98,9 @@ export const WeaponsList: React.FC<WeaponsListProps> = ({
       {weapons.length === 0 ? (
         <div className="text-center py-8 text-sepia-600">
           <Swords className="w-12 h-12 mx-auto mb-2 opacity-50" />
-          <p>No weapons equipped</p>
+          <p>{t('sheet.coc7e.weapons.noneEquipped')}</p>
           {editable && (
-            <p className="text-sm mt-1">Click "Add Weapon" to add a weapon</p>
+            <p className="text-sm mt-1">{t('sheet.coc7e.weapons.addHint')}</p>
           )}
         </div>
       ) : (
@@ -105,27 +108,27 @@ export const WeaponsList: React.FC<WeaponsListProps> = ({
           <table className="w-full text-sm">
             <thead className="bg-sepia-200 border-b-2 border-sepia-400">
               <tr>
-                <th className="px-3 py-2 text-left font-semibold text-sepia-900">Weapon</th>
-                <th className="px-3 py-2 text-left font-semibold text-sepia-900">Skill</th>
-                <th className="px-3 py-2 text-center font-semibold text-sepia-900">Value</th>
-                <th className="px-3 py-2 text-center font-semibold text-sepia-900">Damage</th>
-                <th className="px-3 py-2 text-center font-semibold text-sepia-900">Range</th>
-                <th className="px-3 py-2 text-center font-semibold text-sepia-900">Atks</th>
-                <th className="px-3 py-2 text-center font-semibold text-sepia-900">Ammo</th>
-                <th className="px-3 py-2 text-center font-semibold text-sepia-900">Malf</th>
+                <th className="px-3 py-2 text-left font-semibold text-sepia-900">{t('sheet.coc7e.weapons.tableHeaderWeapon')}</th>
+                <th className="px-3 py-2 text-left font-semibold text-sepia-900">{t('sheet.coc7e.weapons.tableHeaderSkill')}</th>
+                <th className="px-3 py-2 text-center font-semibold text-sepia-900">{t('sheet.coc7e.weapons.tableHeaderValue')}</th>
+                <th className="px-3 py-2 text-center font-semibold text-sepia-900">{t('sheet.coc7e.weapons.tableHeaderDamage')}</th>
+                <th className="px-3 py-2 text-center font-semibold text-sepia-900">{t('sheet.coc7e.weapons.tableHeaderRange')}</th>
+                <th className="px-3 py-2 text-center font-semibold text-sepia-900">{t('sheet.coc7e.weapons.tableHeaderAtks')}</th>
+                <th className="px-3 py-2 text-center font-semibold text-sepia-900">{t('sheet.coc7e.weapons.tableHeaderAmmo')}</th>
+                <th className="px-3 py-2 text-center font-semibold text-sepia-900">{t('sheet.coc7e.weapons.tableHeaderMalf')}</th>
                 {editable && <th className="px-3 py-2 w-10"></th>}
               </tr>
             </thead>
             <tbody>
               {weapons.map((weapon, index) => {
                 const isClickable = !!onRoll && !editable;
-                const skillPurpose = `${weapon.name} (${weapon.skill}) — target: ${weapon.skillValue}%`;
+                const skillPurpose = t('sheet.coc7e.weapons.skillRollPurpose', { name: weapon.name, skill: weapon.skill, value: weapon.skillValue });
                 return (
                 <tr
                   key={index}
                   className={`border-b border-sepia-300 group ${isClickable ? 'cursor-pointer hover:bg-sepia-100/50 select-none' : 'hover:bg-parchment-light/30'}`}
                   onClick={isClickable ? () => onRoll!('1d100', skillPurpose) : undefined}
-                  title={isClickable ? `Click to roll ${weapon.skill} (target: ${weapon.skillValue}%)` : undefined}
+                  title={isClickable ? t('sheet.coc7e.weapons.skillRollTitle', { skill: weapon.skill, value: weapon.skillValue }) : undefined}
                 >
                   {/* Name */}
                   <td className="px-3 py-2">
@@ -177,8 +180,8 @@ export const WeaponsList: React.FC<WeaponsListProps> = ({
                   {/* Damage — click to roll damage separately */}
                   <td
                     className={`px-3 py-2 text-center ${isClickable && weapon.damage ? 'cursor-pointer hover:text-red-700 font-semibold' : ''}`}
-                    onClick={isClickable && weapon.damage ? (e) => { e.stopPropagation(); onRoll!(weapon.damage, `${weapon.name} Damage`); } : undefined}
-                    title={isClickable && weapon.damage ? `Click to roll damage: ${weapon.damage}` : undefined}
+                    onClick={isClickable && weapon.damage ? (e) => { e.stopPropagation(); onRoll!(weapon.damage, t('sheet.coc7e.weapons.damageRollLabel', { name: weapon.name })); } : undefined}
+                    title={isClickable && weapon.damage ? t('sheet.coc7e.weapons.damageRollTitle', { damage: weapon.damage }) : undefined}
                   >
                     {editable ? (
                       <input
@@ -201,7 +204,7 @@ export const WeaponsList: React.FC<WeaponsListProps> = ({
                         value={weapon.range}
                         onChange={(e) => handleWeaponChange(index, 'range', e.target.value)}
                         className="w-20 bg-white/50 border border-sepia-400 rounded px-2 py-1 text-sm text-center focus:outline-none focus:ring-2 focus:ring-sepia-500"
-                        placeholder="Touch"
+                        placeholder={t('sheet.coc7e.weapons.rangeTouch')}
                       />
                     ) : (
                       <span className="text-sepia-700">{weapon.range}</span>
@@ -262,7 +265,7 @@ export const WeaponsList: React.FC<WeaponsListProps> = ({
                       <button
                         onClick={() => handleDeleteWeapon(index)}
                         className="p-1 hover:bg-red-100 rounded text-red-600 hover:text-red-700 transition-colors"
-                        title="Delete weapon"
+                        title={t('sheet.coc7e.weapons.deleteTitle')}
                       >
                         <Trash2 className="w-4 h-4" />
                       </button>
@@ -279,13 +282,13 @@ export const WeaponsList: React.FC<WeaponsListProps> = ({
       {/* Notes/Legend */}
       <div className="bg-sepia-100/50 rounded-md p-3">
         <div className="text-xs text-sepia-700 space-y-1">
-          <div><strong>Skill:</strong> The skill used to attack with this weapon</div>
-          <div><strong>Value:</strong> Your skill percentage (Regular / Half / Fifth)</div>
-          <div><strong>Damage:</strong> Dice expression for damage (e.g., "1d10" or "1d3+DB")</div>
-          <div><strong>Range:</strong> Effective range (Touch, 15 yards, 50 yards, etc.)</div>
-          <div><strong>Atks:</strong> Number of attacks per round</div>
-          <div><strong>Ammo:</strong> Current ammunition count (firearms only)</div>
-          <div><strong>Malf:</strong> Malfunction number (if weapon rolls this or higher, it jams)</div>
+          <div><strong>{t('sheet.coc7e.weapons.tableHeaderSkill')}:</strong> {t('sheet.coc7e.weapons.legendSkill')}</div>
+          <div><strong>{t('sheet.coc7e.weapons.tableHeaderValue')}:</strong> {t('sheet.coc7e.weapons.legendValue')}</div>
+          <div><strong>{t('sheet.coc7e.weapons.tableHeaderDamage')}:</strong> {t('sheet.coc7e.weapons.legendDamage')}</div>
+          <div><strong>{t('sheet.coc7e.weapons.tableHeaderRange')}:</strong> {t('sheet.coc7e.weapons.legendRange')}</div>
+          <div><strong>{t('sheet.coc7e.weapons.tableHeaderAtks')}:</strong> {t('sheet.coc7e.weapons.legendAtks')}</div>
+          <div><strong>{t('sheet.coc7e.weapons.tableHeaderAmmo')}:</strong> {t('sheet.coc7e.weapons.legendAmmo')}</div>
+          <div><strong>{t('sheet.coc7e.weapons.tableHeaderMalf')}:</strong> {t('sheet.coc7e.weapons.legendMalf')}</div>
         </div>
       </div>
     </div>
