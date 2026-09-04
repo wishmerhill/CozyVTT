@@ -10,26 +10,149 @@
         "nameTooShort": "Character name must be at least 2 characters",
         "nameTooLong": "Character name must be less than 100 characters",
         "createFailed": "Failed to create character"
+      },
+      "nameLabel": "Character Name",
+      "namePlaceholder": "Aria Moonshadow",
+      "nameHint": "Give your character a memorable name (2-100 characters)",
+      "campaignLabel": "Campaign",
+      "unassignedOption": "Unassigned Character",
+      "campaignHint": "Assign to a campaign now, or leave unassigned for later",
+      "gameSystemLabel": "Game System",
+      "fromCampaignSuffix": "(from campaign)",
+      "gameSystemHintLocked": "Game system is inherited from the selected campaign",
+      "gameSystemHintFree": "Select a game system to use pre-built templates",
+      "templateLabel": "Character Template",
+      "templateHint": "Templates pre-fill the character sheet with example data",
+      "noteLabel": "Note:",
+      "noteBody": "After creation, you'll be redirected to the character editor where you can customize all details and save when ready.",
+      "publishTitleHint": "Create this character and also publish it as a template others can copy",
+      "publishTemplateFailed": "Character created, but publishing it as a template failed. You can retry with \"Save as Template\" in the editor.",
+      "templates": {
+        "dnd5e": {
+          "blank": { "label": "Blank Character Sheet", "description": "Start with an empty Level 1 character" },
+          "fighter": { "label": "Level 1 Fighter (Example)", "description": "A pre-built Fighter with standard array stats" }
+        },
+        "pathfinder2e": {
+          "blank": { "label": "Blank Character Sheet", "description": "Start with an empty Level 1 character" },
+          "fighter": { "label": "Level 1 Fighter (Example)", "description": "A pre-built Dwarf Fighter" }
+        },
+        "shadowrun6e": {
+          "blank": { "label": "Blank Character Sheet", "description": "Start with an empty character" },
+          "streetsamurai": { "label": "Street Samurai (Example)", "description": "A combat-focused runner with cyberware" }
+        },
+        "callOfCthulhu7e": {
+          "blank": { "label": "Blank Investigator Sheet", "description": "Start with an empty investigator" },
+          "privateinvestigator": { "label": "Private Investigator (Example)", "description": "A gritty private eye ready for mysteries" }
+        },
+        "none": {
+          "blank": { "label": "Blank Character", "description": "Start with an empty flexible character sheet" },
+          "basic": { "label": "Basic Template", "description": "Attributes, Skills, Inventory, and Background sections" }
+        }
       }
     },
     "delete": {
       "title": "Delete Character",
       "confirm": "Are you sure you want to delete \"{{name}}\"? This action cannot be undone.",
       "delete": "Delete",
-      "cancel": "Cancel"
+      "cancel": "Cancel",
+      "deleting": "Deleting...",
+      "deleteFailed": "Failed to delete character",
+      "blockedByStatus": "Cannot delete character assigned to {{status}} campaign",
+      "cannotDeleteTitle": "Cannot Delete Character",
+      "cannotDeleteBody": "This character is assigned to <strong>{{name}}</strong>, which is currently {{status}}. You cannot delete characters that are assigned to active or paused campaigns.",
+      "cannotDeleteHint": "To delete this character, first unassign it from the campaign or wait until the campaign is completed or archived.",
+      "assignedWarningTitle": "Character is Assigned to Campaign",
+      "assignedWarningBody": "This character is assigned to <strong>{{name}}</strong> ({{status}}). It's recommended to unassign the character first before deleting.",
+      "detailsTitle": "Character Details",
+      "nameLabel": "Name:",
+      "gameSystemLabel": "Game System:",
+      "campaignLabel": "Campaign:"
     },
     "import": {
       "title": "Import Character",
+      "titleTemplate": "Import Template",
       "pasteJSON": "Paste character JSON",
       "import": "Import",
       "cancel": "Cancel",
-      "error": "Invalid JSON — check the syntax and try again"
+      "error": "Invalid JSON — check the syntax and try again",
+      "templateInfo": "Any character JSON works here, including one exported from another CozyVTT instance. Publishing it as a template makes it available for everyone here to copy — the original character is not affected.",
+      "dropHere": "Drop file here",
+      "uploadHeading": "Upload Character JSON",
+      "srPublishNote": "The file will be published as a template.",
+      "dragDropHint": "Drag and drop a JSON file, or click to browse",
+      "chooseFile": "Choose File",
+      "maxFileSize": "Maximum file size: 5MB",
+      "readingFile": "Reading file...",
+      "errorTitle": "Import Error",
+      "invalidData": "Invalid character data",
+      "readFailed": "Failed to read file",
+      "importedSuffix": "(Imported)",
+      "templateNoun": "template",
+      "characterNoun": "character",
+      "importFailed": "Failed to import {{noun}}",
+      "sheetLoaded": "Sheet Loaded Successfully",
+      "characterLoaded": "Character Loaded Successfully",
+      "reviewTemplate": "Review the details below, then publish it as a template.",
+      "reviewCharacter": "Review the character details below before importing.",
+      "nameConflictTitle": "Name Conflict",
+      "nameConflictTemplateBody": "A template named \"{{existingName}}\" already exists. This one will be named \"{{newName}}\" — edit it below if you'd rather use something else.",
+      "nameConflictCharacterBody": "A character named \"{{existingName}}\" already exists. The imported character will be renamed to \"{{newName}}\".",
+      "templatePreview": "Template Preview",
+      "characterPreview": "Character Preview",
+      "templateNameLabel": "Template Name",
+      "characterNameLabel": "Character Name",
+      "descriptionLabel": "Description",
+      "descriptionPlaceholder": "What this template is for, and who it suits.",
+      "gameSystemLabel": "Game System",
+      "flexibleNoSystem": "Flexible (No specific system)",
+      "sheetDataLabel": "Sheet Data",
+      "characterDataLabel": "Character Data",
+      "importing": "Importing...",
+      "publishAsTemplate": "Publish as Template",
+      "selectedFile": "Selected file:"
     },
     "assign": {
       "title": "Assign Character",
-      "selectCampaign": "Select a campaign",
+      "reassignTitle": "Reassign Character",
+      "selectCampaign": "Select Campaign",
       "assign": "Assign",
-      "cancel": "Cancel"
+      "cancel": "Cancel",
+      "loadCampaignsFailed": "Failed to load campaigns",
+      "assignFailed": "Failed to assign character",
+      "characterLabel": "Character",
+      "currentlyAssignedTo": "Currently assigned to:",
+      "noCompatibleCampaigns": "No compatible campaigns found. Create a campaign with a matching game system or use a flexible campaign.",
+      "unassignedOption": "Unassigned",
+      "unassignedDesc": "Remove character from any campaign",
+      "note": "Note:",
+      "compatibilityNote": "Only showing campaigns compatible with {{gameSystem}} or flexible campaigns.",
+      "assigning": "Assigning...",
+      "unassign": "Unassign"
+    },
+    "template": {
+      "nameRequired": "A template name is required",
+      "updateFailed": "Failed to update the template",
+      "updated": "Template updated",
+      "sheetSaved": "Template sheet saved",
+      "sheetSaveFailed": "Failed to save the sheet",
+      "editTitle": "Edit Template",
+      "nameFieldLabel": "Template name",
+      "descriptionFieldLabel": "Description",
+      "saveDetails": "Save Details",
+      "sheetSectionTitle": "Sheet",
+      "published": "Template published",
+      "createFailed": "Failed to create the template",
+      "saveAsTitle": "Save as Template",
+      "newTitle": "New Character Template",
+      "publishButton": "Publish Template",
+      "visibilityNote": "Templates are visible to everyone on this instance. Anyone can copy one into a character of their own; only you can edit or remove it.",
+      "namePlaceholder": "e.g. Novice Fighter",
+      "descriptionHint": "What this template is for, and who it suits — shown on the card.",
+      "descriptionPlaceholder": "A straightforward melee character, good for a first session.",
+      "gameSystemFieldLabel": "Game system",
+      "gameSystemHintLocked": "Taken from the sheet this template was made from.",
+      "gameSystemHintEditable": "Fixed once published, the same way a character works.",
+      "flexibleNoSystem": "Flexible (No System)"
     }
   },
   "card": {
@@ -229,5 +352,22 @@
       "yearsAgo": "{{count}} years ago",
       "yearsAgo_one": "{{count}} year ago"
     }
+  },
+  "editor": {
+    "validationError": "Validation Error: {{message}}",
+    "saveFailed": "Failed to save character. Please try again.",
+    "shadowrunEditorTitle": "Shadowrun 6e Character Editor",
+    "shadowrunEditorNotImplemented": "The Shadowrun 6th Edition character editor is not yet implemented.",
+    "editSheetTitle": "Edit Character Sheet: {{name}}",
+    "discardTitle": "Discard Changes?",
+    "discardMessage": "Are you sure you want to cancel? Any unsaved changes will be lost.",
+    "discardConfirm": "Discard",
+    "keepEditing": "Keep Editing"
+  },
+  "viewer": {
+    "unknownPlayer": "Unknown Player",
+    "you": "You",
+    "playerLabel": "Player: {{name}}",
+    "dmBanner": "You are viewing <strong>{{name}}'s</strong> character as DM"
   }
 }

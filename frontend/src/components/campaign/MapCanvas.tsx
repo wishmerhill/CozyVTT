@@ -4,6 +4,7 @@
 // ============================================
 
 import { useEffect, useRef, useState, useCallback, useMemo } from 'react';
+import { useTranslation } from 'react-i18next';
 import { ZoomIn, ZoomOut, Maximize2, Grid3x3, Palette, Ghost, Ruler, Zap } from 'lucide-react';
 import { useCampaign } from '@/contexts/CampaignContext';
 import { useWebSocket } from '@/contexts/WebSocketContext';
@@ -96,6 +97,7 @@ interface MapCanvasProps {
 }
 
 export default function MapCanvas({ onEditToken }: MapCanvasProps) {
+  const { t } = useTranslation('campaign');
   const { currentMap, setCurrentMap, userRole, campaign, updateCampaignSpiritLayer, dmViewBothPlanes, playerSpiritVisible, setPlayerSpiritVisible, activeVibeEffect, updateVibe, activeAtmosphereEffect, characterHpCache } = useCampaign();
   // Live token state comes from the game store, not the campaign context —
   // socket handlers write there directly (outside React), and this
@@ -719,7 +721,7 @@ export default function MapCanvas({ onEditToken }: MapCanvasProps) {
     };
 
     img.onerror = () => {
-      setImageError('Failed to load map image');
+      setImageError(t('canvas.failedToLoadMapImage'));
       setImageLoaded(false);
       setMapImage(null);
     };
@@ -731,7 +733,7 @@ export default function MapCanvas({ onEditToken }: MapCanvasProps) {
       img.onload = null;
       img.onerror = null;
     };
-  }, [currentMap?.imageUrl]);
+  }, [currentMap?.imageUrl, t]);
 
   // ============================================
   // Spirit Layer Image Loading
@@ -1387,7 +1389,7 @@ export default function MapCanvas({ onEditToken }: MapCanvasProps) {
       ctx.font = '16px system-ui';
       ctx.textAlign = 'center';
       ctx.textBaseline = 'middle';
-      ctx.fillText('No map loaded', canvas.width / 2, canvas.height / 2);
+      ctx.fillText(t('canvas.noMapLoaded'), canvas.width / 2, canvas.height / 2);
       return;
     }
 
@@ -1444,7 +1446,7 @@ export default function MapCanvas({ onEditToken }: MapCanvasProps) {
     }
 
     ctx.restore();
-  }, [currentMap, imageLoaded, mapImage, mapControls.panOffset, mapControls.zoom, userRole, campaign?.spiritLayerEnabled, playerSpiritVisible, dmViewBothPlanes, showGrid, gridColor, fogState, revealedCells, spiritLayerImage, spiritLayerOpacity]);
+  }, [currentMap, imageLoaded, mapImage, mapControls.panOffset, mapControls.zoom, userRole, campaign?.spiritLayerEnabled, playerSpiritVisible, dmViewBothPlanes, showGrid, gridColor, fogState, revealedCells, spiritLayerImage, spiritLayerOpacity, t]);
 
   /**
    * Draw the TOKENS layer (middle canvas): every token + the drag ghost.
@@ -2093,7 +2095,7 @@ export default function MapCanvas({ onEditToken }: MapCanvasProps) {
       );
       if (door) {
         if (door.type === 'door-locked') {
-          showToast('This door is locked.', 'info');
+          showToast(t('walls.doorLockedMessage'), 'info');
           return;
         }
         const newType = door.type === 'door-closed' ? 'door-open' : 'door-closed';
@@ -2885,7 +2887,7 @@ export default function MapCanvas({ onEditToken }: MapCanvasProps) {
               {/* DM-only indicator: red dashed border shows spirit realm is hidden from players */}
               {/* Only shown in dual-plane mode where the ghost overlay is visible */}
               {isDM && !spiritActive && dmViewBothPlanes && (
-                <div className="spirit-layer-hidden-indicator" title="Spirit realm hidden from players" />
+                <div className="spirit-layer-hidden-indicator" title={t('spiritLayer.realmHidden')} />
               )}
             </>
           );
@@ -2896,7 +2898,7 @@ export default function MapCanvas({ onEditToken }: MapCanvasProps) {
       {userRole !== 'DM' && ((campaign?.spiritLayerEnabled ?? false) || playerSpiritVisible) && (
         <div className="absolute top-4 right-4 z-10 flex items-center gap-1.5 px-3 py-1.5 rounded-cozy bg-spirit-purple/20 border border-spirit-purple/40 backdrop-blur-sm animate-pulse-soft">
           <Ghost className="w-3.5 h-3.5 text-spirit-purple" />
-          <span className="text-xs font-semibold text-spirit-purple">Spirit Realm</span>
+          <span className="text-xs font-semibold text-spirit-purple">{t('map.spiritRealm')}</span>
         </div>
       )}
 
@@ -2907,7 +2909,7 @@ export default function MapCanvas({ onEditToken }: MapCanvasProps) {
           onClick={mapControls.zoomOut}
           disabled={mapControls.zoom <= mapControls.minZoom}
           variant="secondary" className="p-2"
-          title="Zoom Out"
+          title={t('canvas.zoomOut')}
         >
           <ZoomOut className="w-4 h-4" />
         </Button>
@@ -2922,7 +2924,7 @@ export default function MapCanvas({ onEditToken }: MapCanvasProps) {
           onClick={mapControls.zoomIn}
           disabled={mapControls.zoom >= mapControls.maxZoom}
           variant="secondary" className="p-2"
-          title="Zoom In"
+          title={t('canvas.zoomIn')}
         >
           <ZoomIn className="w-4 h-4" />
         </Button>
@@ -2934,7 +2936,7 @@ export default function MapCanvas({ onEditToken }: MapCanvasProps) {
         <Button
           onClick={() => mapControls.fitToScreen(canvasSize.width, canvasSize.height)}
           variant="secondary" className="p-2"
-          title="Fit to Screen"
+          title={t('canvas.fitToScreen')}
         >
           <Maximize2 className="w-4 h-4" />
         </Button>
@@ -2943,7 +2945,7 @@ export default function MapCanvas({ onEditToken }: MapCanvasProps) {
         <Button
           onClick={() => setShowGrid((prev) => !prev)}
           variant="secondary" className={`p-2 ${showGrid ? 'bg-moss-green/20' : ''}`}
-          title="Toggle Grid"
+          title={t('canvas.toggleGrid')}
         >
           <Grid3x3 className="w-4 h-4" />
         </Button>
@@ -2953,7 +2955,7 @@ export default function MapCanvas({ onEditToken }: MapCanvasProps) {
           <Button
             onClick={() => setGridColor((prev) => (prev === 'black' ? 'white' : 'black'))}
             variant="secondary" className="p-2"
-            title={`Grid Color: ${gridColor === 'black' ? 'Black' : 'White'}`}
+            title={t('canvas.gridColorTitle', { color: gridColor === 'black' ? t('canvas.colorBlack') : t('walls.white') })}
           >
             <Palette className="w-4 h-4" />
           </Button>
@@ -2966,7 +2968,7 @@ export default function MapCanvas({ onEditToken }: MapCanvasProps) {
             <Button
               onClick={handleToggleRuler}
               variant="secondary" className={`p-2 ${showRuler ? 'bg-moss-green/20' : ''}`}
-              title="Ruler — measure distance"
+              title={t('canvas.rulerTitle')}
             >
               <Ruler className={`w-4 h-4 ${showRuler ? 'text-brand-ink' : ''}`} />
             </Button>
@@ -2974,7 +2976,7 @@ export default function MapCanvas({ onEditToken }: MapCanvasProps) {
               <Button
                 onClick={() => setRulerColor((prev) => prev === 'amber' ? 'purple' : prev === 'purple' ? 'black' : 'amber')}
                 variant="secondary" className="p-2"
-                title={`Ruler color: ${rulerColor === 'amber' ? 'Amber' : rulerColor === 'purple' ? 'Purple' : 'Black'}`}
+                title={t('canvas.rulerColorTitle', { color: rulerColor === 'amber' ? t('canvas.colorAmber') : rulerColor === 'purple' ? t('canvas.colorPurple') : t('canvas.colorBlack') })}
               >
                 <Palette className={`w-4 h-4 ${rulerColor === 'purple' ? 'text-spirit-purple' : rulerColor === 'black' ? 'text-stone-gray' : 'text-warm-amber'}`} />
               </Button>
@@ -2984,7 +2986,7 @@ export default function MapCanvas({ onEditToken }: MapCanvasProps) {
             <Button
               onClick={handleToggleAoE}
               variant="secondary" className={`p-2 ${showAoE ? 'bg-moss-green/20' : ''}`}
-              title="AoE Shape — area of effect overlay"
+              title={t('canvas.aoeToggleTitle')}
             >
               <Zap className={`w-4 h-4 ${showAoE ? 'text-brand-ink' : ''}`} />
             </Button>
@@ -2998,7 +3000,7 @@ export default function MapCanvas({ onEditToken }: MapCanvasProps) {
             <Button
               onClick={() => setDmShowSpiritTokens((prev) => !prev)}
               variant="secondary" className={`p-2 ${dmShowSpiritTokens ? 'bg-spirit-purple/15' : ''}`}
-              title={dmShowSpiritTokens ? 'Hiding spirit tokens (click to show)' : 'Spirit tokens hidden — click to show'}
+              title={dmShowSpiritTokens ? t('canvas.spiritTokensHidingTitle') : t('canvas.spiritTokensHiddenTitle')}
             >
               <Ghost className={`w-4 h-4 ${dmShowSpiritTokens ? 'text-spirit-purple' : 'text-stone-gray/40'}`} />
             </Button>
@@ -3228,10 +3230,10 @@ export default function MapCanvas({ onEditToken }: MapCanvasProps) {
                 // chip over the map on both light and dark themes
                 : 'bg-ink/85 text-paper border-ink/40 hover:bg-ink'
             }`}
-            title={dmPreviewPlayerView ? 'Back to DM view (see all)' : 'Preview how players see this map with dynamic lighting'}
-            aria-label="Toggle DM player view preview"
+            title={dmPreviewPlayerView ? t('canvas.backToDmViewTitle') : t('canvas.previewPlayerViewTitle')}
+            aria-label={t('canvas.togglePlayerViewAria')}
           >
-            {dmPreviewPlayerView ? '👁 DM View' : '🎭 Preview Player View'}
+            {dmPreviewPlayerView ? t('canvas.dmViewButton') : t('canvas.previewPlayerViewButton')}
           </button>
         </div>
       )}
@@ -3239,14 +3241,14 @@ export default function MapCanvas({ onEditToken }: MapCanvasProps) {
       {/* Ruler hint for players with no token */}
       {showRuler && !isDM && !myToken && (
         <div className="absolute bottom-16 left-1/2 -translate-x-1/2 bg-black/60 text-warm-amber text-xs px-3 py-1.5 rounded-full pointer-events-none">
-          Place your character token on the map to use the ruler
+          {t('canvas.rulerHintNoToken')}
         </div>
       )}
 
       {/* AoE panel */}
       {showAoE && currentMap && (
         <div className="absolute top-12 left-2 z-10 p-3 space-y-3 w-52 shadow-xl rounded-xl border border-moss-green/30 bg-parchment/95 backdrop-blur-sm">
-          <p className="text-xs font-semibold text-brand-ink">AoE Shape</p>
+          <p className="text-xs font-semibold text-brand-ink">{t('canvas.aoeShapeTitle')}</p>
 
           {/* Shape selector */}
           <div className="flex flex-wrap gap-1.5">
@@ -3260,7 +3262,10 @@ export default function MapCanvas({ onEditToken }: MapCanvasProps) {
                     : 'border-stone-gray/30 text-stone-gray hover:border-moss-green/40 hover:text-brand-ink'
                 }`}
               >
-                {shape === 'sphere' ? 'Circle' : shape.charAt(0).toUpperCase() + shape.slice(1)}
+                {shape === 'sphere' ? t('canvas.aoeCircle') :
+                 shape === 'cone' ? t('canvas.aoeCone') :
+                 shape === 'line' ? t('canvas.aoeLine') :
+                 t('canvas.aoeCube')}
               </button>
             ))}
           </div>
@@ -3268,7 +3273,7 @@ export default function MapCanvas({ onEditToken }: MapCanvasProps) {
           {/* Size input */}
           <div className="space-y-1">
             <label className="text-xs font-medium text-stone-gray">
-              {aoeConfig.shape === 'sphere' ? 'Radius' : 'Length'} (ft)
+              {aoeConfig.shape === 'sphere' ? t('lighting.radius') : t('canvas.aoeLengthLabel')} (ft)
             </label>
             <input
               type="number"
@@ -3284,7 +3289,7 @@ export default function MapCanvas({ onEditToken }: MapCanvasProps) {
           {/* Width input (line only) */}
           {aoeConfig.shape === 'line' && (
             <div className="space-y-1">
-              <label className="text-xs font-medium text-stone-gray">Width (ft)</label>
+              <label className="text-xs font-medium text-stone-gray">{t('tokenTemplate.widthLabel')} (ft)</label>
               <input
                 type="number"
                 min={5}
@@ -3299,7 +3304,7 @@ export default function MapCanvas({ onEditToken }: MapCanvasProps) {
 
           {/* Quick-size presets */}
           <div className="space-y-1">
-            <p className="text-xs font-medium text-stone-gray">Presets</p>
+            <p className="text-xs font-medium text-stone-gray">{t('lighting.presets')}</p>
             <div className="flex flex-wrap gap-1">
               {[10, 15, 20, 30, 60].map((ft) => (
                 <button
@@ -3319,12 +3324,12 @@ export default function MapCanvas({ onEditToken }: MapCanvasProps) {
               onClick={() => setAoEAnchor(null)}
               className="text-xs text-stone-gray hover:text-danger-ink transition-colors"
             >
-              × Clear placement
+              {t('canvas.clearPlacement')}
             </button>
           )}
 
           <p className="text-xs text-stone-gray/70">
-            {aoeAnchor ? 'Click map to reposition' : 'Click map to place shape'}
+            {aoeAnchor ? t('canvas.clickToReposition') : t('canvas.clickToPlace')}
           </p>
           {/* Cone and line pivot about the square you click, so most of the
               time you want them on your token. Alt is the escape hatch for an
@@ -3332,8 +3337,8 @@ export default function MapCanvas({ onEditToken }: MapCanvasProps) {
           {(aoeConfig.shape === 'cone' || aoeConfig.shape === 'line') && (
             <p className="text-xs text-stone-gray/70">
               {aoeAnchor
-                ? 'Move the cursor to aim it around that square'
-                : 'Alt+click to place it freely, off the grid'}
+                ? t('canvas.aimHint')
+                : t('canvas.altClickHint')}
             </p>
           )}
         </div>
@@ -3379,7 +3384,7 @@ export default function MapCanvas({ onEditToken }: MapCanvasProps) {
           )}
           {!canMoveToken(hoverToken) && (
             <span className="text-[10px] text-warm-gray">
-              (Locked)
+              {t('canvas.lockedBadge')}
             </span>
           )}
         </div>
@@ -3390,7 +3395,7 @@ export default function MapCanvas({ onEditToken }: MapCanvasProps) {
         <div className="absolute inset-0 flex items-center justify-center bg-parchment/80">
           <div className="text-center">
             <div className="w-8 h-8 border-4 border-moss-green/30 border-t-moss-green rounded-full animate-spin mx-auto mb-2" />
-            <p className="text-sm text-stone-gray">Loading map...</p>
+            <p className="text-sm text-stone-gray">{t('canvas.loadingMap')}</p>
           </div>
         </div>
       )}
@@ -3400,7 +3405,7 @@ export default function MapCanvas({ onEditToken }: MapCanvasProps) {
         <div className="absolute inset-0 flex items-center justify-center bg-parchment/80">
           <div className="glass-panel p-4 text-center">
             <p className="text-sm text-danger-ink mb-2">{imageError}</p>
-            <p className="text-xs text-stone-gray">Check map image URL</p>
+            <p className="text-xs text-stone-gray">{t('canvas.checkMapImageUrl')}</p>
           </div>
         </div>
       )}
@@ -3410,9 +3415,9 @@ export default function MapCanvas({ onEditToken }: MapCanvasProps) {
         <div className="absolute inset-0 flex items-center justify-center">
           <div className="text-center">
             <Grid3x3 className="w-12 h-12 text-brand-ink/30 mx-auto mb-3" />
-            <p className="text-sm text-warm-gray mb-2">No map loaded</p>
+            <p className="text-sm text-warm-gray mb-2">{t('canvas.noMapLoaded')}</p>
             <p className="text-xs text-stone-gray/70">
-              Upload a map to get started
+              {t('canvas.uploadMapHint')}
             </p>
           </div>
         </div>
@@ -3458,7 +3463,7 @@ export default function MapCanvas({ onEditToken }: MapCanvasProps) {
                   }
                 }}
               >
-                View Character Sheet
+                {t('roster.viewCharacterSheet')}
               </button>
               <button
                 className="w-full px-4 py-2 text-left text-sm text-stone-gray hover:bg-moss-green/10 transition-colors"
@@ -3475,7 +3480,7 @@ export default function MapCanvas({ onEditToken }: MapCanvasProps) {
                   setRollPicker(picker);
                 }}
               >
-                Roll...
+                {t('roster.rollEllipsis')}
               </button>
             </>
           )}
@@ -3503,7 +3508,7 @@ export default function MapCanvas({ onEditToken }: MapCanvasProps) {
                     setNpcRollPicker({ tokenId, x, y });
                   }}
                 >
-                  Roll...
+                  {t('roster.rollEllipsis')}
                 </button>
               )}
 
@@ -3516,7 +3521,7 @@ export default function MapCanvas({ onEditToken }: MapCanvasProps) {
                     onEditToken?.(cmToken);
                   }}
                 >
-                  Edit Token
+                  {t('token.edit')}
                 </button>
               )}
 
@@ -3530,7 +3535,7 @@ export default function MapCanvas({ onEditToken }: MapCanvasProps) {
                     socket?.emitInitiativeAdd({ tokenId: token.id, mapId: currentMap.id });
                   }}
                 >
-                  Add to Initiative
+                  {t('initiative.add')}
                 </button>
               )}
 
@@ -3570,7 +3575,7 @@ export default function MapCanvas({ onEditToken }: MapCanvasProps) {
                   }
                 }}
               >
-                Duplicate Token
+                {t('token.duplicate')}
               </button>
 
               {/* Save as Template — DM only */}
@@ -3599,7 +3604,7 @@ export default function MapCanvas({ onEditToken }: MapCanvasProps) {
                   }
                 }}
               >
-                Save as Template
+                {t('tokenTemplate.saveAsTemplate')}
               </button>
 
               {/* Visibility toggle — Object tokens: Reveal/Hide */}
@@ -3619,7 +3624,7 @@ export default function MapCanvas({ onEditToken }: MapCanvasProps) {
                     }
                   }}
                 >
-                  {cmToken.visible ? 'Hide from Players' : 'Reveal to Players'}
+                  {cmToken.visible ? t('npcEditor.hideFromPlayers') : t('npcEditor.revealToPlayers')}
                 </button>
               )}
 
@@ -3645,7 +3650,7 @@ export default function MapCanvas({ onEditToken }: MapCanvasProps) {
                       }
                     }}
                   >
-                    {isMovingTokenLayer ? 'Moving…' : 'Send to Spirit Realm'}
+                    {isMovingTokenLayer ? t('spiritLayer.moving') : t('spiritLayer.sendToRealm')}
                   </button>
                 ) : (
                   <button
@@ -3667,7 +3672,7 @@ export default function MapCanvas({ onEditToken }: MapCanvasProps) {
                       }
                     }}
                   >
-                    {isMovingTokenLayer ? 'Moving…' : 'Return to Material Plane'}
+                    {isMovingTokenLayer ? t('spiritLayer.moving') : t('spiritLayer.returnToMaterial')}
                   </button>
                 )
               )}
@@ -3684,13 +3689,13 @@ export default function MapCanvas({ onEditToken }: MapCanvasProps) {
                       setContextMenuMoveToMapOpen(!contextMenuMoveToMapOpen);
                     }}
                   >
-                    <span>Move to Map…</span>
+                    <span>{t('token.moveToMapAction')}</span>
                     <span className="text-xs opacity-60">▶</span>
                   </button>
                   {contextMenuMoveToMapOpen && (
                     <div className="bg-parchment/80 border-t border-moss-green/10 px-2 py-1 space-y-0.5">
                       {isMoveToMapLoading ? (
-                        <p className="text-xs text-stone-gray px-2 py-1">Moving…</p>
+                        <p className="text-xs text-stone-gray px-2 py-1">{t('spiritLayer.moving')}</p>
                       ) : (
                         (campaign?.maps ?? [])
                           .filter((m) => m.id !== currentMap?.id)
@@ -3755,7 +3760,7 @@ export default function MapCanvas({ onEditToken }: MapCanvasProps) {
                   }
                 }}
               >
-                Remove from Map
+                {t('token.removeFromMap')}
               </button>
             </>
             );
@@ -3822,9 +3827,9 @@ export default function MapCanvas({ onEditToken }: MapCanvasProps) {
         >
           {/* Header — door type label */}
           <p className="px-4 py-1.5 text-xs font-semibold text-stone-gray/70 border-b border-moss-green/10 select-none">
-            {doorContextMenu.door.type === 'door-closed' ? '🚪 Closed Door' :
-             doorContextMenu.door.type === 'door-open'   ? '🚪 Open Door'   :
-                                                            '🔒 Locked Door'}
+            {doorContextMenu.door.type === 'door-closed' ? `🚪 ${t('walls.doorClosed')}` :
+             doorContextMenu.door.type === 'door-open'   ? `🚪 ${t('walls.doorOpen')}`   :
+                                                            `🔒 ${t('walls.doorLocked')}`}
           </p>
 
           {/* Open — available when door is closed */}
@@ -3833,7 +3838,7 @@ export default function MapCanvas({ onEditToken }: MapCanvasProps) {
               className="w-full px-4 py-2 text-left text-sm text-brand-ink hover:bg-moss-green/10 transition-colors"
               onClick={() => changeDoorType(doorContextMenu.door, 'door-open')}
             >
-              Open Door
+              {t('walls.doorOpen')}
             </button>
           )}
 
@@ -3843,7 +3848,7 @@ export default function MapCanvas({ onEditToken }: MapCanvasProps) {
               className="w-full px-4 py-2 text-left text-sm text-brand-ink hover:bg-moss-green/10 transition-colors"
               onClick={() => changeDoorType(doorContextMenu.door, 'door-closed')}
             >
-              Close Door
+              {t('walls.closeDoorAction')}
             </button>
           )}
 
@@ -3853,7 +3858,7 @@ export default function MapCanvas({ onEditToken }: MapCanvasProps) {
               className="w-full px-4 py-2 text-left text-sm text-danger-ink hover:bg-danger/10 transition-colors"
               onClick={() => changeDoorType(doorContextMenu.door, 'door-locked')}
             >
-              Lock Door
+              {t('walls.lockDoorAction')}
             </button>
           )}
 
@@ -3863,14 +3868,14 @@ export default function MapCanvas({ onEditToken }: MapCanvasProps) {
               className="w-full px-4 py-2 text-left text-sm text-brand-ink hover:bg-moss-green/10 transition-colors"
               onClick={() => changeDoorType(doorContextMenu.door, 'door-closed')}
             >
-              Unlock Door
+              {t('walls.unlockDoorAction')}
             </button>
           )}
 
           {/* Players see informational text when a door is locked */}
           {!isDM && doorContextMenu.door.type === 'door-locked' && (
             <p className="px-4 py-2 text-sm text-stone-gray/70 italic select-none">
-              This door is locked.
+              {t('walls.doorLockedMessage')}
             </p>
           )}
         </div>

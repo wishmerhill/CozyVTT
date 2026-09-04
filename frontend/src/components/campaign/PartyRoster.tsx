@@ -3,11 +3,13 @@
 // Displays campaign members and their characters
 // ============================================
 
+import { useTranslation } from 'react-i18next';
 import { useCampaign } from '@/contexts/CampaignContext';
 import { Users, Crown, Gamepad2, Eye } from 'lucide-react';
 import type { CampaignRole } from '@/types';
 
 export default function PartyRoster() {
+  const { t } = useTranslation(['campaign', 'common']);
   const { campaign } = useCampaign();
 
   // Get role icon
@@ -24,12 +26,26 @@ export default function PartyRoster() {
     }
   };
 
+  // Get role display label
+  const getRoleLabel = (role: CampaignRole) => {
+    switch (role) {
+      case 'DM':
+        return t('roster.dm');
+      case 'PLAYER':
+        return t('roster.player');
+      case 'SPECTATOR':
+        return t('roster.spectator');
+      default:
+        return role;
+    }
+  };
+
   return (
     <div className="glass-panel p-4 space-y-4">
       {/* Header */}
       <div className="flex items-center gap-2 pb-2 border-b border-moss-green/20">
         <Users className="w-5 h-5 text-brand-ink" />
-        <h3 className="text-lg font-semibold text-brand-ink">Party Roster</h3>
+        <h3 className="text-lg font-semibold text-brand-ink">{t('partyRoster.title')}</h3>
       </div>
 
       {/* Members List */}
@@ -59,9 +75,9 @@ export default function PartyRoster() {
                 </div>
                 <div className="flex-1 min-w-0">
                   <p className="text-sm font-medium text-stone-gray truncate">
-                    {membership.user?.displayName || 'Unknown'}
+                    {membership.user?.displayName || t('common:unknown')}
                   </p>
-                  <p className="text-xs text-warm-gray">{membership.role}</p>
+                  <p className="text-xs text-warm-gray">{getRoleLabel(membership.role)}</p>
                 </div>
               </div>
             );
@@ -69,7 +85,7 @@ export default function PartyRoster() {
         </div>
       ) : (
         <div className="text-center py-4">
-          <p className="text-sm text-warm-gray">No members yet</p>
+          <p className="text-sm text-warm-gray">{t('roster.noMembers')}</p>
         </div>
       )}
     </div>

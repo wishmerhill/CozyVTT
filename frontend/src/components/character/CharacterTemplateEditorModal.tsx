@@ -9,6 +9,7 @@
  */
 
 import { useState } from 'react';
+import { useTranslation } from 'react-i18next';
 import { FileText } from 'lucide-react';
 import api from '@/services/api';
 import { useToast } from '@/contexts/ToastContext';
@@ -30,6 +31,7 @@ export default function CharacterTemplateEditorModal({
   onClose,
   onSaved,
 }: CharacterTemplateEditorModalProps) {
+  const { t } = useTranslation('character');
   const { showToast } = useToast();
 
   const [name, setName] = useState(template.name);
@@ -55,7 +57,7 @@ export default function CharacterTemplateEditorModal({
 
   const handleSaveDetails = async () => {
     if (!name.trim()) {
-      setError('A template name is required');
+      setError(t('modal.template.nameRequired'));
       return;
     }
     setSavingDetails(true);
@@ -65,12 +67,12 @@ export default function CharacterTemplateEditorModal({
         name: name.trim(),
         description: description.trim() || null,
       });
-      showToast('Template updated', 'success');
+      showToast(t('modal.template.updated'), 'success');
       onSaved();
     } catch (err) {
       setError(
         (err as { response?: { data?: { message?: string } } }).response?.data?.message ??
-          'Failed to update the template'
+          t('modal.template.updateFailed')
       );
     } finally {
       setSavingDetails(false);
@@ -81,12 +83,12 @@ export default function CharacterTemplateEditorModal({
   const handleSheetSave = async (data: unknown) => {
     try {
       await api.updateCharacterTemplate(template.id, { data });
-      showToast('Template sheet saved', 'success');
+      showToast(t('modal.template.sheetSaved'), 'success');
       onSaved();
     } catch (err) {
       showToast(
         (err as { response?: { data?: { message?: string } } }).response?.data?.message ??
-          'Failed to save the sheet',
+          t('modal.template.sheetSaveFailed'),
         'error'
       );
     }
@@ -96,14 +98,14 @@ export default function CharacterTemplateEditorModal({
     <Modal
       open
       onClose={onClose}
-      title="Edit Template"
+      title={t('modal.template.editTitle')}
       icon={FileText}
       size="xl"
       closeDisabled={savingDetails}
     >
       <div className="space-y-6">
         <div className="space-y-4">
-          <Field label="Template name" required error={error}>
+          <Field label={t('modal.template.nameFieldLabel')} required error={error}>
             {(props) => (
               <Input
                 {...props}
@@ -114,7 +116,7 @@ export default function CharacterTemplateEditorModal({
             )}
           </Field>
 
-          <Field label="Description">
+          <Field label={t('modal.template.descriptionFieldLabel')}>
             {(props) => (
               <Textarea
                 {...props}
@@ -128,13 +130,13 @@ export default function CharacterTemplateEditorModal({
 
           <div className="flex justify-end">
             <Button onClick={handleSaveDetails} loading={savingDetails}>
-              Save Details
+              {t('modal.template.saveDetails')}
             </Button>
           </div>
         </div>
 
         <div className="border-t border-ink/10 pt-4">
-          <h3 className="text-sm font-semibold text-brand-ink mb-3">Sheet</h3>
+          <h3 className="text-sm font-semibold text-brand-ink mb-3">{t('modal.template.sheetSectionTitle')}</h3>
           <CharacterSheetRouter
             character={asCharacter}
             mode="edit"

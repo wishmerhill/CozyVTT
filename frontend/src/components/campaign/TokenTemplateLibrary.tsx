@@ -5,6 +5,7 @@
  */
 
 import { useState, useEffect, useCallback, useRef } from 'react';
+import { useTranslation } from 'react-i18next';
 import { AnimatePresence, motion } from 'framer-motion';
 import {
   X,
@@ -54,6 +55,7 @@ interface TokenTemplateLibraryProps {
 // ============================================
 
 export default function TokenTemplateLibrary({ isOpen, onClose }: TokenTemplateLibraryProps) {
+  const { t } = useTranslation(['campaign', 'common']);
   const { campaign, currentMap } = useCampaign();
   const { socket } = useWebSocket();
 
@@ -91,11 +93,11 @@ export default function TokenTemplateLibrary({ isOpen, onClose }: TokenTemplateL
       setTemplates(result.templates);
       setTotal(result.total);
     } catch {
-      setError('Failed to load token templates');
+      setError(t('tokenTemplate.errors.loadFailed'));
     } finally {
       setIsLoading(false);
     }
-  }, [campaign, searchQuery, typeFilter]);
+  }, [campaign, searchQuery, typeFilter, t]);
 
   useEffect(() => {
     if (!isOpen || !campaign) return;
@@ -160,24 +162,24 @@ export default function TokenTemplateLibrary({ isOpen, onClose }: TokenTemplateL
       useGameStore.getState().addToken(result.token);
       socket?.emitMapChange(currentMap.id);
     } catch {
-      setError('Failed to place token on map');
+      setError(t('tokenTemplate.errors.placeFailed'));
     } finally {
       setPlacingId(null);
     }
-  }, [campaign, currentMap, socket]);
+  }, [campaign, currentMap, socket, t]);
 
   // ── Delete template ──
   const handleDelete = useCallback(async (id: string) => {
     if (!campaign) return;
     try {
       await api.deleteTokenTemplate(campaign.id, id);
-      setTemplates((prev) => prev.filter((t) => t.id !== id));
+      setTemplates((prev) => prev.filter((tpl) => tpl.id !== id));
       setTotal((prev) => prev - 1);
       if (expandedId === id) setExpandedId(null);
     } catch {
-      setError('Failed to delete template');
+      setError(t('tokenTemplate.errors.deleteFailed'));
     }
-  }, [campaign, expandedId]);
+  }, [campaign, expandedId, t]);
 
   // ── Edit ──
   const handleEdit = useCallback((template: TokenTemplate) => {
@@ -193,9 +195,9 @@ export default function TokenTemplateLibrary({ isOpen, onClose }: TokenTemplateL
       await api.copyTokenTemplateToCampaign(campaign.id, templateId, targetCampaignId);
       setCopyMenuId(null);
     } catch {
-      setError('Failed to copy template');
+      setError(t('tokenTemplate.errors.copyFailed'));
     }
-  }, [campaign]);
+  }, [campaign, t]);
 
   return (
     <AnimatePresence>
@@ -223,11 +225,11 @@ export default function TokenTemplateLibrary({ isOpen, onClose }: TokenTemplateL
             {/* Header */}
             <div className="flex items-center gap-3 px-5 py-4 border-b border-moss-green/20 bg-parchment/60 sticky top-0 z-10">
               <Package className="w-5 h-5 text-brand-ink flex-shrink-0" />
-              <h2 className="flex-1 text-base font-bold text-brand-ink">Token Templates</h2>
+              <h2 className="flex-1 text-base font-bold text-brand-ink">{t('tools.tokenTemplates')}</h2>
               <span className="text-xs text-stone-gray/60">
-                {total} template{total !== 1 ? 's' : ''}
+                {t('tokenTemplate.count', { count: total })}
               </span>
-              <Button onClick={onClose} variant="secondary" className="p-1.5 flex-shrink-0" title="Close">
+              <Button onClick={onClose} variant="secondary" className="p-1.5 flex-shrink-0" title={t('common:close')}>
                 <X className="w-4 h-4" />
               </Button>
             </div>
@@ -240,7 +242,7 @@ export default function TokenTemplateLibrary({ isOpen, onClose }: TokenTemplateL
                   type="text"
                   value={searchQuery}
                   onChange={(e) => setSearchQuery(e.target.value)}
-                  placeholder="Search templates..."
+                  placeholder={t('tokenTemplate.searchPlaceholder')}
                   className="input-cozy w-full pl-8 text-sm"
                 />
               </div>
@@ -251,16 +253,16 @@ export default function TokenTemplateLibrary({ isOpen, onClose }: TokenTemplateL
                   onChange={(e) => setTypeFilter(e.target.value)}
                   className="input-cozy text-xs flex-1"
                 >
-                  <option value="">All Types</option>
-                  <option value="object">Objects</option>
-                  <option value="npc">NPCs</option>
-                  <option value="player">Players</option>
+                  <option value="">{t('tokenTemplate.filterAllTypes')}</option>
+                  <option value="object">{t('token.roster.objects')}</option>
+                  <option value="npc">{t('token.roster.npcs')}</option>
+                  <option value="player">{t('token.players')}</option>
                 </select>
                 <button
                   onClick={() => { setEditingTemplate(null); setShowForm(true); }}
                   className="flex items-center gap-1 text-xs text-brand-ink hover:text-brand-ink/80 transition-colors"
                 >
-                  <Plus className="w-3 h-3" /> New Template
+                  <Plus className="w-3 h-3" /> {t('tokenTemplate.newTemplate')}
                 </button>
               </div>
             </div>
@@ -277,16 +279,16 @@ export default function TokenTemplateLibrary({ isOpen, onClose }: TokenTemplateL
               {isLoading && templates.length === 0 ? (
                 <div className="flex items-center justify-center py-12 text-stone-gray">
                   <Loader2 className="w-5 h-5 animate-spin mr-2" />
-                  Loading templates...
+                  {t('tokenTemplate.loading')}
                 </div>
               ) : templates.length === 0 ? (
                 <div className="text-center py-12 px-6">
                   <Package className="w-8 h-8 text-brand-ink/30 mx-auto mb-2" />
                   <p className="text-sm text-stone-gray/70">
-                    {searchQuery ? 'No templates match your search.' : 'No saved token templates yet.'}
+                    {searchQuery ? t('tokenTemplate.noMatchSearch') : t('tokenTemplate.noTemplatesYet')}
                   </p>
                   <p className="text-xs text-stone-gray/50 mt-1">
-                    Save tokens from the map or create a new template to get started.
+                    {t('tokenTemplate.emptyHint')}
                   </p>
                 </div>
               ) : (
@@ -373,6 +375,7 @@ function TemplateRow({
   onToggleCopyMenu,
   onCopyToCampaign,
 }: TemplateRowProps) {
+  const { t } = useTranslation(['campaign', 'common']);
   const typeColors: Record<string, string> = {
     object: 'bg-warning/10 text-warning-ink',
     npc: 'bg-danger/10 text-danger-ink',
@@ -429,27 +432,27 @@ function TemplateRow({
               className="flex-1 flex items-center justify-center gap-1.5 py-1.5 text-xs rounded-cozy bg-moss-green/10 text-brand-ink border border-moss-green/30 hover:bg-moss-green/20 transition-colors font-medium"
             >
               {isPlacing ? <Loader2 className="w-3 h-3 animate-spin" /> : <MapPin className="w-3 h-3" />}
-              {isPlacing ? 'Placing...' : 'Place on Map'}
+              {isPlacing ? t('tokenTemplate.placing') : t('tokenTemplate.placeOnMap')}
             </button>
             <button
               onClick={onEdit}
               className="flex items-center gap-1 px-3 py-1.5 text-xs rounded-cozy border border-moss-green/20 text-brand-ink hover:bg-moss-green/10 transition-colors"
-              title="Edit template"
+              title={t('tokenTemplate.editTitle')}
             >
-              <Pencil className="w-3 h-3" /> Edit
+              <Pencil className="w-3 h-3" /> {t('common:edit')}
             </button>
             <div className="relative">
               <button
                 onClick={onToggleCopyMenu}
                 className="flex items-center gap-1 px-3 py-1.5 text-xs rounded-cozy border border-moss-green/20 text-stone-gray hover:border-moss-green/40 transition-colors"
-                title="Copy to another campaign"
+                title={t('tokenTemplate.copyToAnotherCampaign')}
               >
-                <Copy className="w-3 h-3" /> Copy
+                <Copy className="w-3 h-3" /> {t('tokenTemplate.copy')}
               </button>
               {showCopyMenu && dmCampaigns.length > 0 && (
                 <div className="absolute left-0 top-full mt-1 z-20 bg-paper-white border border-moss-green/20 rounded-cozy shadow-lg py-1 min-w-[180px] max-h-48 overflow-y-auto">
                   <div className="px-2 py-1 text-[9px] text-stone-gray/60 uppercase tracking-wide font-semibold">
-                    Copy to campaign
+                    {t('tokenTemplate.copyToCampaignHeading')}
                   </div>
                   {dmCampaigns.map((c) => (
                     <button
@@ -464,7 +467,7 @@ function TemplateRow({
               )}
               {showCopyMenu && dmCampaigns.length === 0 && (
                 <div className="absolute left-0 top-full mt-1 z-20 bg-paper-white border border-moss-green/20 rounded-cozy shadow-lg p-3 min-w-[180px]">
-                  <p className="text-[10px] text-stone-gray/60">No other campaigns where you are DM.</p>
+                  <p className="text-[10px] text-stone-gray/60">{t('tokenTemplate.noOtherDmCampaigns')}</p>
                 </div>
               )}
             </div>
@@ -472,19 +475,20 @@ function TemplateRow({
               onClick={onDelete}
               className="flex items-center gap-1 px-3 py-1.5 text-xs rounded-cozy border border-danger/20 text-danger-ink hover:bg-danger/10 transition-colors"
             >
-              <Trash2 className="w-3 h-3" /> Delete
+              <Trash2 className="w-3 h-3" /> {t('common:delete')}
             </button>
           </div>
 
           {/* Details */}
           {template.statBlock && (
             <div className="glass-panel p-2 text-[10px] text-stone-gray space-y-0.5">
-              <div>AC {(template.statBlock as NpcStatBlock).ac} &middot; Speed {(template.statBlock as NpcStatBlock).speed}</div>
+              <div>{t('tokenTemplate.acSpeedSummary', { ac: (template.statBlock as NpcStatBlock).ac, speed: (template.statBlock as NpcStatBlock).speed })}</div>
             </div>
           )}
           {template.hp && (
             <div className="text-[10px] text-stone-gray/60">
-              HP: {template.hp.current}/{template.hp.max}{template.hp.temp > 0 && ` (+${template.hp.temp} temp)`}
+              {t('tokenTemplate.hpSummary', { current: template.hp.current, max: template.hp.max })}
+              {template.hp.temp > 0 && t('tokenTemplate.hpTempSuffix', { temp: template.hp.temp })}
             </div>
           )}
         </div>
@@ -506,6 +510,7 @@ interface TemplateFormProps {
 }
 
 function TemplateForm({ campaignId, editingTemplate, onCreated, onEdited, onCancel }: TemplateFormProps) {
+  const { t } = useTranslation(['campaign', 'common']);
   const isEdit = !!editingTemplate;
   const { data: serverConfig } = useServerConfigQuery();
   // The stat block editor interprets a template differently per game system,
@@ -536,7 +541,7 @@ function TemplateForm({ campaignId, editingTemplate, onCreated, onEdited, onCanc
     const file = e.target.files?.[0];
     if (!file) return;
     const tokenLimit = getUploadLimit(serverConfig, AssetType.TOKEN);
-    if (file.size > tokenLimit) { setFormError(`Image must be under ${formatUploadLimit(tokenLimit)}`); return; }
+    if (file.size > tokenLimit) { setFormError(t('tokenTemplate.imageSizeError', { limit: formatUploadLimit(tokenLimit) })); return; }
 
     setIsUploading(true);
     setFormError(null);
@@ -552,7 +557,7 @@ function TemplateForm({ campaignId, editingTemplate, onCreated, onEdited, onCanc
       const { asset } = await api.uploadAsset(formData);
       setImageUrl(asset.id);
     } catch {
-      setFormError('Failed to upload image');
+      setFormError(t('tokenTemplate.errors.uploadImage'));
     } finally {
       setIsUploading(false);
       if (fileInputRef.current) fileInputRef.current.value = '';
@@ -560,7 +565,7 @@ function TemplateForm({ campaignId, editingTemplate, onCreated, onEdited, onCanc
   };
 
   const handleSubmit = async () => {
-    if (!name.trim()) { setFormError('Name is required'); return; }
+    if (!name.trim()) { setFormError(t('tokenTemplate.nameRequired')); return; }
     setIsSubmitting(true);
     setFormError(null);
 
@@ -586,7 +591,7 @@ function TemplateForm({ campaignId, editingTemplate, onCreated, onEdited, onCanc
         onCreated(created);
       }
     } catch {
-      setFormError(isEdit ? 'Failed to update template' : 'Failed to create template');
+      setFormError(isEdit ? t('tokenTemplate.errors.updateFailed') : t('tokenTemplate.errors.createFailed'));
     } finally {
       setIsSubmitting(false);
     }
@@ -596,7 +601,7 @@ function TemplateForm({ campaignId, editingTemplate, onCreated, onEdited, onCanc
     <div className="border-t border-moss-green/20 bg-parchment/40 p-4 space-y-3 max-h-[60vh] overflow-y-auto">
       <div className="flex items-center justify-between">
         <h3 className="text-xs font-semibold text-brand-ink uppercase tracking-wide">
-          {isEdit ? 'Edit Template' : 'New Token Template'}
+          {isEdit ? t('tokenTemplate.formTitleEdit') : t('tokenTemplate.formTitleNew')}
         </h3>
         <button onClick={onCancel} className="text-stone-gray hover:text-stone-gray/80 p-0.5">
           <X className="w-4 h-4" />
@@ -609,13 +614,13 @@ function TemplateForm({ campaignId, editingTemplate, onCreated, onEdited, onCanc
 
       {/* Name */}
       <div>
-        <label className="text-[10px] text-stone-gray block mb-0.5">Name *</label>
-        <input type="text" value={name} onChange={(e) => setName(e.target.value)} placeholder="e.g. Treasure Chest" className="input-cozy w-full text-sm" />
+        <label className="text-[10px] text-stone-gray block mb-0.5">{t('tokenTemplate.nameLabel')}</label>
+        <input type="text" value={name} onChange={(e) => setName(e.target.value)} placeholder={t('tokenTemplate.namePlaceholder')} className="input-cozy w-full text-sm" />
       </div>
 
       {/* Image */}
       <div>
-        <label className="text-[10px] text-stone-gray block mb-0.5">Image</label>
+        <label className="text-[10px] text-stone-gray block mb-0.5">{t('tokenTemplate.imageFieldLabel')}</label>
         <div className="flex items-center gap-2">
           {imageUrl ? (
             <img
@@ -625,7 +630,7 @@ function TemplateForm({ campaignId, editingTemplate, onCreated, onEdited, onCanc
               src={imageUrl.startsWith('http') || imageUrl.startsWith('/')
                 ? imageUrl
                 : api.getAssetUrl(imageUrl, 'tokens')}
-              alt="Token" className="w-10 h-10 rounded-full object-cover border border-moss-green/20"
+              alt={t('tokenTemplate.imageAlt')} className="w-10 h-10 rounded-full object-cover border border-moss-green/20"
             />
           ) : (
             <div className="w-10 h-10 rounded-full bg-stone-gray/10 flex items-center justify-center border border-dashed border-stone-gray/30">
@@ -635,28 +640,28 @@ function TemplateForm({ campaignId, editingTemplate, onCreated, onEdited, onCanc
           <input ref={fileInputRef} type="file" accept="image/png,image/jpeg,image/webp,image/gif" onChange={handleImageUpload} className="hidden" />
           <button type="button" onClick={() => fileInputRef.current?.click()} disabled={isUploading} className="text-[10px] text-brand-ink hover:text-brand-ink/80 flex items-center gap-1">
             {isUploading ? <Loader2 className="w-3 h-3 animate-spin" /> : <Upload className="w-3 h-3" />}
-            {imageUrl ? 'Change' : 'Upload'}
+            {imageUrl ? t('tokenTemplate.change') : t('common:upload')}
           </button>
-          {imageUrl && <button type="button" onClick={() => setImageUrl('')} className="text-[10px] text-danger-ink hover:text-danger-ink">Remove</button>}
+          {imageUrl && <button type="button" onClick={() => setImageUrl('')} className="text-[10px] text-danger-ink hover:text-danger-ink">{t('tokenTemplate.remove')}</button>}
         </div>
       </div>
 
       {/* Type & Display Mode */}
       <div className="grid grid-cols-2 gap-2">
         <div>
-          <label className="text-[10px] text-stone-gray block mb-0.5">Token Type</label>
+          <label className="text-[10px] text-stone-gray block mb-0.5">{t('token.type')}</label>
           <select value={type} onChange={(e) => setType(e.target.value)} className="input-cozy w-full text-xs">
-            <option value="object">Object</option>
-            <option value="npc">NPC</option>
-            <option value="player">Player</option>
+            <option value="object">{t('token.object')}</option>
+            <option value="npc">{t('token.npc')}</option>
+            <option value="player">{t('token.player')}</option>
           </select>
         </div>
         <div>
-          <label className="text-[10px] text-stone-gray block mb-0.5">Display Mode</label>
+          <label className="text-[10px] text-stone-gray block mb-0.5">{t('token.displayMode')}</label>
           <select value={displayMode} onChange={(e) => setDisplayMode(e.target.value as TokenDisplayMode)} className="input-cozy w-full text-xs">
-            <option value="pog">Pog (circular)</option>
-            <option value="top-down">Top-Down</option>
-            <option value="full-art">Full Art</option>
+            <option value="pog">{t('token.pog')}</option>
+            <option value="top-down">{t('token.topDown')}</option>
+            <option value="full-art">{t('token.fullArt')}</option>
           </select>
         </div>
       </div>
@@ -664,20 +669,20 @@ function TemplateForm({ campaignId, editingTemplate, onCreated, onEdited, onCanc
       {/* Size & Disposition */}
       <div className="grid grid-cols-3 gap-2">
         <div>
-          <label className="text-[10px] text-stone-gray block mb-0.5">Width</label>
+          <label className="text-[10px] text-stone-gray block mb-0.5">{t('tokenTemplate.widthLabel')}</label>
           <input type="number" value={width} onChange={(e) => setWidth(Math.max(1, Math.min(10, parseInt(e.target.value, 10) || 1)))} min={1} max={10} className="input-cozy input-cozy-number w-full text-xs text-center" />
         </div>
         <div>
-          <label className="text-[10px] text-stone-gray block mb-0.5">Height</label>
+          <label className="text-[10px] text-stone-gray block mb-0.5">{t('tokenTemplate.heightLabel')}</label>
           <input type="number" value={height} onChange={(e) => setHeight(Math.max(1, Math.min(10, parseInt(e.target.value, 10) || 1)))} min={1} max={10} className="input-cozy input-cozy-number w-full text-xs text-center" />
         </div>
         <div>
-          <label className="text-[10px] text-stone-gray block mb-0.5">Disposition</label>
+          <label className="text-[10px] text-stone-gray block mb-0.5">{t('token.disposition')}</label>
           <select value={disposition} onChange={(e) => setDisposition(e.target.value)} className="input-cozy w-full text-xs">
-            <option value="">None</option>
-            <option value="friendly">Friendly</option>
-            <option value="neutral">Neutral</option>
-            <option value="hostile">Hostile</option>
+            <option value="">{t('common:none')}</option>
+            <option value="friendly">{t('token.friendly')}</option>
+            <option value="neutral">{t('token.neutral')}</option>
+            <option value="hostile">{t('token.hostile')}</option>
           </select>
         </div>
       </div>
@@ -685,9 +690,9 @@ function TemplateForm({ campaignId, editingTemplate, onCreated, onEdited, onCanc
       {/* HP Toggle */}
       <div className="flex items-center gap-2">
         <input type="checkbox" id="template-hp" checked={showHpBar} onChange={(e) => setShowHpBar(e.target.checked)} className="rounded border-moss-green/30" />
-        <label htmlFor="template-hp" className="text-[10px] text-stone-gray">Show HP Bar</label>
+        <label htmlFor="template-hp" className="text-[10px] text-stone-gray">{t('token.showHpBar')}</label>
         {showHpBar && (
-          <input type="number" value={hpMax} onChange={(e) => setHpMax(Math.max(1, parseInt(e.target.value, 10) || 1))} min={1} className="input-cozy input-cozy-number w-16 text-xs text-center ml-2" placeholder="Max HP" />
+          <input type="number" value={hpMax} onChange={(e) => setHpMax(Math.max(1, parseInt(e.target.value, 10) || 1))} min={1} className="input-cozy input-cozy-number w-16 text-xs text-center ml-2" placeholder={t('npcEditor.maxHpPlaceholder')} />
         )}
       </div>
 
@@ -703,8 +708,8 @@ function TemplateForm({ campaignId, editingTemplate, onCreated, onEdited, onCanc
             className="flex items-center gap-1 w-full text-left py-1 text-[10px] font-semibold text-brand-ink uppercase tracking-wide hover:text-brand-ink/80 transition-colors"
           >
             {showStatBlock ? <ChevronDown className="w-3 h-3" /> : <ChevronRight className="w-3 h-3" />}
-            Stat Block
-            {!statBlock && <span className="ml-1 text-stone-gray/60 normal-case font-normal">(none)</span>}
+            {t('npcEditor.statBlock')}
+            {!statBlock && <span className="ml-1 text-stone-gray/60 normal-case font-normal">({t('common:none')})</span>}
           </button>
           {showStatBlock && statBlock && (
             <div className="pl-1 pt-1">
@@ -718,7 +723,7 @@ function TemplateForm({ campaignId, editingTemplate, onCreated, onEdited, onCanc
                 onClick={() => { setStatBlock(null); setShowStatBlock(false); }}
                 className="mt-2 text-[10px] text-danger-ink hover:text-danger-ink flex items-center gap-1"
               >
-                <Trash2 className="w-3 h-3" /> Clear stat block
+                <Trash2 className="w-3 h-3" /> {t('tokenTemplate.clearStatBlock')}
               </button>
             </div>
           )}
@@ -727,20 +732,20 @@ function TemplateForm({ campaignId, editingTemplate, onCreated, onEdited, onCanc
 
       {/* Notes */}
       <div>
-        <label className="text-[10px] text-stone-gray block mb-0.5">Notes</label>
-        <textarea value={notes} onChange={(e) => setNotes(e.target.value)} rows={2} className="input-cozy w-full text-xs resize-y" placeholder="Optional description or notes" />
+        <label className="text-[10px] text-stone-gray block mb-0.5">{t('token.notes')}</label>
+        <textarea value={notes} onChange={(e) => setNotes(e.target.value)} rows={2} className="input-cozy w-full text-xs resize-y" placeholder={t('tokenTemplate.notesPlaceholder')} />
       </div>
 
       {/* Submit */}
       <div className="flex gap-2 pt-1">
         <Button onClick={handleSubmit} disabled={isSubmitting || !name.trim()} className="flex-1 text-xs py-2">
           {isSubmitting ? (
-            <><Loader2 className="w-3 h-3 animate-spin inline mr-1" />{isEdit ? 'Saving...' : 'Creating...'}</>
+            <><Loader2 className="w-3 h-3 animate-spin inline mr-1" />{isEdit ? t('common:saving') : t('common:creating')}</>
           ) : (
-            isEdit ? 'Save Changes' : 'Create Template'
+            isEdit ? t('common:saveChanges') : t('tokenTemplate.createTemplate')
           )}
         </Button>
-        <Button onClick={onCancel} variant="secondary" className="text-xs py-2 px-4">Cancel</Button>
+        <Button onClick={onCancel} variant="secondary" className="text-xs py-2 px-4">{t('common:cancel')}</Button>
       </div>
     </div>
   );

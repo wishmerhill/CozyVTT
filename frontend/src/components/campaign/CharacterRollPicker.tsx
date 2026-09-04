@@ -9,6 +9,7 @@
  */
 
 import React, { useEffect, useRef, useState } from 'react';
+import { useTranslation } from 'react-i18next';
 import { Dices, X, ChevronDown } from 'lucide-react';
 import { api } from '@/services/api';
 import type { Character } from '@/types';
@@ -87,14 +88,15 @@ const Section: React.FC<SectionProps> = ({ title, rolls, mode: _mode, onRoll }) 
 // Roll-mode selector (Normal / Advantage / Disadvantage)
 // ---------------------------------------------------------------------------
 
-const MODE_LABELS: Record<string, Record<RollMode, string>> = {
-  DND_5E:           { normal: 'Normal', advantage: 'Advantage', disadvantage: 'Disadvantage' },
-  PATHFINDER_2E:    { normal: 'Normal', advantage: 'Fortune',   disadvantage: 'Misfortune' },
-  CALL_OF_CTHULHU_7E: { normal: 'Normal', advantage: 'Normal', disadvantage: 'Normal' },
-};
-
-function getModeLabels(gameSystem: string | null): Record<RollMode, string> {
-  return MODE_LABELS[gameSystem ?? ''] ?? { normal: 'Normal', advantage: 'Advantage', disadvantage: 'Disadvantage' };
+function getModeLabels(gameSystem: string | null, t: (key: string) => string): Record<RollMode, string> {
+  const normal = t('character:sheet.normal');
+  if (gameSystem === 'PATHFINDER_2E') {
+    return { normal, advantage: t('rollPicker.fortune'), disadvantage: t('rollPicker.misfortune') };
+  }
+  if (gameSystem === 'CALL_OF_CTHULHU_7E') {
+    return { normal, advantage: normal, disadvantage: normal };
+  }
+  return { normal, advantage: t('character:sheet.advantage'), disadvantage: t('character:sheet.disadvantage') };
 }
 
 // Does this game system support advantage/disadvantage variants?
@@ -115,6 +117,7 @@ export default function CharacterRollPicker({
   anchorX,
   anchorY,
 }: CharacterRollPickerProps) {
+  const { t } = useTranslation(['campaign', 'character']);
   const pickerRef = useRef<HTMLDivElement>(null);
   const [pos, setPos] = useState<{ x: number; y: number } | null>(null);
 
@@ -133,14 +136,14 @@ export default function CharacterRollPicker({
       setLoading(false);
       return;
     }
-    if (!characterId) { setError('No character provided'); setLoading(false); return; }
+    if (!characterId) { setError(t('rollPicker.noCharacterProvided')); setLoading(false); return; }
 
     api.getCharacter(characterId)
       .then(({ character: c }) => {
         setCharacter(c);
         setRolls(getCharacterRolls(c.gameSystem, c.data));
       })
-      .catch(() => setError('Failed to load character data'))
+      .catch(() => setError(t('rollPicker.loadCharacterFailed')))
       .finally(() => setLoading(false));
   }, [initialCharacter, characterId]);  
 
@@ -177,7 +180,7 @@ export default function CharacterRollPicker({
 
     if (opt.supportsAdvantage && mode !== 'normal') {
       expr = mode === 'advantage' ? withAdvantage(expr) : withDisadvantage(expr);
-      const modeLabel = getModeLabels(character?.gameSystem ?? null)[mode];
+      const modeLabel = getModeLabels(character?.gameSystem ?? null, t)[mode];
       purpose = `${purpose} (${modeLabel})`;
     }
 
@@ -187,7 +190,7 @@ export default function CharacterRollPicker({
 
   const gameSystem = character?.gameSystem ?? null;
   const hasAdvantage = systemSupportsAdvantage(gameSystem);
-  const modeLabels = getModeLabels(gameSystem);
+  const modeLabels = getModeLabels(gameSystem, t);
 
   // What initiative means for this character, purely so the entry can describe
   // itself ("1d20+3", or "DEX 65" for a system that does not roll). The server
@@ -195,7 +198,7 @@ export default function CharacterRollPicker({
   // actually made — this never decides the outcome.
   const initiative = resolveCharacterInitiative(gameSystem, character?.data);
 
-  const characterName = character?.name ?? 'Character';
+  const characterName = character?.name ?? t('rollPicker.characterFallback');
   const hasAnyRolls = rolls && (
     rolls.abilities.length > 0 ||
     rolls.skills.length > 0 ||
@@ -221,7 +224,7 @@ export default function CharacterRollPicker({
         <div className="flex items-center gap-2">
           <Dices className="w-4 h-4 text-brand-ink" />
           <span className="text-sm font-semibold text-stone-gray truncate">
-            Roll for {characterName}
+            {t('rollPicker.rollFor', { name: characterName })}
           </span>
         </div>
         <button onClick={onClose} className="p-0.5 rounded hover:bg-moss-green/10 transition-colors">
@@ -232,7 +235,7 @@ export default function CharacterRollPicker({
       {/* Roll Mode Selector (d20 systems only) */}
       {hasAdvantage && !loading && hasAnyRolls && (
         <div className="px-3 py-2 border-b border-moss-green/10 bg-parchment/30">
-          <div className="text-xs text-warm-gray mb-1">Roll mode</div>
+          <div className="text-xs text-warm-gray mb-1">{t('rollPicker.rollMode')}</div>
           <div className="relative">
             <button
               onClick={() => setModeOpen((o) => !o)}
@@ -266,7 +269,7 @@ export default function CharacterRollPicker({
       <div className="overflow-y-auto" style={{ maxHeight: 400 }}>
         {loading && (
           <div className="flex items-center justify-center py-8 text-warm-gray text-sm">
-            Loading rolls…
+            {t('rollPicker.loadingRolls')}
           </div>
         )}
 
@@ -282,7 +285,7 @@ export default function CharacterRollPicker({
         {!loading && !error && onRollInitiative && (
           <div className="border-b border-moss-green/10">
             <div className="px-3 py-1 text-xs font-semibold uppercase tracking-wider text-warm-gray bg-parchment/40">
-              Initiative
+              {t('character:sheet.initiative')}
             </div>
             <button
               onClick={() => { onRollInitiative(); onClose(); }}
@@ -293,7 +296,7 @@ export default function CharacterRollPicker({
                   combatants by Dexterity with no die involved, so offering to
                   "roll" would promise something that does not happen. */}
               <span className="flex-1">
-                {initiative?.kind === 'fixed' ? 'Set Initiative' : 'Roll Initiative'}
+                {initiative?.kind === 'fixed' ? t('rollPicker.setInitiative') : t('rollPicker.rollInitiative')}
               </span>
               {initiative && (
                 <span className="text-xs text-warm-gray flex-shrink-0">{initiative.label}</span>
@@ -304,20 +307,20 @@ export default function CharacterRollPicker({
 
         {!loading && !error && !hasAnyRolls && (
           <div className="px-3 py-6 text-sm text-warm-gray text-center">
-            No rollable stats found for this character.
+            {t('rollPicker.noRollableStats')}
             <br />
-            <span className="text-xs">Make sure the character sheet is filled in.</span>
+            <span className="text-xs">{t('rollPicker.fillSheetHint')}</span>
           </div>
         )}
 
         {!loading && !error && rolls && (
           <div className="divide-y divide-moss-green/10">
-            <Section title="Abilities" rolls={rolls.abilities} mode={mode} onRoll={handleRollOption} />
-            <Section title="Skills" rolls={rolls.skills} mode={mode} onRoll={handleRollOption} />
+            <Section title={t('rollPicker.abilities')} rolls={rolls.abilities} mode={mode} onRoll={handleRollOption} />
+            <Section title={t('character:sheet.skillList')} rolls={rolls.skills} mode={mode} onRoll={handleRollOption} />
             {rolls.savingThrows.length > 0 && (
-              <Section title="Saving Throws" rolls={rolls.savingThrows} mode={mode} onRoll={handleRollOption} />
+              <Section title={t('character:sheet.savingThrows')} rolls={rolls.savingThrows} mode={mode} onRoll={handleRollOption} />
             )}
-            <Section title="Combat" rolls={rolls.combat} mode={mode} onRoll={handleRollOption} />
+            <Section title={t('character:sheet.combat')} rolls={rolls.combat} mode={mode} onRoll={handleRollOption} />
           </div>
         )}
       </div>

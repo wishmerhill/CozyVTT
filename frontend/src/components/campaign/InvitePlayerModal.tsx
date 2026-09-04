@@ -4,6 +4,7 @@
  */
 
 import { useState, useEffect } from 'react';
+import { useTranslation } from 'react-i18next';
 import { Mail, Loader2, Users } from 'lucide-react';
 import { api } from '@/services/api';
 import { useServerConfigQuery } from '@/hooks/queries';
@@ -22,6 +23,7 @@ export default function InvitePlayerModal({
   onClose,
   onSuccess,
 }: InvitePlayerModalProps) {
+  const { t } = useTranslation('campaign');
   const [users, setUsers] = useState<User[]>([]);
   const [selectedUserId, setSelectedUserId] = useState('');
   const [loading, setLoading] = useState(true);
@@ -44,7 +46,7 @@ export default function InvitePlayerModal({
         setUsers(response.users || []);
       } catch (err: any) {
         console.error('Error fetching invitable users:', err);
-        setError('Failed to load users');
+        setError(t('invitePlayer.errorLoadUsers'));
       } finally {
         setLoading(false);
       }
@@ -54,7 +56,7 @@ export default function InvitePlayerModal({
 
   const handleInvite = async () => {
     if (!selectedUserId) {
-      setError('Please select a user to invite');
+      setError(t('invitePlayer.selectUserRequired'));
       return;
     }
     try {
@@ -68,14 +70,14 @@ export default function InvitePlayerModal({
       // Say what actually happened. Asking for an email and not getting one is
       // worth knowing about, and the server is the only thing that can tell us.
       showToast(
-        emailSent ? 'Invitation sent, and emailed to them.' : 'Invitation sent.',
+        emailSent ? t('invitePlayer.sentWithEmail') : t('invitePlayer.sentPlain'),
         'success'
       );
       onSuccess();
       onClose();
     } catch (err: any) {
       console.error('Error sending invitation:', err);
-      setError(err.response?.data?.message || 'Failed to send invitation');
+      setError(err.response?.data?.message || t('invitePlayer.errorSend'));
     } finally {
       setSending(false);
     }
@@ -85,14 +87,14 @@ export default function InvitePlayerModal({
     <Modal
       open
       onClose={onClose}
-      title="Invite Player"
+      title={t('roster.invite')}
       icon={Mail}
       size="sm"
       closeDisabled={sending}
       footer={
         <>
           <Button type="button" onClick={onClose} disabled={sending} variant="secondary">
-            Cancel
+            {t('common.cancel')}
           </Button>
           <Button
             onClick={handleInvite}
@@ -100,7 +102,7 @@ export default function InvitePlayerModal({
             loading={sending}
             icon={Mail}
           >
-            {sending ? 'Sending...' : 'Send Invitation'}
+            {sending ? t('common.sending') : t('invitation.send')}
           </Button>
         </>
       }
@@ -121,18 +123,18 @@ export default function InvitePlayerModal({
         ) : users.length === 0 ? (
           <div className="flex flex-col items-center justify-center py-10 gap-2 text-center">
             <Users className="w-8 h-8 text-ink-muted/40" />
-            <p className="text-sm text-ink-muted">No users available to invite.</p>
-            <p className="text-xs text-ink-muted/70">All registered users are already members or have pending invitations.</p>
+            <p className="text-sm text-ink-muted">{t('invitePlayer.noUsers')}</p>
+            <p className="text-xs text-ink-muted/70">{t('invitePlayer.noUsersHint')}</p>
           </div>
         ) : (
-          <Field label="Select User">
+          <Field label={t('invitePlayer.selectUserLabel')}>
             {(field) => (
               <Select
                 {...field}
                 value={selectedUserId}
                 onChange={(e) => { setSelectedUserId(e.target.value); setError(''); }}
               >
-                <option value="">Choose a user...</option>
+                <option value="">{t('invitePlayer.chooseUserPlaceholder')}</option>
                 {users.map((user) => (
                   <option key={user.id} value={user.id}>
                     {user.displayName}
@@ -163,11 +165,11 @@ export default function InvitePlayerModal({
               />
             </div>
             <div>
-              <span className="text-sm text-ink">Also email them an invitation</span>
+              <span className="text-sm text-ink">{t('invitePlayer.emailCheckboxLabel')}</span>
               <p className="text-xs text-warm-gray mt-0.5">
                 {emailAvailable
-                  ? "They'll see the invitation on their dashboard either way."
-                  : 'Email is not set up on this server, so only the dashboard invitation will appear.'}
+                  ? t('invitePlayer.emailHintAvailable')
+                  : t('invitePlayer.emailHintUnavailable')}
               </p>
             </div>
           </label>

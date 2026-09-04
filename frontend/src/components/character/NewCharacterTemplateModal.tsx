@@ -8,6 +8,7 @@
  */
 
 import { useState } from 'react';
+import { useTranslation } from 'react-i18next';
 import { FileText } from 'lucide-react';
 import api from '@/services/api';
 import { useToast } from '@/contexts/ToastContext';
@@ -34,6 +35,7 @@ export default function NewCharacterTemplateModal({
   onCreated,
   initial,
 }: NewCharacterTemplateModalProps) {
+  const { t } = useTranslation(['character', 'common']);
   const { showToast } = useToast();
 
   const [name, setName] = useState(initial?.name ?? '');
@@ -48,7 +50,7 @@ export default function NewCharacterTemplateModal({
 
   const handleSubmit = async () => {
     if (!name.trim()) {
-      setError('A template name is required');
+      setError(t('modal.template.nameRequired'));
       return;
     }
 
@@ -76,12 +78,12 @@ export default function NewCharacterTemplateModal({
         data,
       });
 
-      showToast('Template published', 'success');
+      showToast(t('modal.template.published'), 'success');
       onCreated();
     } catch (err) {
       const message =
         (err as { response?: { data?: { message?: string } } }).response?.data?.message ??
-        'Failed to create the template';
+        t('modal.template.createFailed');
       setError(message);
     } finally {
       setSaving(false);
@@ -92,41 +94,40 @@ export default function NewCharacterTemplateModal({
     <Modal
       open
       onClose={onClose}
-      title={initial?.data !== undefined ? 'Save as Template' : 'New Character Template'}
+      title={initial?.data !== undefined ? t('modal.template.saveAsTitle') : t('modal.template.newTitle')}
       icon={FileText}
       closeDisabled={saving}
       footer={
         <>
           <Button variant="secondary" onClick={onClose} disabled={saving}>
-            Cancel
+            {t('common:cancel')}
           </Button>
           <Button onClick={handleSubmit} loading={saving}>
-            Publish Template
+            {t('modal.template.publishButton')}
           </Button>
         </>
       }
     >
       <div className="space-y-4">
         <p className="text-sm text-ink-secondary">
-          Templates are visible to everyone on this instance. Anyone can copy one into a character
-          of their own; only you can edit or remove it.
+          {t('modal.template.visibilityNote')}
         </p>
 
-        <Field label="Template name" required error={error}>
+        <Field label={t('modal.template.nameFieldLabel')} required error={error}>
           {(props) => (
             <Input
               {...props}
               value={name}
               onChange={(e) => setName(e.target.value)}
-              placeholder="e.g. Novice Fighter"
+              placeholder={t('modal.template.namePlaceholder')}
               maxLength={200}
             />
           )}
         </Field>
 
         <Field
-          label="Description"
-          hint="What this template is for, and who it suits — shown on the card."
+          label={t('modal.template.descriptionFieldLabel')}
+          hint={t('modal.template.descriptionHint')}
         >
           {(props) => (
             <Textarea
@@ -135,17 +136,17 @@ export default function NewCharacterTemplateModal({
               onChange={(e) => setDescription(e.target.value)}
               rows={3}
               maxLength={2000}
-              placeholder="A straightforward melee character, good for a first session."
+              placeholder={t('modal.template.descriptionPlaceholder')}
             />
           )}
         </Field>
 
         <Field
-          label="Game system"
+          label={t('modal.template.gameSystemFieldLabel')}
           hint={
             systemLocked
-              ? 'Taken from the sheet this template was made from.'
-              : 'Fixed once published, the same way a character works.'
+              ? t('modal.template.gameSystemHintLocked')
+              : t('modal.template.gameSystemHintEditable')
           }
         >
           {(props) => (
@@ -155,7 +156,7 @@ export default function NewCharacterTemplateModal({
               disabled={systemLocked}
               onChange={(e) => setGameSystem(e.target.value)}
             >
-              <option value="">Flexible (No System)</option>
+              <option value="">{t('modal.template.flexibleNoSystem')}</option>
               {GAME_SYSTEM_OPTIONS.map((opt) => (
                 <option key={opt.value} value={opt.value}>
                   {opt.label}

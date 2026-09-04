@@ -28,55 +28,20 @@ interface TemplateOption {
   description: string;
 }
 
-const TEMPLATE_OPTIONS_BY_SYSTEM: Record<string, TemplateOption[]> = {
-  [GameSystem.DND_5E]: [
-    {
-      value: 'blank',
-      label: 'Blank Character Sheet',
-      description: 'Start with an empty Level 1 character',
-    },
-    {
-      value: 'fighter',
-      label: 'Level 1 Fighter (Example)',
-      description: 'A pre-built Fighter with standard array stats',
-    },
-  ],
-  [GameSystem.PATHFINDER_2E]: [
-    {
-      value: 'blank',
-      label: 'Blank Character Sheet',
-      description: 'Start with an empty Level 1 character',
-    },
-    {
-      value: 'fighter',
-      label: 'Level 1 Fighter (Example)',
-      description: 'A pre-built Dwarf Fighter',
-    },
-  ],
-  [GameSystem.SHADOWRUN_6E]: [
-    {
-      value: 'blank',
-      label: 'Blank Character Sheet',
-      description: 'Start with an empty character',
-    },
-    {
-      value: 'streetsamurai',
-      label: 'Street Samurai (Example)',
-      description: 'A combat-focused runner with cyberware',
-    },
-  ],
-  [GameSystem.CALL_OF_CTHULHU_7E]: [
-    {
-      value: 'blank',
-      label: 'Blank Investigator Sheet',
-      description: 'Start with an empty investigator',
-    },
-    {
-      value: 'privateinvestigator',
-      label: 'Private Investigator (Example)',
-      description: 'A gritty private eye ready for mysteries',
-    },
-  ],
+/** Template value keys available per game system — labels/descriptions come from i18n. */
+const TEMPLATE_KEYS_BY_SYSTEM: Record<string, string[]> = {
+  [GameSystem.DND_5E]: ['blank', 'fighter'],
+  [GameSystem.PATHFINDER_2E]: ['blank', 'fighter'],
+  [GameSystem.SHADOWRUN_6E]: ['blank', 'streetsamurai'],
+  [GameSystem.CALL_OF_CTHULHU_7E]: ['blank', 'privateinvestigator'],
+};
+
+/** Maps GameSystem enum values to the i18n key segment used under modal.new.templates.* */
+const GAME_SYSTEM_I18N_KEY: Record<string, string> = {
+  [GameSystem.DND_5E]: 'dnd5e',
+  [GameSystem.PATHFINDER_2E]: 'pathfinder2e',
+  [GameSystem.SHADOWRUN_6E]: 'shadowrun6e',
+  [GameSystem.CALL_OF_CTHULHU_7E]: 'callOfCthulhu7e',
 };
 
 export default function NewCharacterModal({
@@ -153,18 +118,24 @@ export default function NewCharacterModal({
       return [
         {
           value: 'blank',
-          label: 'Blank Character',
-          description: 'Start with an empty flexible character sheet',
+          label: t('modal.new.templates.none.blank.label'),
+          description: t('modal.new.templates.none.blank.description'),
         },
         {
           value: 'basic',
-          label: 'Basic Template',
-          description: 'Attributes, Skills, Inventory, and Background sections',
+          label: t('modal.new.templates.none.basic.label'),
+          description: t('modal.new.templates.none.basic.description'),
         },
       ];
     }
 
-    return TEMPLATE_OPTIONS_BY_SYSTEM[gameSystem] || [];
+    const systemKey = GAME_SYSTEM_I18N_KEY[gameSystem];
+    const values = TEMPLATE_KEYS_BY_SYSTEM[gameSystem] || [];
+    return values.map((value) => ({
+      value,
+      label: t(`modal.new.templates.${systemKey}.${value}.label`),
+      description: t(`modal.new.templates.${systemKey}.${value}.description`),
+    }));
   };
 
   /**
@@ -232,9 +203,7 @@ export default function NewCharacterModal({
             data: templateData,
           });
         } catch {
-          setError(
-            'Character created, but publishing it as a template failed. You can retry with "Save as Template" in the editor.'
-          );
+          setError(t('modal.new.publishTemplateFailed'));
         }
         alsoPublishTemplate.current = false;
       }
@@ -260,7 +229,7 @@ export default function NewCharacterModal({
         setError(`${errorData.message}\n\n${errorList}`);
         console.error('Validation errors:', errorData.validationErrors);
       } else {
-        setError(errorData?.message || err.message || 'Failed to create character');
+        setError(errorData?.message || err.message || t('modal.new.errors.createFailed'));
       }
     } finally {
       setLoading(false);
@@ -281,7 +250,7 @@ export default function NewCharacterModal({
   const isFormValid = name.trim().length >= 2;
 
   return (
-    <Modal open={isOpen} onClose={handleClose} title="Create New Character" icon={User} size="lg" closeDisabled={loading}>
+    <Modal open={isOpen} onClose={handleClose} title={t('modal.new.title')} icon={User} size="lg" closeDisabled={loading}>
       {/* Error Alert */}
       {error && (
                 <div className="mb-4 bg-spirit-red/10 border border-spirit-red/30 rounded-lg p-4 max-h-60 overflow-y-auto">
@@ -299,21 +268,21 @@ export default function NewCharacterModal({
                     htmlFor="characterName"
                     className="block text-sm font-semibold text-ink mb-2"
                   >
-                    Character Name <span className="text-spirit-red">*</span>
+                    {t('modal.new.nameLabel')} <span className="text-spirit-red">*</span>
                   </label>
                   <input
                     type="text"
                     id="characterName"
                     value={name}
                     onChange={(e) => setName(e.target.value)}
-                    placeholder="Aria Moonshadow"
+                    placeholder={t('modal.new.namePlaceholder')}
                     disabled={loading}
                     className="input-cozy w-full disabled:opacity-50 disabled:cursor-not-allowed"
                     autoFocus
                     required
                   />
                   <p className="mt-1 text-xs text-ink-muted">
-                    Give your character a memorable name (2-100 characters)
+                    {t('modal.new.nameHint')}
                   </p>
                 </div>
 
@@ -324,7 +293,7 @@ export default function NewCharacterModal({
                       htmlFor="campaign"
                       className="block text-sm font-semibold text-ink mb-2"
                     >
-                      Campaign <span className="text-ink-muted">(optional)</span>
+                      {t('modal.new.campaignLabel')} <span className="text-ink-muted">({t('common:optional')})</span>
                     </label>
                     <select
                       id="campaign"
@@ -335,7 +304,7 @@ export default function NewCharacterModal({
                       disabled={loading || loadingCampaigns}
                       className="input-cozy w-full disabled:opacity-50 disabled:cursor-not-allowed"
                     >
-                      <option value="">Unassigned Character</option>
+                      <option value="">{t('modal.new.unassignedOption')}</option>
                       {availableCampaigns.map((c) => (
                         <option key={c.id} value={c.id}>
                           {c.name}
@@ -344,7 +313,7 @@ export default function NewCharacterModal({
                       ))}
                     </select>
                     <p className="mt-1 text-xs text-ink-muted">
-                      Assign to a campaign now, or leave unassigned for later
+                      {t('modal.new.campaignHint')}
                     </p>
                   </div>
                 )}
@@ -355,11 +324,11 @@ export default function NewCharacterModal({
                     htmlFor="gameSystem"
                     className="block text-sm font-semibold text-ink mb-2"
                   >
-                    Game System{' '}
+                    {t('modal.new.gameSystemLabel')}{' '}
                     {isGameSystemLocked() ? (
-                      <span className="text-ink-muted">(from campaign)</span>
+                      <span className="text-ink-muted">{t('modal.new.fromCampaignSuffix')}</span>
                     ) : (
-                      <span className="text-ink-muted">(optional)</span>
+                      <span className="text-ink-muted">({t('common:optional')})</span>
                     )}
                   </label>
                   <select
@@ -372,7 +341,7 @@ export default function NewCharacterModal({
                     disabled={loading || isGameSystemLocked()}
                     className="input-cozy w-full disabled:opacity-50 disabled:cursor-not-allowed"
                   >
-                    <option value="">Flexible (No System)</option>
+                    <option value="">{t('modal.template.flexibleNoSystem')}</option>
                     {GAME_SYSTEM_OPTIONS.map((option) => (
                       <option key={option.value} value={option.value}>
                         {option.label}
@@ -381,8 +350,8 @@ export default function NewCharacterModal({
                   </select>
                   <p className="mt-1 text-xs text-ink-muted">
                     {isGameSystemLocked()
-                      ? 'Game system is inherited from the selected campaign'
-                      : 'Select a game system to use pre-built templates'}
+                      ? t('modal.new.gameSystemHintLocked')
+                      : t('modal.new.gameSystemHintFree')}
                   </p>
                 </div>
 
@@ -393,7 +362,7 @@ export default function NewCharacterModal({
                       htmlFor="template"
                       className="block text-sm font-semibold text-ink mb-2"
                     >
-                      Character Template
+                      {t('modal.new.templateLabel')}
                     </label>
                     <div className="space-y-3">
                       {getTemplateOptions().map((template) => (
@@ -431,7 +400,7 @@ export default function NewCharacterModal({
                       ))}
                     </div>
                     <p className="mt-2 text-xs text-ink-muted">
-                      Templates pre-fill the character sheet with example data
+                      {t('modal.new.templateHint')}
                     </p>
                   </div>
                 )}
@@ -439,9 +408,7 @@ export default function NewCharacterModal({
                 {/* Info Box */}
                 <div className="rounded-lg p-4 bg-moss-green/10 border border-moss-green/30">
                   <p className="text-sm text-ink">
-                    <strong className="text-brand-ink">Note:</strong> After
-                    creation, you'll be redirected to the character editor where
-                    you can customize all details and save when ready.
+                    <strong className="text-brand-ink">{t('modal.new.noteLabel')}</strong> {t('modal.new.noteBody')}
                   </p>
                 </div>
 
@@ -453,7 +420,7 @@ export default function NewCharacterModal({
                     disabled={loading}
                     variant="secondary" className="flex-1 disabled:opacity-50 disabled:cursor-not-allowed"
                   >
-                    Cancel
+                    {t('modal.new.cancel')}
                   </Button>
 
                   <Button
@@ -464,12 +431,12 @@ export default function NewCharacterModal({
                     {loading ? (
                       <>
                         <Loader2 className="w-4 h-4 animate-spin inline-block mr-2" />
-                        Creating...
+                        {t('modal.new.creating')}
                       </>
                     ) : (
                       <>
                         <User className="w-4 h-4 inline-block mr-2" />
-                        Create Character
+                        {t('modal.new.create')}
                       </>
                     )}
                   </Button>
@@ -482,10 +449,10 @@ export default function NewCharacterModal({
                     variant="secondary"
                     disabled={loading || !isFormValid}
                     onClick={() => { alsoPublishTemplate.current = true; }}
-                    title="Create this character and also publish it as a template others can copy"
+                    title={t('modal.new.publishTitleHint')}
                     className="w-full disabled:opacity-50 disabled:cursor-not-allowed"
                   >
-                    Create &amp; Publish as Template
+                    {t('modal.new.createAndPublish')}
                   </Button>
                 </div>
               </form>

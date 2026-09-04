@@ -8,6 +8,7 @@
 
 import { useState, useEffect, lazy, Suspense } from 'react';
 import { useNavigate } from 'react-router-dom';
+import { useTranslation } from 'react-i18next';
 import { CampaignProvider, useCampaign } from '@/contexts/CampaignContext';
 import { WebSocketProvider, useWebSocket } from '@/contexts/WebSocketContext';
 import { useGameStore } from '@/stores/gameStore';
@@ -61,6 +62,7 @@ import Tooltip from '@/components/ui/Tooltip';
 // ============================================
 
 function CampaignPageContent() {
+  const { t } = useTranslation(['campaign', 'common']);
   const navigate = useNavigate();
   const { campaign, currentMap, loading, error, userRole, updateCampaignStatus, setActiveSession, refreshCurrentMap } = useCampaign();
   const { socket, reconnectCount, status } = useWebSocket();
@@ -207,7 +209,7 @@ function CampaignPageContent() {
       <div className="min-h-screen flex items-center justify-center bg-gradient-to-br from-soft-cream via-parchment to-warm-amber/20">
         <div className="text-center space-y-4">
           <Loader2 className="w-12 h-12 text-brand-ink animate-spin mx-auto" />
-          <p className="text-stone-gray">Loading campaign...</p>
+          <p className="text-stone-gray">{t('page.loadingCampaign')}</p>
         </div>
       </div>
     );
@@ -221,7 +223,7 @@ function CampaignPageContent() {
           <p className="text-spirit-red font-medium">{error}</p>
           <Button onClick={() => navigate('/dashboard')}>
             <ArrowLeft className="w-4 h-4 inline mr-2" />
-            Back to Dashboard
+            {t('page.backToDashboard')}
           </Button>
         </div>
       </div>
@@ -233,10 +235,10 @@ function CampaignPageContent() {
     return (
       <div className="min-h-screen flex items-center justify-center bg-gradient-to-br from-soft-cream via-parchment to-warm-amber/20">
         <div className="card-cozy max-w-md text-center space-y-4">
-          <p className="text-stone-gray">Campaign not found</p>
+          <p className="text-stone-gray">{t('page.campaignNotFound')}</p>
           <Button onClick={() => navigate('/dashboard')}>
             <ArrowLeft className="w-4 h-4 inline mr-2" />
-            Back to Dashboard
+            {t('page.backToDashboard')}
           </Button>
         </div>
       </div>
@@ -253,7 +255,7 @@ function CampaignPageContent() {
             variant="secondary" className="flex items-center gap-2"
           >
             <ArrowLeft className="w-4 h-4" />
-            <span className="hidden sm:inline">Dashboard</span>
+            <span className="hidden sm:inline">{t('common:nav.dashboard')}</span>
           </Button>
 
           <div className="h-6 w-px bg-moss-green/20" />
@@ -271,19 +273,19 @@ function CampaignPageContent() {
           {campaign.status === CampaignStatus.ACTIVE && (
             <div className="flex items-center gap-1.5 px-2 py-1 rounded-lg bg-success/10 border border-success/20">
               <div className="w-2 h-2 rounded-full bg-success animate-pulse" />
-              <span className="text-xs font-medium text-success-ink hidden sm:inline">Live</span>
+              <span className="text-xs font-medium text-success-ink hidden sm:inline">{t('page.liveBadge')}</span>
             </div>
           )}
           {campaign.status === CampaignStatus.PAUSED && (
             <div className="flex items-center gap-1.5 px-2 py-1 rounded-lg bg-warm-amber/10 border border-warm-amber/20">
               <PauseCircle className="w-3.5 h-3.5 text-warm-amber" />
-              <span className="text-xs font-medium text-warm-amber hidden sm:inline">Paused</span>
+              <span className="text-xs font-medium text-warm-amber hidden sm:inline">{t('page.pausedBadge')}</span>
             </div>
           )}
           {campaign.status === CampaignStatus.INACTIVE && (
             <div className="flex items-center gap-1.5 px-2 py-1 rounded-lg bg-stone-gray/10 border border-stone-gray/20">
               <div className="w-2 h-2 rounded-full bg-stone-gray/50" />
-              <span className="text-xs font-medium text-stone-gray hidden sm:inline">Inactive</span>
+              <span className="text-xs font-medium text-stone-gray hidden sm:inline">{t('page.inactiveBadge')}</span>
             </div>
           )}
 
@@ -320,21 +322,21 @@ function CampaignPageContent() {
           {/* Sidebar collapse toggles (all roles) */}
           <div className="h-6 w-px bg-moss-green/20" />
           <div className="flex items-center gap-1">
-            <Tooltip content={leftCollapsed ? 'Show party panel' : 'Hide party panel'} side="bottom">
+            <Tooltip content={leftCollapsed ? t('page.showPartyPanel') : t('page.hidePartyPanel')} side="bottom">
               <Button
                 variant="ghost"
                 iconOnly
                 icon={leftCollapsed ? PanelLeftOpen : PanelLeftClose}
-                aria-label={leftCollapsed ? 'Show party panel' : 'Hide party panel'}
+                aria-label={leftCollapsed ? t('page.showPartyPanel') : t('page.hidePartyPanel')}
                 onClick={() => togglePanel(leftPanelRef, '20%')}
               />
             </Tooltip>
-            <Tooltip content={rightCollapsed ? 'Show session panel' : 'Hide session panel'} side="bottom">
+            <Tooltip content={rightCollapsed ? t('page.showSessionPanel') : t('page.hideSessionPanel')} side="bottom">
               <Button
                 variant="ghost"
                 iconOnly
                 icon={rightCollapsed ? PanelRightOpen : PanelRightClose}
-                aria-label={rightCollapsed ? 'Show session panel' : 'Hide session panel'}
+                aria-label={rightCollapsed ? t('page.showSessionPanel') : t('page.hideSessionPanel')}
                 onClick={() => togglePanel(rightPanelRef, '25%')}
               />
             </Tooltip>
@@ -347,7 +349,7 @@ function CampaignPageContent() {
         <div className="flex items-center justify-center gap-2 px-4 py-2 bg-warm-amber/10 border-b border-warm-amber/20">
           <PauseCircle className="w-4 h-4 text-warm-amber flex-shrink-0" />
           <p className="text-xs font-medium text-warm-amber">
-            Session is paused. Token movement is disabled and dice rolls are automatically secret.
+            {t('page.sessionPausedBanner')}
           </p>
         </div>
       )}
@@ -394,7 +396,7 @@ function CampaignPageContent() {
             <section className="h-full min-w-0 p-4">
               <Suspense
                 fallback={
-                  <div className="w-full h-full flex items-center justify-center" aria-live="polite" aria-label="Loading map">
+                  <div className="w-full h-full flex items-center justify-center" aria-live="polite" aria-label={t('canvas.loadingMap')}>
                     <Loader2 className="w-8 h-8 text-brand-ink animate-spin" aria-hidden="true" />
                   </div>
                 }
@@ -505,14 +507,13 @@ function CampaignPageContent() {
       <div className="lg:hidden fixed inset-0 bg-black/80 flex items-center justify-center p-4 z-50">
         <div className="card-cozy max-w-md text-center space-y-4">
           <h2 className="text-xl font-bold text-brand-ink">
-            Desktop Required
+            {t('page.desktopRequiredTitle')}
           </h2>
           <p className="text-stone-gray">
-            The campaign view is optimized for desktop screens (1024px+). Mobile
-            support will be added in future updates.
+            {t('page.desktopRequiredDesc')}
           </p>
           <Button onClick={() => navigate('/dashboard')}>
-            Back to Dashboard
+            {t('page.backToDashboard')}
           </Button>
         </div>
       </div>

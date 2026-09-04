@@ -265,7 +265,7 @@ export default function DmLightControls({
                             ? 'bg-amber-400/25 text-amber-300 border border-amber-400/40'
                             : 'bg-stone-700/60 text-stone-400 border border-stone-600/40 hover:text-stone-300 hover:bg-stone-700'
                         }`}
-                        title={`${t('lighting.brightRadius')}: ${p.bright} sq, ${t('lighting.dimRadius')}: ${p.dim} sq`}
+                        title={`${t('lighting.brightRadius')}: ${p.bright} ${t('lighting.squaresUnit')}, ${t('lighting.dimRadius')}: ${p.dim} ${t('lighting.squaresUnit')}`}
                       >
                         {t(p.labelKey)}
                       </button>
@@ -278,7 +278,7 @@ export default function DmLightControls({
               <div>
                 <div className="flex justify-between mb-0.5">
                   <span className="text-[10px] text-stone-400">{t('lighting.brightRadius')}</span>
-                  <span className="text-[10px] text-stone-300">{displayBright.toFixed(1)} sq</span>
+                  <span className="text-[10px] text-stone-300">{displayBright.toFixed(1)} {t('lighting.squaresUnit')}</span>
                 </div>
                 <input
                   type="range"
@@ -305,7 +305,7 @@ export default function DmLightControls({
               <div>
                 <div className="flex justify-between mb-0.5">
                   <span className="text-[10px] text-stone-400">{t('lighting.dimRadius')}</span>
-                  <span className="text-[10px] text-stone-300">{displayDim.toFixed(1)} sq</span>
+                  <span className="text-[10px] text-stone-300">{displayDim.toFixed(1)} {t('lighting.squaresUnit')}</span>
                 </div>
                 <input
                   type="range"

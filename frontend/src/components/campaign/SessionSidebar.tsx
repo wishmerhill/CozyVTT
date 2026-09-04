@@ -12,6 +12,7 @@
 // ============================================
 
 import { useEffect, useRef, useState } from 'react';
+import { useTranslation } from 'react-i18next';
 import { MessageCircle, Dices, ListOrdered, PlayCircle, type LucideIcon } from 'lucide-react';
 import { useWebSocket } from '@/contexts/WebSocketContext';
 import { useAuth } from '@/contexts/AuthContext';
@@ -27,21 +28,27 @@ type RailTab = 'chat' | 'dice' | 'initiative' | 'session';
 
 const TAB_STORAGE_KEY = 'cozyvtt-session-tab';
 
-const TABS: { key: RailTab; label: string; icon: LucideIcon }[] = [
-  { key: 'chat', label: 'Chat', icon: MessageCircle },
-  { key: 'dice', label: 'Dice', icon: Dices },
-  { key: 'initiative', label: 'Initiative', icon: ListOrdered },
-  { key: 'session', label: 'Session', icon: PlayCircle },
+const TAB_KEYS: { key: RailTab; icon: LucideIcon }[] = [
+  { key: 'chat', icon: MessageCircle },
+  { key: 'dice', icon: Dices },
+  { key: 'initiative', icon: ListOrdered },
+  { key: 'session', icon: PlayCircle },
 ];
 
 function loadInitialTab(): RailTab {
   const stored = localStorage.getItem(TAB_STORAGE_KEY);
-  return TABS.some((t) => t.key === stored) ? (stored as RailTab) : 'chat';
+  return TAB_KEYS.some((t) => t.key === stored) ? (stored as RailTab) : 'chat';
 }
 
 export default function SessionSidebar() {
+  const { t } = useTranslation('campaign');
   const { socket } = useWebSocket();
   const { user } = useAuth();
+
+  const TABS: { key: RailTab; label: string; icon: LucideIcon }[] = TAB_KEYS.map((tab) => ({
+    ...tab,
+    label: t(`sessionSidebar.tabs.${tab.key}`),
+  }));
 
   const [activeTab, setActiveTab] = useState<RailTab>(loadInitialTab);
   const [unreadChat, setUnreadChat] = useState(0);
@@ -92,7 +99,7 @@ export default function SessionSidebar() {
       {/* Tab bar */}
       <div
         role="tablist"
-        aria-label="Session panels"
+        aria-label={t('sessionSidebar.panelsAriaLabel')}
         className="flex items-stretch gap-1 px-2 pt-2 border-b border-moss-green/20 flex-shrink-0"
       >
         {TABS.map(({ key, label, icon: Icon }, index) => {
@@ -121,7 +128,7 @@ export default function SessionSidebar() {
               {key === 'chat' && unreadChat > 0 && (
                 <span
                   className="min-w-[18px] h-[18px] px-1 rounded-full bg-brand text-canvas text-[10px] font-bold flex items-center justify-center"
-                  aria-label={`${unreadChat} unread messages`}
+                  aria-label={t('sessionSidebar.unreadAria', { count: unreadChat })}
                 >
                   {unreadChat > 9 ? '9+' : unreadChat}
                 </span>

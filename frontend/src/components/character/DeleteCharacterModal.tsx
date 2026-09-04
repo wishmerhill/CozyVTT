@@ -4,6 +4,7 @@
 // ============================================
 
 import { useState } from 'react';
+import { Trans, useTranslation } from 'react-i18next';
 import { AlertTriangle, Trash2 } from 'lucide-react';
 import type { Character, Campaign } from '@/types';
 import { Button, Modal } from '@/components/ui';
@@ -23,6 +24,7 @@ export default function DeleteCharacterModal({
   onClose,
   onConfirm,
 }: DeleteCharacterModalProps) {
+  const { t } = useTranslation(['character', 'campaign', 'common']);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState('');
 
@@ -47,10 +49,13 @@ export default function DeleteCharacterModal({
     campaign.status === 'ARCHIVED'
   );
 
+  const statusLabel = (status: string) =>
+    t(`campaign:status.${status.toLowerCase()}`).toLowerCase();
+
   const handleConfirm = async () => {
     // Prevent deletion if in active campaign
     if (isInActiveCampaign) {
-      setError(`Cannot delete character assigned to ${campaign!.status.toLowerCase()} campaign`);
+      setError(t('modal.delete.blockedByStatus', { status: statusLabel(campaign!.status) }));
       return;
     }
 
@@ -61,14 +66,14 @@ export default function DeleteCharacterModal({
       await onConfirm(character.id);
       onClose();
     } catch (err: any) {
-      setError(err.response?.data?.message || 'Failed to delete character');
+      setError(err.response?.data?.message || t('modal.delete.deleteFailed'));
     } finally {
       setLoading(false);
     }
   };
 
   return (
-    <Modal open={isOpen} onClose={handleClose} title="Delete Character" icon={Trash2} size="sm" closeDisabled={loading}>
+    <Modal open={isOpen} onClose={handleClose} title={t('modal.delete.title')} icon={Trash2} size="sm" closeDisabled={loading}>
       {/* Error Alert */}
       {error && (
         <div role="alert" className="mb-4 bg-danger/10 border border-danger/30 rounded-lg p-4">
@@ -85,16 +90,17 @@ export default function DeleteCharacterModal({
                       <AlertTriangle className="w-5 h-5 text-warm-amber flex-shrink-0 mt-0.5" />
                       <div>
                         <h3 className="font-semibold text-warm-amber mb-1">
-                          Cannot Delete Character
+                          {t('modal.delete.cannotDeleteTitle')}
                         </h3>
                         <p className="text-sm text-stone-gray">
-                          This character is assigned to <strong>{campaign!.name}</strong>,
-                          which is currently {campaign!.status.toLowerCase()}. You cannot delete
-                          characters that are assigned to active or paused campaigns.
+                          <Trans
+                            i18nKey="character:modal.delete.cannotDeleteBody"
+                            values={{ name: campaign!.name, status: statusLabel(campaign!.status) }}
+                            components={{ strong: <strong /> }}
+                          />
                         </p>
                         <p className="text-sm text-stone-gray mt-2">
-                          To delete this character, first unassign it from the campaign or wait
-                          until the campaign is completed or archived.
+                          {t('modal.delete.cannotDeleteHint')}
                         </p>
                       </div>
                     </div>
@@ -108,12 +114,14 @@ export default function DeleteCharacterModal({
                       <AlertTriangle className="w-5 h-5 text-warm-amber flex-shrink-0 mt-0.5" />
                       <div>
                         <h3 className="font-semibold text-warm-amber mb-1">
-                          Character is Assigned to Campaign
+                          {t('modal.delete.assignedWarningTitle')}
                         </h3>
                         <p className="text-sm text-stone-gray">
-                          This character is assigned to <strong>{campaign!.name}</strong>{' '}
-                          ({campaign!.status.toLowerCase()}). It's recommended to unassign the
-                          character first before deleting.
+                          <Trans
+                            i18nKey="character:modal.delete.assignedWarningBody"
+                            values={{ name: campaign!.name, status: statusLabel(campaign!.status) }}
+                            components={{ strong: <strong /> }}
+                          />
                         </p>
                       </div>
                     </div>
@@ -124,29 +132,28 @@ export default function DeleteCharacterModal({
                 {!campaign && (
                   <div className="bg-moss-green/10 border border-moss-green/30 rounded-lg p-4">
                     <p className="text-sm text-stone-gray">
-                      Are you sure you want to delete <strong className="text-brand-ink">{character.name}</strong>?
-                      This action cannot be undone.
+                      {t('modal.delete.confirm', { name: character.name })}
                     </p>
                   </div>
                 )}
 
                 {/* Character Info */}
                 <div className="glass-panel p-4">
-                  <h3 className="font-semibold text-brand-ink mb-2">Character Details</h3>
+                  <h3 className="font-semibold text-brand-ink mb-2">{t('modal.delete.detailsTitle')}</h3>
                   <dl className="space-y-1 text-sm">
                     <div className="flex justify-between">
-                      <dt className="text-warm-gray">Name:</dt>
+                      <dt className="text-warm-gray">{t('modal.delete.nameLabel')}</dt>
                       <dd className="text-stone-gray font-medium">{character.name}</dd>
                     </div>
                     <div className="flex justify-between">
-                      <dt className="text-warm-gray">Game System:</dt>
+                      <dt className="text-warm-gray">{t('modal.delete.gameSystemLabel')}</dt>
                       <dd className="text-stone-gray font-medium">
-                        {character.gameSystem || 'Flexible'}
+                        {character.gameSystem || t('common:flexible')}
                       </dd>
                     </div>
                     {campaign && (
                       <div className="flex justify-between">
-                        <dt className="text-warm-gray">Campaign:</dt>
+                        <dt className="text-warm-gray">{t('modal.delete.campaignLabel')}</dt>
                         <dd className="text-stone-gray font-medium">{campaign.name}</dd>
                       </div>
                     )}
@@ -163,7 +170,7 @@ export default function DeleteCharacterModal({
           variant="secondary"
           className="flex-1"
         >
-          Cancel
+          {t('modal.delete.cancel')}
         </Button>
 
         <Button
@@ -175,7 +182,7 @@ export default function DeleteCharacterModal({
           variant="danger"
           className="flex-1"
         >
-          {loading ? 'Deleting...' : 'Delete Character'}
+          {loading ? t('modal.delete.deleting') : t('modal.delete.delete')}
         </Button>
       </div>
     </Modal>

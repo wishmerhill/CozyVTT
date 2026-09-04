@@ -10,26 +10,149 @@
         "nameTooShort": "Il nome del personaggio deve contenere almeno 2 caratteri",
         "nameTooLong": "Il nome del personaggio deve contenere meno di 100 caratteri",
         "createFailed": "Creazione personaggio fallita"
+      },
+      "nameLabel": "Nome Personaggio",
+      "namePlaceholder": "Aria Moonshadow",
+      "nameHint": "Dai al tuo personaggio un nome memorabile (2-100 caratteri)",
+      "campaignLabel": "Campagna",
+      "unassignedOption": "Personaggio Non Assegnato",
+      "campaignHint": "Assegna a una campagna ora, oppure lascialo non assegnato per dopo",
+      "gameSystemLabel": "Sistema di Gioco",
+      "fromCampaignSuffix": "(dalla campagna)",
+      "gameSystemHintLocked": "Il sistema di gioco è ereditato dalla campagna selezionata",
+      "gameSystemHintFree": "Seleziona un sistema di gioco per usare modelli predefiniti",
+      "templateLabel": "Modello Personaggio",
+      "templateHint": "I modelli precompilano la scheda del personaggio con dati di esempio",
+      "noteLabel": "Nota:",
+      "noteBody": "Dopo la creazione, sarai reindirizzato all'editor del personaggio dove potrai personalizzare tutti i dettagli e salvare quando sei pronto.",
+      "publishTitleHint": "Crea questo personaggio e pubblicalo anche come modello che altri possono copiare",
+      "publishTemplateFailed": "Personaggio creato, ma la pubblicazione come modello è fallita. Puoi riprovare con \"Salva come Modello\" nell'editor.",
+      "templates": {
+        "dnd5e": {
+          "blank": { "label": "Scheda Personaggio Vuota", "description": "Inizia con un personaggio di Livello 1 vuoto" },
+          "fighter": { "label": "Guerriero Livello 1 (Esempio)", "description": "Un Guerriero pre-costruito con statistiche standard" }
+        },
+        "pathfinder2e": {
+          "blank": { "label": "Scheda Personaggio Vuota", "description": "Inizia con un personaggio di Livello 1 vuoto" },
+          "fighter": { "label": "Guerriero Livello 1 (Esempio)", "description": "Un Guerriero Nano pre-costruito" }
+        },
+        "shadowrun6e": {
+          "blank": { "label": "Scheda Personaggio Vuota", "description": "Inizia con un personaggio vuoto" },
+          "streetsamurai": { "label": "Street Samurai (Esempio)", "description": "Un runner orientato al combattimento con cyberware" }
+        },
+        "callOfCthulhu7e": {
+          "blank": { "label": "Scheda Investigatore Vuota", "description": "Inizia con un investigatore vuoto" },
+          "privateinvestigator": { "label": "Investigatore Privato (Esempio)", "description": "Un investigatore privato duro pronto per i misteri" }
+        },
+        "none": {
+          "blank": { "label": "Personaggio Vuoto", "description": "Inizia con una scheda personaggio flessibile vuota" },
+          "basic": { "label": "Modello Base", "description": "Sezioni Attributi, Abilità, Inventario e Background" }
+        }
       }
     },
     "delete": {
       "title": "Elimina Personaggio",
       "confirm": "Sei sicuro di voler eliminare \"{{name}}\"? Questa azione non può essere annullata.",
       "delete": "Elimina",
-      "cancel": "Annulla"
+      "cancel": "Annulla",
+      "deleting": "Eliminazione in corso…",
+      "deleteFailed": "Eliminazione personaggio fallita",
+      "blockedByStatus": "Impossibile eliminare un personaggio assegnato a una campagna {{status}}",
+      "cannotDeleteTitle": "Impossibile Eliminare il Personaggio",
+      "cannotDeleteBody": "Questo personaggio è assegnato a <strong>{{name}}</strong>, che è attualmente {{status}}. Non puoi eliminare personaggi assegnati a campagne attive o in pausa.",
+      "cannotDeleteHint": "Per eliminare questo personaggio, prima rimuovilo dalla campagna o attendi che la campagna venga completata o archiviata.",
+      "assignedWarningTitle": "Personaggio Assegnato a una Campagna",
+      "assignedWarningBody": "Questo personaggio è assegnato a <strong>{{name}}</strong> ({{status}}). È consigliabile rimuovere il personaggio dalla campagna prima di eliminarlo.",
+      "detailsTitle": "Dettagli Personaggio",
+      "nameLabel": "Nome:",
+      "gameSystemLabel": "Sistema di Gioco:",
+      "campaignLabel": "Campagna:"
     },
     "import": {
       "title": "Importa Personaggio",
+      "titleTemplate": "Importa Modello",
       "pasteJSON": "Incolla JSON del personaggio",
       "import": "Importa",
       "cancel": "Annulla",
-      "error": "JSON non valido — controlla la sintassi e riprova"
+      "error": "JSON non valido — controlla la sintassi e riprova",
+      "templateInfo": "Qualsiasi JSON di personaggio funziona qui, incluso uno esportato da un'altra istanza di CozyVTT. Pubblicarlo come modello lo rende disponibile a tutti qui per essere copiato — il personaggio originale non viene modificato.",
+      "dropHere": "Trascina il file qui",
+      "uploadHeading": "Carica JSON del Personaggio",
+      "srPublishNote": "Il file verrà pubblicato come modello.",
+      "dragDropHint": "Trascina e rilascia un file JSON, oppure clicca per selezionarlo",
+      "chooseFile": "Scegli File",
+      "maxFileSize": "Dimensione massima file: 5MB",
+      "readingFile": "Lettura del file in corso…",
+      "errorTitle": "Errore di Importazione",
+      "invalidData": "Dati del personaggio non validi",
+      "readFailed": "Lettura del file fallita",
+      "importedSuffix": "(Importato)",
+      "templateNoun": "modello",
+      "characterNoun": "personaggio",
+      "importFailed": "Importazione {{noun}} fallita",
+      "sheetLoaded": "Scheda Caricata con Successo",
+      "characterLoaded": "Personaggio Caricato con Successo",
+      "reviewTemplate": "Rivedi i dettagli qui sotto, poi pubblicalo come modello.",
+      "reviewCharacter": "Rivedi i dettagli del personaggio qui sotto prima di importarlo.",
+      "nameConflictTitle": "Conflitto di Nome",
+      "nameConflictTemplateBody": "Esiste già un modello chiamato \"{{existingName}}\". Questo verrà chiamato \"{{newName}}\" — modificalo qui sotto se preferisci usare un altro nome.",
+      "nameConflictCharacterBody": "Esiste già un personaggio chiamato \"{{existingName}}\". Il personaggio importato verrà rinominato in \"{{newName}}\".",
+      "templatePreview": "Anteprima Modello",
+      "characterPreview": "Anteprima Personaggio",
+      "templateNameLabel": "Nome del Modello",
+      "characterNameLabel": "Nome del Personaggio",
+      "descriptionLabel": "Descrizione",
+      "descriptionPlaceholder": "A cosa serve questo modello e a chi si adatta.",
+      "gameSystemLabel": "Sistema di Gioco",
+      "flexibleNoSystem": "Flessibile (nessun sistema specifico)",
+      "sheetDataLabel": "Dati della Scheda",
+      "characterDataLabel": "Dati del Personaggio",
+      "importing": "Importazione in corso…",
+      "publishAsTemplate": "Pubblica come Modello",
+      "selectedFile": "File selezionato:"
     },
     "assign": {
       "title": "Assegna Personaggio",
-      "selectCampaign": "Seleziona una campagna",
+      "reassignTitle": "Riassegna Personaggio",
+      "selectCampaign": "Seleziona Campagna",
       "assign": "Assegna",
-      "cancel": "Annulla"
+      "cancel": "Annulla",
+      "loadCampaignsFailed": "Caricamento campagne fallito",
+      "assignFailed": "Assegnazione personaggio fallita",
+      "characterLabel": "Personaggio",
+      "currentlyAssignedTo": "Attualmente assegnato a:",
+      "noCompatibleCampaigns": "Nessuna campagna compatibile trovata. Crea una campagna con lo stesso sistema di gioco oppure usa una campagna flessibile.",
+      "unassignedOption": "Non assegnato",
+      "unassignedDesc": "Rimuovi il personaggio da qualsiasi campagna",
+      "note": "Nota:",
+      "compatibilityNote": "Vengono mostrate solo le campagne compatibili con {{gameSystem}} o le campagne flessibili.",
+      "assigning": "Assegnazione in corso…",
+      "unassign": "Rimuovi Assegnazione"
+    },
+    "template": {
+      "nameRequired": "Il nome del modello è obbligatorio",
+      "updateFailed": "Aggiornamento del modello fallito",
+      "updated": "Modello aggiornato",
+      "sheetSaved": "Scheda del modello salvata",
+      "sheetSaveFailed": "Salvataggio della scheda fallito",
+      "editTitle": "Modifica Modello",
+      "nameFieldLabel": "Nome del modello",
+      "descriptionFieldLabel": "Descrizione",
+      "saveDetails": "Salva Dettagli",
+      "sheetSectionTitle": "Scheda",
+      "published": "Modello pubblicato",
+      "createFailed": "Creazione del modello fallita",
+      "saveAsTitle": "Salva come Modello",
+      "newTitle": "Nuovo Modello Personaggio",
+      "publishButton": "Pubblica Modello",
+      "visibilityNote": "I modelli sono visibili a tutti su questa istanza. Chiunque può copiarne uno in un proprio personaggio; solo tu puoi modificarlo o rimuoverlo.",
+      "namePlaceholder": "es. Combattente Novizio",
+      "descriptionHint": "A cosa serve questo modello e a chi si adatta — mostrato sulla scheda.",
+      "descriptionPlaceholder": "Un personaggio da mischia semplice, adatto per una prima sessione.",
+      "gameSystemFieldLabel": "Sistema di gioco",
+      "gameSystemHintLocked": "Preso dalla scheda da cui è stato creato questo modello.",
+      "gameSystemHintEditable": "Fissato una volta pubblicato, allo stesso modo di un personaggio.",
+      "flexibleNoSystem": "Flessibile (Nessun Sistema)"
     }
   },
   "card": {
@@ -229,5 +352,22 @@
       "yearsAgo": "{{count}} anni fa",
       "yearsAgo_one": "{{count}} anno fa"
     }
+  },
+  "editor": {
+    "validationError": "Errore di Validazione: {{message}}",
+    "saveFailed": "Salvataggio del personaggio fallito. Riprova.",
+    "shadowrunEditorTitle": "Editor Personaggio Shadowrun 6e",
+    "shadowrunEditorNotImplemented": "L'editor del personaggio per Shadowrun 6ª Edizione non è ancora implementato.",
+    "editSheetTitle": "Modifica Scheda Personaggio: {{name}}",
+    "discardTitle": "Annullare le Modifiche?",
+    "discardMessage": "Sei sicuro di voler annullare? Tutte le modifiche non salvate andranno perse.",
+    "discardConfirm": "Annulla Modifiche",
+    "keepEditing": "Continua a Modificare"
+  },
+  "viewer": {
+    "unknownPlayer": "Giocatore Sconosciuto",
+    "you": "Tu",
+    "playerLabel": "Giocatore: {{name}}",
+    "dmBanner": "Stai visualizzando il personaggio di <strong>{{name}}</strong> come DM"
   }
 }

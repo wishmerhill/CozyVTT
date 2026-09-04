@@ -224,7 +224,7 @@ function MapCard({
       <div className="p-3">
         <h3 className="font-semibold text-brand-ink truncate text-sm mb-0.5">{map.name}</h3>
         <p className="text-xs text-stone-gray/60">
-          {map.width}×{map.height} grid · {map.gridSize}px/sq
+          {t('map.gridDimensionsSummary', { width: map.width, height: map.height, gridSize: map.gridSize })}
         </p>
 
         {/* Actions */}
@@ -404,10 +404,10 @@ export default function MapManager({ isOpen, onClose }: MapManagerProps) {
     try {
       const result = await mapService.importUVTT(campaign.id, file);
       setMaps((prev) => [result.map, ...prev]);
-      const parts = [`${result.totalSegments} wall segments`];
-      if (result.portalCount > 0) parts.push(`${result.portalCount} doors`);
-      if ((result as any).lightCount > 0) parts.push(`${(result as any).lightCount} lights`);
-      setImportSuccess(`Imported "${result.map.name}" with ${parts.join(', ')}`);
+      const parts = [t('map.uvttImport.segments', { count: result.totalSegments })];
+      if (result.portalCount > 0) parts.push(t('map.uvttImport.doors', { count: result.portalCount }));
+      if ((result as any).lightCount > 0) parts.push(t('map.uvttImport.lights', { count: (result as any).lightCount }));
+      setImportSuccess(t('map.uvttImport.successMessage', { name: result.map.name, parts: parts.join(', ') }));
       // Auto-clear success message after 5 seconds
       setTimeout(() => setImportSuccess(null), 5000);
     } catch (err: any) {

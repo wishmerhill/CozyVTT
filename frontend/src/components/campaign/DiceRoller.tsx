@@ -1,4 +1,5 @@
 import { useState, useEffect, useRef, useCallback, FormEvent, KeyboardEvent } from 'react';
+import { useTranslation } from 'react-i18next';
 import { motion, AnimatePresence } from 'framer-motion';
 import { Dices, Send, AlertCircle, RotateCcw, ChevronLeft, ChevronRight, Trash2, EyeOff, X } from 'lucide-react';
 import { useWebSocket } from '@/contexts/WebSocketContext';
@@ -133,6 +134,7 @@ const SPECIAL_ROLLS = [
  * Dice roller component with carousel navigation and secret rolls
  */
 export default function DiceRoller() {
+  const { t } = useTranslation(['campaign', 'common']);
   const { socket, reconnectCount, status } = useWebSocket();
   const { user } = useAuth();
   const { userRole, campaign } = useCampaign();
@@ -393,18 +395,18 @@ export default function DiceRoller() {
 
   const validateExpression = (expr: string): string | null => {
     if (!expr.trim()) {
-      return 'Expression cannot be empty';
+      return t('dice.errorEmptyExpression');
     }
 
     // Check length limit (200 characters)
     if (expr.length > 200) {
-      return 'Expression too long (max 200 characters)';
+      return t('dice.errorExpressionTooLong');
     }
 
     // Basic validation for dice notation
     const dicePattern = /^[\dd+\-*/khldisavw\s]+$/i;
     if (!dicePattern.test(expr)) {
-      return 'Invalid characters in expression';
+      return t('dice.errorInvalidCharacters');
     }
 
     // Check for maximum dice count (100)
@@ -416,7 +418,7 @@ export default function DiceRoller() {
       }, 0);
 
       if (totalDice > 100) {
-        return 'Too many dice (max 100 per roll)';
+        return t('dice.errorTooManyDice');
       }
     }
 
@@ -440,7 +442,7 @@ export default function DiceRoller() {
         setRolls((prev) => [localResult, ...prev]);
         setCurrentRollIndex(0);
       } else {
-        setError('Could not evaluate expression locally');
+        setError(t('dice.errorLocalEvalFailed'));
       }
       clearPendingRoll();
       return;
@@ -452,7 +454,7 @@ export default function DiceRoller() {
     }
 
     if (!socket?.isConnected()) {
-      setError('Not connected to server');
+      setError(t('dice.errorNotConnected'));
       return;
     }
 
@@ -472,7 +474,7 @@ export default function DiceRoller() {
     rollTimeoutRef.current = window.setTimeout(() => {
       rollTimeoutRef.current = null;
       setIsRolling(false);
-      setError("That roll didn't come back — check your connection and try again.");
+      setError(t('dice.errorRollTimeout'));
     }, ROLL_TIMEOUT_MS);
 
     console.log('[DiceRoller] Rolling dice:', expr, 'secret:', isSecret);
@@ -544,9 +546,9 @@ export default function DiceRoller() {
     <>
     <ConfirmDialog
       isOpen={confirmClear}
-      title="Clear Roll History"
-      message="Clear all roll history for everyone? This cannot be undone."
-      confirmLabel="Clear History"
+      title={t('dice.clearHistoryConfirmTitle')}
+      message={t('dice.clearHistoryConfirmMessage')}
+      confirmLabel={t('chat.clearHistory')}
       variant="danger"
       onConfirm={handleConfirmClear}
       onCancel={() => setConfirmClear(false)}
@@ -558,7 +560,7 @@ export default function DiceRoller() {
           <div className="flex items-center gap-2">
             <Dices className="w-4 h-4 text-brand-ink dark:text-brand-ink" />
             <h2 className="text-base font-semibold text-ink">
-              Dice Roller
+              {t('dice.rollerTitle')}
             </h2>
           </div>
           {/* DM Only: Clear History Button */}
@@ -566,10 +568,10 @@ export default function DiceRoller() {
             <button
               onClick={handleClearHistory}
               className="flex items-center gap-1 px-2 py-1 text-xs rounded-md border border-danger/30 bg-danger/10 dark:bg-danger/20 text-danger-ink dark:text-danger-ink hover:bg-danger/15 dark:hover:bg-danger/30 transition-all"
-              title="Clear all roll history"
+              title={t('dice.clearAllHistoryTitle')}
             >
               <Trash2 className="w-3 h-3" />
-              <span>Clear</span>
+              <span>{t('chat.clear')}</span>
             </button>
           )}
         </div>
@@ -581,7 +583,7 @@ export default function DiceRoller() {
           <div className="flex flex-col items-center justify-center h-full text-center p-4">
             <Dices className="w-10 h-10 text-ink-muted/40 mb-2" />
             <p className="text-ink-secondary text-xs">
-              No rolls yet. Roll some dice to get started!
+              {t('dice.noRollsYet')}
             </p>
           </div>
         ) : (
@@ -592,18 +594,18 @@ export default function DiceRoller() {
                 onClick={handlePrevRoll}
                 disabled={currentRollIndex >= rolls.length - 1}
                 className="p-1 rounded-md border border-ink-muted/30 bg-paper/50 hover:bg-paper/70 text-ink disabled:opacity-30 disabled:cursor-not-allowed transition-all"
-                title="Older rolls"
+                title={t('dice.olderRollsTitle')}
               >
                 <ChevronLeft className="w-4 h-4" />
               </button>
               <span className="text-xs text-ink-secondary">
-                Roll {rolls.length - currentRollIndex} of {rolls.length}
+                {t('dice.rollCounter', { current: rolls.length - currentRollIndex, total: rolls.length })}
               </span>
               <button
                 onClick={handleNextRoll}
                 disabled={currentRollIndex <= 0}
                 className="p-1 rounded-md border border-ink-muted/30 bg-paper/50 hover:bg-paper/70 text-ink disabled:opacity-30 disabled:cursor-not-allowed transition-all"
-                title="Newer rolls"
+                title={t('dice.newerRollsTitle')}
               >
                 <ChevronRight className="w-4 h-4" />
               </button>
@@ -630,7 +632,7 @@ export default function DiceRoller() {
         {/* Paused notice for players — rolls still work but are forced secret */}
         {isPaused && (
           <p className="text-xs text-warm-amber text-center mb-2 italic">
-            Session paused — rolls are automatically secret.
+            {t('dice.pausedNotice')}
           </p>
         )}
         {/* Error Message */}
@@ -651,7 +653,7 @@ export default function DiceRoller() {
         {/* Quick Roll Buttons */}
         <div className="mb-2">
           <div className="text-xs text-ink-secondary mb-1">
-            Quick Roll:
+            {t('dice.quickRollLabel')}
           </div>
           <div className="flex flex-wrap gap-1.5">
             {QUICK_ROLLS.map((btn) => (
@@ -710,7 +712,7 @@ export default function DiceRoller() {
               type="text"
               value={characterName}
               onChange={(e) => setCharacterName(e.target.value)}
-              placeholder="Character"
+              placeholder={t('dice.character')}
               disabled={isRolling}
               className="input-cozy px-2 py-1.5 text-xs disabled:opacity-50 disabled:cursor-not-allowed"
             />
@@ -720,7 +722,7 @@ export default function DiceRoller() {
               type="text"
               value={purpose}
               onChange={(e) => setPurpose(e.target.value)}
-              placeholder="Purpose"
+              placeholder={t('dice.purpose')}
               disabled={isRolling}
               className="input-cozy px-2 py-1.5 text-xs disabled:opacity-50 disabled:cursor-not-allowed"
             />
@@ -741,7 +743,7 @@ export default function DiceRoller() {
               className="flex items-center gap-1 text-xs text-ink-secondary cursor-pointer"
             >
               <EyeOff className="w-3 h-3" />
-              <span>Secret Roll (only you can see)</span>
+              <span>{t('dice.secretRollHint')}</span>
             </label>
           </div>
 
@@ -766,12 +768,12 @@ export default function DiceRoller() {
                   >
                     <Dices className="w-4 h-4" />
                   </motion.div>
-                  <span>Rolling...</span>
+                  <span>{t('dice.rolling')}</span>
                 </>
               ) : (
                 <>
                   <Send className="w-4 h-4" />
-                  <span>Roll</span>
+                  <span>{t('dice.roll')}</span>
                 </>
               )}
             </button>
@@ -788,7 +790,7 @@ export default function DiceRoller() {
                 transition-all duration-200
                 focus:outline-none focus:ring-2 focus:ring-brand/50
               "
-              title="Clear all fields"
+              title={t('dice.clearAllFieldsTitle')}
             >
               <RotateCcw className="w-4 h-4" />
             </button>
@@ -798,11 +800,11 @@ export default function DiceRoller() {
         {/* Hint / Rate Limit Countdown */}
         {rateLimitCooldown > 0 ? (
           <div className="mt-1.5 text-xs text-danger-ink dark:text-danger-ink text-center font-medium">
-            You may roll again in: {rateLimitCooldown} second{rateLimitCooldown !== 1 ? 's' : ''}
+            {t('dice.rollAgainIn', { count: rateLimitCooldown })}
           </div>
         ) : (
           <div className="mt-1.5 text-xs text-ink-muted text-center">
-            Press Enter to roll
+            {t('dice.pressEnterToRoll')}
           </div>
         )}
       </div>
@@ -828,7 +830,7 @@ export default function DiceRoller() {
               <button
                 onClick={() => setSecretRollResult(null)}
                 className="absolute top-2 right-2 p-1 rounded-md bg-surface hover:bg-surface-dark transition-all"
-                title="Close"
+                title={t('common:close')}
               >
                 <X className="w-4 h-4 text-ink" />
               </button>
@@ -838,11 +840,11 @@ export default function DiceRoller() {
                 <div className="flex items-center gap-2">
                   <EyeOff className="w-5 h-5 text-brand-ink" />
                   <h3 className="text-lg font-semibold text-ink">
-                    Secret Roll
+                    {t('dice.secret')}
                   </h3>
                 </div>
                 <p className="text-xs text-ink-muted mt-1">
-                  Only you can see this result
+                  {t('dice.secretResultHint')}
                 </p>
               </div>
 
@@ -862,7 +864,7 @@ export default function DiceRoller() {
                   onClick={() => setSecretRollResult(null)}
                   className="w-full px-3 py-2 rounded-md bg-brand hover:bg-brand-dark text-white font-semibold text-sm shadow-sm transition-all"
                 >
-                  Close
+                  {t('common:close')}
                 </button>
               </div>
             </motion.div>

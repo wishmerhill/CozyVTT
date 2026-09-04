@@ -4,11 +4,21 @@
 // ============================================
 
 import { useState, useEffect } from 'react';
+import { useTranslation } from 'react-i18next';
 import { Loader2, Link2, AlertCircle } from 'lucide-react';
 import type { Character, Campaign } from '@/types';
 import api from '@/services/api';
 import GameSystemBadge from '@/components/common/GameSystemBadge';
 import { Button, Modal } from '@/components/ui';
+
+// Maps the GameSystem enum to the campaign namespace's gameSystemNames keys
+// (already localized there for the campaign info panel).
+const GAME_SYSTEM_NAME_KEYS: Record<string, string> = {
+  DND_5E: 'dnd5e',
+  PATHFINDER_2E: 'pathfinder2e',
+  SHADOWRUN_6E: 'shadowrun6e',
+  CALL_OF_CTHULHU_7E: 'callOfCthulhu7e',
+};
 
 interface AssignCharacterModalProps {
   isOpen: boolean;
@@ -25,6 +35,7 @@ export default function AssignCharacterModal({
   onClose,
   onConfirm,
 }: AssignCharacterModalProps) {
+  const { t } = useTranslation(['character', 'campaign']);
   const [campaigns, setCampaigns] = useState<Campaign[]>([]);
   const [selectedCampaignId, setSelectedCampaignId] = useState<string | null>(
     currentCampaign?.id || null
@@ -49,7 +60,7 @@ export default function AssignCharacterModal({
       const response = await api.listCampaigns();
       setCampaigns(response.campaigns);
     } catch (err: any) {
-      setError(err.response?.data?.message || 'Failed to load campaigns');
+      setError(err.response?.data?.message || t('modal.assign.loadCampaignsFailed'));
     } finally {
       setLoadingCampaigns(false);
     }
@@ -65,7 +76,7 @@ export default function AssignCharacterModal({
       await onConfirm(character.id, selectedCampaignId);
       onClose();
     } catch (err: any) {
-      setError(err.response?.data?.message || 'Failed to assign character');
+      setError(err.response?.data?.message || t('modal.assign.assignFailed'));
     } finally {
       setLoading(false);
     }
@@ -98,7 +109,7 @@ export default function AssignCharacterModal({
     <Modal
       open={isOpen}
       onClose={handleClose}
-      title={currentCampaign ? 'Reassign Character' : 'Assign to Campaign'}
+      title={currentCampaign ? t('modal.assign.reassignTitle') : t('card.assignToCampaign')}
       icon={Link2}
       closeDisabled={loading}
     >
@@ -113,7 +124,7 @@ export default function AssignCharacterModal({
       <div className="space-y-4">
                 {/* Character Info */}
                 <div className="glass-panel p-4">
-                  <h3 className="font-semibold text-brand-ink mb-2">Character</h3>
+                  <h3 className="font-semibold text-brand-ink mb-2">{t('modal.assign.characterLabel')}</h3>
                   <div className="flex items-center gap-3">
                     <div className="w-12 h-12 rounded-lg bg-moss-green/10 border-2 border-moss-green/30
                                   flex items-center justify-center overflow-hidden flex-shrink-0">
@@ -140,7 +151,7 @@ export default function AssignCharacterModal({
                 {currentCampaign && (
                   <div className="bg-spirit-purple/10 border border-spirit-purple/30 rounded-lg p-4">
                     <p className="text-sm text-stone-gray">
-                      <strong className="text-spirit-purple">Currently assigned to:</strong>{' '}
+                      <strong className="text-spirit-purple">{t('modal.assign.currentlyAssignedTo')}</strong>{' '}
                       {currentCampaign.name}
                     </p>
                   </div>
@@ -152,7 +163,7 @@ export default function AssignCharacterModal({
                     htmlFor="campaign"
                     className="block text-sm font-semibold text-ink mb-2"
                   >
-                    Select Campaign
+                    {t('modal.assign.selectCampaign')}
                   </label>
 
                   {loadingCampaigns ? (
@@ -165,8 +176,7 @@ export default function AssignCharacterModal({
                         <AlertCircle className="w-5 h-5 text-warm-amber flex-shrink-0 mt-0.5" />
                         <div>
                           <p className="text-sm text-stone-gray">
-                            No compatible campaigns found. Create a campaign with a matching
-                            game system or use a flexible campaign.
+                            {t('modal.assign.noCompatibleCampaigns')}
                           </p>
                         </div>
                       </div>
@@ -192,10 +202,10 @@ export default function AssignCharacterModal({
                         />
                         <div className="flex-1">
                           <div className="font-semibold text-ink">
-                            Unassigned
+                            {t('modal.assign.unassignedOption')}
                           </div>
                           <p className="text-sm text-ink-muted mt-1">
-                            Remove character from any campaign
+                            {t('modal.assign.unassignedDesc')}
                           </p>
                         </div>
                       </label>
@@ -242,8 +252,12 @@ export default function AssignCharacterModal({
                 {character.gameSystem && (
                   <div className="bg-moss-green/10 border border-moss-green/30 rounded-lg p-3">
                     <p className="text-xs text-stone-gray">
-                      <strong className="text-brand-ink">Note:</strong> Only showing campaigns
-                      compatible with {character.gameSystem} or flexible campaigns.
+                      <strong className="text-brand-ink">{t('modal.assign.note')}</strong>{' '}
+                      {t('modal.assign.compatibilityNote', {
+                        gameSystem: t(
+                          `campaign:gameSystemNames.${GAME_SYSTEM_NAME_KEYS[character.gameSystem] ?? 'flexible'}`
+                        ),
+                      })}
                     </p>
                   </div>
                 )}
@@ -258,7 +272,7 @@ export default function AssignCharacterModal({
           variant="secondary"
           className="flex-1"
         >
-          Cancel
+          {t('modal.assign.cancel')}
         </Button>
 
         <Button
@@ -270,10 +284,10 @@ export default function AssignCharacterModal({
           className="flex-1"
         >
           {loading
-            ? 'Assigning...'
+            ? t('modal.assign.assigning')
             : selectedCampaignId === null
-              ? 'Unassign'
-              : 'Assign to Campaign'}
+              ? t('modal.assign.unassign')
+              : t('card.assignToCampaign')}
         </Button>
       </div>
     </Modal>

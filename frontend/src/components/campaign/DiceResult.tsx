@@ -1,4 +1,5 @@
 import { motion } from 'framer-motion';
+import { useTranslation } from 'react-i18next';
 import { Dices, User, Target } from 'lucide-react';
 import type { DiceRolledEvent } from '@/types';
 
@@ -11,6 +12,7 @@ interface DiceResultProps {
  * Display a single dice roll result with breakdown and animations
  */
 export default function DiceResult({ roll, isCurrentUser }: DiceResultProps) {
+  const { t } = useTranslation('campaign');
   const { userName, characterName, expression, result, breakdown, purpose, timestamp, secret } = roll;
 
   // Determine if critical success or fail (for d20 rolls)
@@ -50,9 +52,9 @@ export default function DiceResult({ roll, isCurrentUser }: DiceResultProps) {
     const diffSecs = Math.floor(diffMs / 1000);
     const diffMins = Math.floor(diffSecs / 60);
 
-    if (diffSecs < 10) return 'just now';
-    if (diffSecs < 60) return `${diffSecs}s ago`;
-    if (diffMins < 60) return `${diffMins}m ago`;
+    if (diffSecs < 10) return t('chat.justNow');
+    if (diffSecs < 60) return t('dice.secondsAgoShort', { count: diffSecs });
+    if (diffMins < 60) return t('dice.minutesAgoShort', { count: diffMins });
     return date.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
   };
 
@@ -70,16 +72,16 @@ export default function DiceResult({ roll, isCurrentUser }: DiceResultProps) {
             <User className="w-4 h-4 flex-shrink-0 text-ink-secondary" />
             <span className="font-medium text-sm text-ink truncate">
               {userName}
-              {isCurrentUser && <span className="ml-1 text-xs opacity-60">(You)</span>}
+              {isCurrentUser && <span className="ml-1 text-xs opacity-60">{t('dice.you')}</span>}
               {secret && !isCurrentUser && (
                 <span className="ml-2 text-xs bg-ink/10 text-ink-muted px-2 py-0.5 rounded">
-                  🔒 Secret (DM View)
+                  {t('dice.secretDmView')}
                 </span>
               )}
             </span>
             {characterName && (
               <span className="text-xs text-ink-secondary truncate">
-                as {characterName}
+                {t('dice.asCharacter', { name: characterName })}
               </span>
             )}
           </div>
@@ -123,7 +125,7 @@ export default function DiceResult({ roll, isCurrentUser }: DiceResultProps) {
         <div className="text-xs text-ink-secondary space-y-1">
           {/* Formula */}
           <div className="font-mono">
-            <span className="opacity-60">Formula: </span>
+            <span className="opacity-60">{t('dice.formulaLabel')}</span>
             {breakdown.formula}
           </div>
 
@@ -188,8 +190,8 @@ export default function DiceResult({ roll, isCurrentUser }: DiceResultProps) {
             ${isCriticalFail ? 'text-danger-ink dark:text-danger-ink border-danger/20' : ''}
           `}
         >
-          {isCriticalSuccess && '🎉 CRITICAL SUCCESS!'}
-          {isCriticalFail && '💥 CRITICAL FAIL!'}
+          {isCriticalSuccess && t('dice.criticalSuccessBanner')}
+          {isCriticalFail && t('dice.criticalFailBanner')}
         </motion.div>
       )}
     </motion.div>

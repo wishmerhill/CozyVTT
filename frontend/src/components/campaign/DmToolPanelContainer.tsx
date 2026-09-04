@@ -6,6 +6,7 @@
  */
 
 import { useState, useRef, useCallback, type ReactNode, type RefObject } from 'react';
+import { useTranslation } from 'react-i18next';
 
 interface DmToolPanelContainerProps {
   children: ReactNode;
@@ -14,6 +15,7 @@ interface DmToolPanelContainerProps {
 }
 
 export default function DmToolPanelContainer({ children, containerRef }: DmToolPanelContainerProps) {
+  const { t } = useTranslation('campaign');
   // Position relative to the container's top-right corner (right, top offsets).
   // null = use default CSS position; set on first drag.
   const [position, setPosition] = useState<{ x: number; y: number } | null>(null);
@@ -72,7 +74,7 @@ export default function DmToolPanelContainer({ children, containerRef }: DmToolP
         onPointerMove={handlePointerMove}
         onPointerUp={handlePointerUp}
         onPointerCancel={handlePointerUp}
-        title="Drag to reposition panels"
+        title={t('tools.dragToRepositionTitle')}
       >
         <svg width="16" height="6" viewBox="0 0 16 6" className="opacity-40">
           <circle cx="4" cy="1.5" r="1.2" fill="currentColor" className="text-stone-400" />

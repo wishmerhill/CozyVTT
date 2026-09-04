@@ -8,6 +8,7 @@
  */
 
 import { useState, useCallback } from 'react';
+import { useTranslation } from 'react-i18next';
 import { Plus, Trash2, RotateCcw, Music } from 'lucide-react';
 import { useCampaign } from '@/contexts/CampaignContext';
 import Toast, { useToast } from '@/components/Toast';
@@ -72,6 +73,7 @@ interface PeriodEditorProps {
 }
 
 function PeriodEditor({ period, index, canDelete, onChange, onDelete }: PeriodEditorProps) {
+  const { t } = useTranslation(['campaign', 'common']);
   const filterVals = parseFilter(period.filter ?? '');
 
   const updateFilterVal = (key: keyof FilterValues, val: number) => {
@@ -84,20 +86,20 @@ function PeriodEditor({ period, index, canDelete, onChange, onDelete }: PeriodEd
       {/* Period name + delete */}
       <div className="flex items-center gap-3">
         <div className="flex-1">
-          <label className="block text-xs font-medium text-stone-gray mb-1">Period Name</label>
+          <label className="block text-xs font-medium text-stone-gray mb-1">{t('vibe.periodNameLabel')}</label>
           <input
             type="text"
             value={period.name}
             maxLength={50}
             onChange={(e) => onChange(index, { ...period, name: e.target.value })}
             className="input-cozy w-full"
-            placeholder="e.g. dawn, midday, twilight..."
+            placeholder={t('vibe.periodNamePlaceholder')}
           />
         </div>
         <button
           onClick={() => onDelete(index)}
           disabled={!canDelete}
-          title={canDelete ? 'Remove this period' : 'Cannot remove the only period'}
+          title={canDelete ? t('vibe.removePeriodTitle') : t('vibe.cannotRemoveOnlyTitle')}
           className="mt-5 p-2 rounded-lg text-danger-ink hover:bg-danger/10 transition-colors disabled:opacity-30 disabled:cursor-not-allowed"
         >
           <Trash2 className="w-4 h-4" />
@@ -106,7 +108,7 @@ function PeriodEditor({ period, index, canDelete, onChange, onDelete }: PeriodEd
 
       {/* Hue color + preview */}
       <div>
-        <label className="block text-xs font-medium text-stone-gray mb-2">Hue Color</label>
+        <label className="block text-xs font-medium text-stone-gray mb-2">{t('vibe.hueColorLabel')}</label>
         <div className="flex items-center gap-3">
           <input
             type="color"
@@ -135,13 +137,13 @@ function PeriodEditor({ period, index, canDelete, onChange, onDelete }: PeriodEd
 
       {/* Filter sliders */}
       <div className="space-y-3">
-        <p className="text-xs font-medium text-stone-gray">Visual Filter</p>
+        <p className="text-xs font-medium text-stone-gray">{t('vibe.visualFilterLabel')}</p>
 
         <div className="grid grid-cols-2 gap-x-4 gap-y-3">
           {/* Brightness */}
           <div>
             <div className="flex justify-between text-xs text-warm-gray mb-1">
-              <span>Brightness</span>
+              <span>{t('vibe.brightnessLabel')}</span>
               <span>{filterVals.brightness.toFixed(2)}</span>
             </div>
             <input
@@ -156,7 +158,7 @@ function PeriodEditor({ period, index, canDelete, onChange, onDelete }: PeriodEd
           {/* Saturation */}
           <div>
             <div className="flex justify-between text-xs text-warm-gray mb-1">
-              <span>Saturation</span>
+              <span>{t('vibe.saturationLabel')}</span>
               <span>{filterVals.saturate.toFixed(2)}</span>
             </div>
             <input
@@ -171,7 +173,7 @@ function PeriodEditor({ period, index, canDelete, onChange, onDelete }: PeriodEd
           {/* Contrast */}
           <div>
             <div className="flex justify-between text-xs text-warm-gray mb-1">
-              <span>Contrast</span>
+              <span>{t('vibe.contrastLabel')}</span>
               <span>{filterVals.contrast.toFixed(2)}</span>
             </div>
             <input
@@ -186,7 +188,7 @@ function PeriodEditor({ period, index, canDelete, onChange, onDelete }: PeriodEd
           {/* Hue rotate */}
           <div>
             <div className="flex justify-between text-xs text-warm-gray mb-1">
-              <span>Hue Shift</span>
+              <span>{t('vibe.hueShiftLabel')}</span>
               <span>{Math.round(filterVals.hueRotate)}°</span>
             </div>
             <input
@@ -207,7 +209,7 @@ function PeriodEditor({ period, index, canDelete, onChange, onDelete }: PeriodEd
 
       {/* Filter preview */}
       <div>
-        <p className="text-xs font-medium text-stone-gray mb-2">Preview</p>
+        <p className="text-xs font-medium text-stone-gray mb-2">{t('vibe.previewLabel')}</p>
         <div className="relative h-16 rounded-lg overflow-hidden ring-1 ring-moss-green/20">
           {/* Simulated map background */}
           <div
@@ -229,17 +231,17 @@ function PeriodEditor({ period, index, canDelete, onChange, onDelete }: PeriodEd
       <div>
         <label className="block text-xs font-medium text-stone-gray mb-1">
           <Music className="w-3 h-3 inline mr-1" />
-          Audio Note (optional)
+          {t('vibe.audioNoteLabel')}
         </label>
         <input
           type="text"
           value={period.audio ?? ''}
           onChange={(e) => onChange(index, { ...period, audio: e.target.value || null })}
           className="input-cozy w-full"
-          placeholder="e.g. birds_chirping.mp3"
+          placeholder={t('vibe.audioNotePlaceholder')}
         />
         <p className="text-xs text-warm-gray mt-1">
-          Use the Atmosphere panel during a session to sync ambient audio in real time for all players.
+          {t('vibe.audioNoteHint')}
         </p>
       </div>
     </div>
@@ -255,6 +257,7 @@ interface ConfigureVibeModalProps {
 }
 
 export default function ConfigureVibeModal({ onClose }: ConfigureVibeModalProps) {
+  const { t } = useTranslation(['campaign', 'common']);
   const { campaign, updateVibeSettings } = useCampaign();
   const { toast, showToast, hideToast } = useToast();
 
@@ -294,18 +297,18 @@ export default function ConfigureVibeModal({ onClose }: ConfigureVibeModalProps)
   // ============================================
 
   const validate = (): string | null => {
-    if (periods.length === 0) return 'At least one period is required.';
-    if (periods.length > 20) return 'Maximum 20 periods allowed.';
+    if (periods.length === 0) return t('vibe.errorAtLeastOne');
+    if (periods.length > 20) return t('vibe.errorMaxPeriods');
     const names = periods.map((p) => p.name.trim().toLowerCase());
     for (const name of names) {
-      if (!name) return 'All period names must be non-empty.';
-      if (name.length > 50) return 'Period names must be 50 characters or fewer.';
+      if (!name) return t('vibe.errorNameRequired');
+      if (name.length > 50) return t('vibe.errorNameTooLong');
     }
     const unique = new Set(names);
-    if (unique.size !== names.length) return 'Period names must be unique.';
+    if (unique.size !== names.length) return t('vibe.errorNamesUnique');
     for (const p of periods) {
       if (!/^#[0-9A-Fa-f]{6}$/.test(p.hue)) {
-        return `"${p.name}" has an invalid hue color. Use format #RRGGBB.`;
+        return t('vibe.errorInvalidHue', { name: p.name });
       }
     }
     return null;
@@ -340,11 +343,11 @@ export default function ConfigureVibeModal({ onClose }: ConfigureVibeModalProps)
       const result = await api.updateVibeSettings(campaign.id, newSettings);
       // Patch local context so VibeTracker reflects new periods immediately
       updateVibeSettings(result.vibeSettings);
-      showToast('Vibe periods saved!', 'success');
+      showToast(t('vibe.saved'), 'success');
       setTimeout(onClose, 900);
     } catch (err: any) {
       console.error('Failed to save vibe settings:', err);
-      showToast(err.response?.data?.message || 'Failed to save vibe settings', 'error');
+      showToast(err.response?.data?.message || t('vibe.saveFailed'), 'error');
     } finally {
       setIsSaving(false);
     }
@@ -356,9 +359,9 @@ export default function ConfigureVibeModal({ onClose }: ConfigureVibeModalProps)
 
   return (
     <>
-      <Modal open onClose={handleClose} title="Configure Vibe Periods" icon={Music} size="lg" closeDisabled={isSaving}>
+      <Modal open onClose={handleClose} title={t('vibe.configurePeriods')} icon={Music} size="lg" closeDisabled={isSaving}>
           <p className="text-sm text-ink-muted -mt-4 mb-6">
-            Define the time-of-day periods and their visual effects.
+            {t('vibe.definePeriodsHint')}
           </p>
 
           {/* Period Editors */}
@@ -382,7 +385,7 @@ export default function ConfigureVibeModal({ onClose }: ConfigureVibeModalProps)
               className="w-full flex items-center justify-center gap-2 px-4 py-3 rounded-lg border-2 border-dashed border-moss-green/30 text-brand-ink hover:border-moss-green/60 hover:bg-moss-green/5 transition-colors mb-6"
             >
               <Plus className="w-4 h-4" />
-              Add Period
+              {t('vibe.addPeriod')}
             </button>
           )}
 
@@ -393,7 +396,7 @@ export default function ConfigureVibeModal({ onClose }: ConfigureVibeModalProps)
               className="flex items-center gap-2 px-3 py-2 rounded-lg text-sm text-stone-gray hover:bg-parchment transition-colors"
             >
               <RotateCcw className="w-4 h-4" />
-              Restore Defaults
+              {t('vibe.restoreDefaults')}
             </button>
 
             <div className="flex items-center gap-3">
@@ -402,14 +405,14 @@ export default function ConfigureVibeModal({ onClose }: ConfigureVibeModalProps)
                 disabled={isSaving}
                 variant="secondary"
               >
-                Cancel
+                {t('common:cancel')}
               </Button>
               <Button
                 onClick={handleSave}
                 disabled={isSaving || periods.length === 0}
-                
+
               >
-                {isSaving ? 'Saving...' : 'Save Periods'}
+                {isSaving ? t('common:saving') : t('vibe.savePeriods')}
               </Button>
             </div>
           </div>

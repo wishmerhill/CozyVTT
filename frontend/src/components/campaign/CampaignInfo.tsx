@@ -4,6 +4,7 @@
 // ============================================
 
 import { useState } from 'react';
+import { useTranslation } from 'react-i18next';
 import { useCampaign } from '@/contexts/CampaignContext';
 import { Info, Users, Crown, Calendar, UserPlus } from 'lucide-react';
 import type { CampaignStatus } from '@/types';
@@ -11,6 +12,7 @@ import GameSystemBadge from '../common/GameSystemBadge';
 import InvitePlayerModal from './InvitePlayerModal';
 
 export default function CampaignInfo() {
+  const { t } = useTranslation(['campaign', 'common']);
   const { campaign, userRole } = useCampaign();
   const [showInviteModal, setShowInviteModal] = useState(false);
 
@@ -30,27 +32,27 @@ export default function CampaignInfo() {
   const getStatusBadge = (status: CampaignStatus) => {
     const badges = {
       PREPARATION: {
-        label: 'Preparation',
+        label: t('status.preparation'),
         class: 'bg-warm-amber/20 text-warm-amber border-warm-amber/30',
       },
       ACTIVE: {
-        label: 'Active',
+        label: t('status.active'),
         class: 'bg-moss-green/20 text-brand-ink border-moss-green/30',
       },
       PAUSED: {
-        label: 'Paused',
+        label: t('status.paused'),
         class: 'bg-stone-gray/20 text-stone-gray border-stone-gray/30',
       },
       COMPLETED: {
-        label: 'Completed',
+        label: t('status.completed'),
         class: 'bg-spirit-purple/20 text-spirit-purple border-spirit-purple/30',
       },
       ARCHIVED: {
-        label: 'Archived',
+        label: t('status.archived'),
         class: 'bg-warm-gray/20 text-warm-gray border-warm-gray/30',
       },
       INACTIVE: {
-        label: 'Inactive',
+        label: t('status.inactive'),
         class: 'bg-warm-gray/20 text-warm-gray border-warm-gray/30',
       },
     };
@@ -62,7 +64,7 @@ export default function CampaignInfo() {
   const memberCount = campaign.memberships?.length || 0;
   const ownerName =
     campaign.memberships?.find((m) => m.userId === campaign.ownerId)?.user
-      ?.displayName || 'Unknown';
+      ?.displayName || t('common:unknown');
 
   return (
     <div className="glass-panel p-4 space-y-4">
@@ -70,7 +72,7 @@ export default function CampaignInfo() {
       <div className="flex items-center gap-2 pb-2 border-b border-moss-green/20">
         <Info className="w-5 h-5 text-brand-ink" />
         <h3 className="text-lg font-semibold text-brand-ink">
-          Campaign Info
+          {t('info.title')}
         </h3>
       </div>
 
@@ -100,20 +102,20 @@ export default function CampaignInfo() {
       <div className="space-y-2 text-sm">
         <div className="flex items-center gap-2 text-stone-gray">
           <Crown className="w-4 h-4 text-brand-ink" />
-          <span className="text-warm-gray">DM:</span>
+          <span className="text-warm-gray">{t('info.dm')}</span>
           <span className="text-stone-gray font-medium">{ownerName}</span>
         </div>
 
         <div className="flex items-center gap-2 text-stone-gray">
           <Users className="w-4 h-4 text-spirit-purple" />
-          <span className="text-warm-gray">Members:</span>
+          <span className="text-warm-gray">{t('info.members')}</span>
           <span className="text-stone-gray font-medium">{memberCount}</span>
         </div>
 
         {campaign.lastPlayedAt && (
           <div className="flex items-center gap-2 text-stone-gray">
             <Calendar className="w-4 h-4 text-warm-amber" />
-            <span className="text-warm-gray">Last played:</span>
+            <span className="text-warm-gray">{t('info.lastPlayed')}</span>
             <span className="text-stone-gray font-medium">
               {new Date(campaign.lastPlayedAt).toLocaleDateString()}
             </span>
@@ -129,7 +131,7 @@ export default function CampaignInfo() {
             className="flex items-center gap-2 px-3 py-2 w-full rounded-lg bg-moss-green/10 text-brand-ink hover:bg-moss-green/20 transition-colors text-sm font-medium"
           >
             <UserPlus className="w-4 h-4" />
-            Invite Player
+            {t('roster.invite')}
           </button>
         </div>
       )}
@@ -137,7 +139,7 @@ export default function CampaignInfo() {
       {/* User Role Badge */}
       {userRole && (
         <div className="pt-2 border-t border-moss-green/20">
-          <span className="text-xs text-warm-gray">Your role:</span>
+          <span className="text-xs text-warm-gray">{t('info.yourRole')}</span>
           <div
             className={`inline-block ml-2 px-2.5 py-1 rounded-full border text-xs font-medium ${
               userRole === 'DM'
