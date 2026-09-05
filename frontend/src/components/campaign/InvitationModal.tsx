@@ -9,6 +9,7 @@ import { api } from '@/services/api';
 import Toast, { useToast } from '@/components/Toast';
 import type { CampaignInvitation, Character } from '@/types';
 import { Modal } from '@/components/ui';
+import { apiErrorMessage } from '@/utils/errors';
 
 interface InvitationModalProps {
   invitation: CampaignInvitation;
@@ -77,9 +78,9 @@ export default function InvitationModal({
       setProcessing(true);
       await api.acceptInvitation(invitation.id, selectedCharacterIds);
       onAccept();
-    } catch (error: any) {
+    } catch (error) {
       console.error('Error accepting invitation:', error);
-      showToast(error.response?.data?.message || t('invitation.errorAccept'), 'error');
+      showToast(apiErrorMessage(error) || t('invitation.errorAccept'), 'error');
     } finally {
       setProcessing(false);
     }
@@ -91,9 +92,9 @@ export default function InvitationModal({
       setProcessing(true);
       await api.declineInvitation(invitation.id);
       onDecline();
-    } catch (error: any) {
+    } catch (error) {
       console.error('Error declining invitation:', error);
-      showToast(error.response?.data?.message || t('invitation.errorDecline'), 'error');
+      showToast(apiErrorMessage(error) || t('invitation.errorDecline'), 'error');
     } finally {
       setProcessing(false);
     }

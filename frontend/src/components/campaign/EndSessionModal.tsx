@@ -8,7 +8,7 @@
  */
 
 import { useState } from 'react';
-import { useTranslation } from 'react-i18next';
+import { Trans, useTranslation } from 'react-i18next';
 import type { TFunction } from 'i18next';
 import { Square, Save, Clock, Hash } from 'lucide-react';
 import { Button, Modal } from '@/components/ui';
@@ -134,7 +134,10 @@ export default function EndSessionModal({
             />
             <p className="text-xs text-warm-gray mt-1 text-right">{notes.length}/2000</p>
             <p className="text-xs text-warm-gray/70 mt-1">
-              {t('session.notesFutureHint')}
+              <Trans
+                i18nKey="campaign:session.notesHistoryHint"
+                components={{ strong: <span className="font-medium" /> }}
+              />
             </p>
           </div>
 

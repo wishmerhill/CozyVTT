@@ -11,6 +11,7 @@ import { useAuth } from '@/contexts/AuthContext';
 import { isValidEmail } from '@/utils/validation';
 import authService from '@/services/auth.service';
 import Button from '@/components/ui/Button';
+import { apiErrorMessage } from '@/utils/errors';
 
 export default function ForgotPasswordPage() {
   const { t } = useTranslation(['auth', 'common']);
@@ -47,10 +48,10 @@ export default function ForgotPasswordPage() {
     try {
       await authService.forgotPassword(email.trim().toLowerCase());
       setSubmitted(true);
-    } catch (err: any) {
+    } catch (err) {
       // The backend always returns 200 for this endpoint to prevent
       // email enumeration — but surface any unexpected errors.
-      const msg = err.response?.data?.message;
+      const msg = apiErrorMessage(err);
       if (msg) {
         setServerMessage(msg);
       }

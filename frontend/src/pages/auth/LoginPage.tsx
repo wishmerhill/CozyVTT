@@ -12,6 +12,7 @@ import { isValidEmail } from '@/utils/validation';
 import { api } from '@/services/api';
 import Button from '@/components/ui/Button';
 import LanguageSelector from '@/components/common/LanguageSelector';
+import { apiErrorStatus, apiErrorText } from '@/utils/errors';
 
 export default function LoginPage() {
   const { t } = useTranslation(['auth', 'common']);
@@ -90,13 +91,14 @@ export default function LoginPage() {
 
       // If MFA is not required, user is logged in and will be redirected by auth check above
       // If MFA is required, mfaPending will be true and user will be redirected to MFA page
-    } catch (err: any) {
+    } catch (err) {
       // Handle specific error messages
-      if (err.response?.data?.error) {
-        setError(err.response.data.error);
-      } else if (err.response?.status === 401) {
+      const serverError = apiErrorText(err);
+      if (serverError) {
+        setError(serverError);
+      } else if (apiErrorStatus(err) === 401) {
         setError(t('auth:login.errorInvalid'));
-      } else if (err.response?.status === 429) {
+      } else if (apiErrorStatus(err) === 429) {
         setError(t('auth:login.errorTooManyAttempts'));
       } else {
         setError(t('auth:login.errorGeneric'));

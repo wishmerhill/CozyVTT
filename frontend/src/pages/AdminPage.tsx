@@ -79,6 +79,15 @@ import TableSkeleton from '@/components/skeletons/TableSkeleton';
 import ConfirmDialog from '@/components/common/ConfirmDialog';
 import LanguageSelector from '@/components/common/LanguageSelector';
 import Button from '@/components/ui/Button';
+import { apiErrorMessage } from '@/utils/errors';
+
+/** The four colours the appearance form edits. */
+interface AppearanceColors {
+  primary: string;
+  accent: string;
+  background: string;
+  text: string;
+}
 
 // ============================================
 // Helpers
@@ -231,7 +240,11 @@ export default function AdminPage() {
 
   // ---- Appearance ----
   const { refreshAppearance } = useTheme();
-  const [appearanceForm, setAppearanceForm] = useState({
+  const [appearanceForm, setAppearanceForm] = useState<{
+    themeId: string;
+    fontId: string;
+    customColors: AppearanceColors;
+  }>({
     themeId: 'cozy-default',
     fontId: 'default',
     customColors: {
@@ -416,7 +429,7 @@ export default function AdminPage() {
       setAppearanceForm({
         themeId: settings.themeId || 'cozy-default',
         fontId: settings.fontId || 'default',
-        customColors: settings.customThemeColors as any || {
+        customColors: (settings.customThemeColors as AppearanceColors | null) || {
           primary: '#4A5D4E',
           accent: '#D4A574',
           background: '#FFF9E6',
@@ -472,7 +485,7 @@ export default function AdminPage() {
       // Revert on error
       setUsers(prev => prev.map(x => x.id === u.id ? { ...x, templateEditor: !next } : x));
       const e = err as { response?: { data?: { message?: string } } };
-      showToast(e.response?.data?.message ?? t('admin:users.permissionUpdateFailed'), 'error');
+      showToast(apiErrorMessage(e) ?? t('admin:users.permissionUpdateFailed'), 'error');
     } finally {
       setTogglingTemplateEditor(null);
     }
@@ -491,7 +504,7 @@ export default function AdminPage() {
       // Revert on error
       setUsers(prev => prev.map(x => x.id === u.id ? { ...x, globalAssetManager: !next } : x));
       const e = err as { response?: { data?: { message?: string } } };
-      showToast(e.response?.data?.message ?? t('admin:users.permissionUpdateFailed'), 'error');
+      showToast(apiErrorMessage(e) ?? t('admin:users.permissionUpdateFailed'), 'error');
     } finally {
       setTogglingGlobalAssets(null);
     }
@@ -508,7 +521,7 @@ export default function AdminPage() {
       showToast(`${t('admin:users.roleChanged')} ${newRole}`, 'success');
     } catch (err: unknown) {
       const e = err as { response?: { data?: { message?: string } } };
-      showToast(e.response?.data?.message ?? t('common:error'), 'error');
+      showToast(apiErrorMessage(e) ?? t('admin:users.roleChangeFailed'), 'error');
     } finally {
       setRoleChangingId(null);
     }
@@ -523,7 +536,7 @@ export default function AdminPage() {
       setTempPassword(pwd);
     } catch (err: unknown) {
       const e = err as { response?: { data?: { message?: string } } };
-      setResetError(e.response?.data?.message ?? t('common:error'));
+      setResetError(apiErrorMessage(e) ?? t('admin:users.passwordResetFailed'));
     } finally {
       setIsResetting(false);
     }
@@ -538,7 +551,7 @@ export default function AdminPage() {
       setResetLinkSent(true);
     } catch (err: unknown) {
       const e = err as { response?: { data?: { message?: string } } };
-      setResetLinkError(e.response?.data?.message ?? t('common:error'));
+      setResetLinkError(apiErrorMessage(e) ?? t('admin:users.resetLinkFailed'));
     } finally {
       setIsSendingResetLink(false);
     }
@@ -557,7 +570,7 @@ export default function AdminPage() {
       showToast(`${t('common:delete')} "${deletedName}"`, 'success');
     } catch (err: unknown) {
       const e = err as { response?: { data?: { message?: string } } };
-      setDeleteError(e.response?.data?.message ?? t('common:error'));
+      setDeleteError(apiErrorMessage(e) ?? t('admin:users.deleteUserFailed'));
     } finally {
       setIsDeleting(false);
     }
@@ -636,7 +649,7 @@ export default function AdminPage() {
     } catch (err: unknown) {
       const e = err as { response?: { data?: { message?: string } } };
       setCreateUserError(
-        e.response?.data?.message ??
+        apiErrorMessage(e) ??
           (createUserMode === 'invite' ? t('admin:createUser.errorInvite') : t('admin:createUser.error'))
       );
     } finally {
@@ -654,7 +667,7 @@ export default function AdminPage() {
       const e = err as { response?: { data?: { message?: string } } };
       setResendInviteResult({
         id: userId,
-        message: e.response?.data?.message ?? t('common:error'),
+        message: apiErrorMessage(e) ?? t('admin:users.resendInviteFailed'),
       });
     } finally {
       setResendingInviteId(null);
@@ -679,7 +692,7 @@ export default function AdminPage() {
       setResetMfaConfirmId(null);
     } catch (err: unknown) {
       const e = err as { response?: { data?: { message?: string } } };
-      setResetMfaError(e.response?.data?.message ?? t('common:error'));
+      setResetMfaError(apiErrorMessage(e) ?? t('admin:users.resetMfaFailed'));
     } finally {
       setIsResettingMfa(false);
     }
@@ -693,7 +706,7 @@ export default function AdminPage() {
       showToast(t('admin:users.approve') + '!', 'success');
     } catch (err: unknown) {
       const e = err as { response?: { data?: { message?: string } } };
-      showToast(e.response?.data?.message ?? t('common:error'), 'error');
+      showToast(apiErrorMessage(e) ?? t('admin:users.approveUserFailed'), 'error');
     } finally {
       setApprovingUserId(null);
     }
@@ -727,7 +740,7 @@ export default function AdminPage() {
       setAdminAssetsTotal(prev => prev - 1);
     } catch (err: unknown) {
       const e = err as { response?: { data?: { message?: string } } };
-      showToast(e.response?.data?.message ?? t('common:error'), 'error');
+      showToast(apiErrorMessage(e) ?? t('admin:assets.deleteFailed'), 'error');
     } finally {
       setAssetDeleting(null);
     }
@@ -745,7 +758,7 @@ export default function AdminPage() {
       setSmtpTestResult({ ok: true, message });
     } catch (err: unknown) {
       const e = err as { response?: { data?: { message?: string } } };
-      setSmtpTestResult({ ok: false, message: e.response?.data?.message ?? t('common:error') });
+      setSmtpTestResult({ ok: false, message: apiErrorMessage(e) ?? t('admin:settings.smtpTestFailed') });
     } finally {
       setSmtpTesting(false);
     }
@@ -763,7 +776,7 @@ export default function AdminPage() {
       setBackups(prev => [backup, ...prev]);
     } catch (err: unknown) {
       const e = err as { response?: { data?: { message?: string } } };
-      setBackupCreateError(e.response?.data?.message ?? t('common:error'));
+      setBackupCreateError(apiErrorMessage(e) ?? t('admin:backups.createFailed'));
     } finally {
       setCreatingBackup(false);
     }
@@ -776,7 +789,7 @@ export default function AdminPage() {
       setBackups(prev => prev.filter(b => b.filename !== filename));
     } catch (err: unknown) {
       const e = err as { response?: { data?: { message?: string } } };
-      showToast(e.response?.data?.message ?? t('common:error'), 'error');
+      showToast(apiErrorMessage(e) ?? t('admin:backups.backupDeleteFailed'), 'error');
     } finally {
       setDeletingBackupFile(null);
     }
@@ -798,7 +811,7 @@ export default function AdminPage() {
       setRestoreFile(null);
     } catch (err: unknown) {
       const e = err as { response?: { data?: { message?: string } } };
-      setRestoreError(e.response?.data?.message ?? t('common:error'));
+      setRestoreError(apiErrorMessage(e) ?? t('admin:backups.restoreFailed'));
     } finally {
       setRestoring(false);
     }
@@ -817,7 +830,7 @@ export default function AdminPage() {
       showToast(t('admin:settings.success'), 'success');
     } catch (err: unknown) {
       const e = err as { response?: { data?: { message?: string } } };
-      setSettingsError(e.response?.data?.message ?? t('admin:settings.error'));
+      setSettingsError(apiErrorMessage(e) ?? t('admin:settings.error'));
     } finally {
       setSettingsSaving(false);
     }
@@ -2142,7 +2155,7 @@ export default function AdminPage() {
                     setAppearanceSaving(true);
                     setAppearanceError('');
                     try {
-                    const updateData: Record<string, any> = {
+                    const updateData: Record<string, unknown> = {
                     themeId: appearanceForm.themeId,
                     fontId: appearanceForm.fontId,
                     };
@@ -2151,9 +2164,9 @@ export default function AdminPage() {
                     }
                     await adminService.updateSettings(updateData);
                     await refreshAppearance();
-                    showToast(t('admin:appearance.save') + '!', 'success');
-                    } catch (err: any) {
-                    setAppearanceError(err.response?.data?.message || t('common:error'));
+                    showToast(t('admin:appearance.savedToast'), 'success');
+                    } catch (err: unknown) {
+                    setAppearanceError(apiErrorMessage(err) || t('admin:appearance.saveFailed'));
                     } finally {
                     setAppearanceSaving(false);
                     }

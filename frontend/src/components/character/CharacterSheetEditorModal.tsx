@@ -16,6 +16,8 @@ import DnD5eCharacterEditor from '../character-sheets/dnd5e/DnD5eCharacterEditor
 import Pathfinder2eCharacterEditor from '../character-sheets/pathfinder2e/Pathfinder2eCharacterEditor';
 import CallOfCthulhu7eCharacterEditor from '../character-sheets/call-of-cthulhu-7e/CallOfCthulhu7eCharacterEditor';
 import { FlexibleCharacterSheetEdit } from '../character-sheets/flexible/FlexibleCharacterSheetEdit';
+import { apiErrorMessage, apiValidationIssues } from '@/utils/errors';
+import type { CharacterData } from '@/types';
 
 interface CharacterSheetEditorModalProps {
   character: Character;
@@ -37,7 +39,7 @@ export default function CharacterSheetEditorModal({
   // third argument — forward it so the character's token actually updates.
   // (Omit it when undefined so an edit that didn't touch the token keeps the
   // existing image.)
-  const handleSave = async (data: any, _showToast?: boolean, tokenImageUrl?: string) => {
+  const handleSave = async (data: CharacterData, _showToast?: boolean, tokenImageUrl?: string) => {
     try {
       setSaving(true);
       await api.updateCharacter(character.id, {
@@ -52,18 +54,18 @@ export default function CharacterSheetEditorModal({
 
       // Close modal
       onClose();
-    } catch (error: any) {
+    } catch (error) {
       console.error('Error saving character:', error);
 
       // Show detailed error message
-      const errorMessage = error.response?.data?.message || t('editor.saveFailed');
-      const validationErrors = error.response?.data?.validationErrors;
+      const message = apiErrorMessage(error) || t('editor.saveFailed');
+      const validationErrors = apiValidationIssues(error);
 
       if (validationErrors) {
         console.error('Validation errors:', validationErrors);
-        showToast(t('editor.validationError', { message: errorMessage }), 'error');
+        showToast(t('editor.validationError', { message }), 'error');
       } else {
-        showToast(errorMessage, 'error');
+        showToast(message, 'error');
       }
     } finally {
       setSaving(false);

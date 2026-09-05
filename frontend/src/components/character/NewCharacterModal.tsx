@@ -11,6 +11,7 @@ import { Character, GameSystem, Campaign } from '@/types';
 import { GAME_SYSTEM_OPTIONS } from '@/constants/game-systems';
 import api from '@/services/api';
 import Button from '@/components/ui/Button';
+import { apiErrorMessage, apiValidationIssues, errorMessage } from '@/utils/errors';
 
 interface NewCharacterModalProps {
   isOpen: boolean;
@@ -89,7 +90,7 @@ export default function NewCharacterModal({
     try {
       const response = await api.listCampaigns();
       setAvailableCampaigns(response.campaigns);
-    } catch (err: any) {
+    } catch (err) {
       console.error('Failed to fetch campaigns:', err);
     } finally {
       setLoadingCampaigns(false);
@@ -219,17 +220,17 @@ export default function NewCharacterModal({
 
       // Close modal
       onClose();
-    } catch (err: any) {
+    } catch (err) {
       // Show detailed validation errors if available
-      const errorData = err.response?.data;
-      if (errorData?.validationErrors && Array.isArray(errorData.validationErrors)) {
-        const errorList = errorData.validationErrors
-          .map((e: any) => `• ${e.path}: ${e.message}`)
+      const issues = apiValidationIssues(err);
+      if (issues) {
+        const errorList = issues
+          .map((e) => `• ${e.path}: ${e.message}`)
           .join('\n');
-        setError(`${errorData.message}\n\n${errorList}`);
-        console.error('Validation errors:', errorData.validationErrors);
+        setError(`${apiErrorMessage(err)}\n\n${errorList}`);
+        console.error('Validation errors:', issues);
       } else {
-        setError(errorData?.message || err.message || t('modal.new.errors.createFailed'));
+        setError(apiErrorMessage(err) || errorMessage(err) || t('modal.new.errors.createFailed'));
       }
     } finally {
       setLoading(false);

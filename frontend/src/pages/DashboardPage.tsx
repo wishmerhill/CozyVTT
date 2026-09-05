@@ -21,6 +21,7 @@ import CampaignCardSkeleton from '@/components/skeletons/CampaignCardSkeleton';
 import type { Campaign, CampaignInvitation } from '@/types';
 import { CampaignRole, PlatformRole } from '@/types';
 import Button from '@/components/ui/Button';
+import { apiErrorMessage } from '@/utils/errors';
 
 export default function DashboardPage() {
   const { t } = useTranslation(['dashboard', 'common']);
@@ -46,7 +47,7 @@ export default function DashboardPage() {
   const loading = campaignsQuery.isPending || charactersQuery.isPending || invitationsQuery.isPending;
   const queryError = campaignsQuery.error || charactersQuery.error || invitationsQuery.error;
   const error = queryError
-    ? ((queryError as any).response?.data?.message || t('dashboard:failedToLoad'))
+    ? (apiErrorMessage(queryError) || t('dashboard:failedToLoad'))
     : '';
 
   // Refresh button + post-invitation-response resync

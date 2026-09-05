@@ -10,6 +10,7 @@ import type { Character, Campaign } from '@/types';
 import api from '@/services/api';
 import GameSystemBadge from '@/components/common/GameSystemBadge';
 import { Button, Modal } from '@/components/ui';
+import { apiErrorMessage } from '@/utils/errors';
 
 // Maps the GameSystem enum to the campaign namespace's gameSystemNames keys
 // (already localized there for the campaign info panel).
@@ -59,8 +60,8 @@ export default function AssignCharacterModal({
     try {
       const response = await api.listCampaigns();
       setCampaigns(response.campaigns);
-    } catch (err: any) {
-      setError(err.response?.data?.message || t('modal.assign.loadCampaignsFailed'));
+    } catch (err) {
+      setError(apiErrorMessage(err) || t('modal.assign.loadCampaignsFailed'));
     } finally {
       setLoadingCampaigns(false);
     }
@@ -75,8 +76,8 @@ export default function AssignCharacterModal({
     try {
       await onConfirm(character.id, selectedCampaignId);
       onClose();
-    } catch (err: any) {
-      setError(err.response?.data?.message || t('modal.assign.assignFailed'));
+    } catch (err) {
+      setError(apiErrorMessage(err) || t('modal.assign.assignFailed'));
     } finally {
       setLoading(false);
     }

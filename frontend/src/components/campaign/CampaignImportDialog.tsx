@@ -22,6 +22,7 @@ import {
 import api from '@/services/api';
 import type { CampaignImportPreview, CampaignImportResult } from '@/types';
 import Button from '@/components/ui/Button';
+import { apiErrorMessage, errorMessage as thrownMessage } from '@/utils/errors';
 
 interface CampaignImportDialogProps {
   isOpen: boolean;
@@ -79,8 +80,8 @@ export default function CampaignImportDialog({
       setPreview(previewData);
       setCampaignName(previewData.campaignName);
       setStep('preview');
-    } catch (err: any) {
-      const msg = err.response?.data?.message || err.message || t('import.readArchiveFailedFallback');
+    } catch (err) {
+      const msg = apiErrorMessage(err) || thrownMessage(err) || t('import.readArchiveFailedFallback');
       setErrorMessage(msg);
       setStep('error');
     } finally {
@@ -112,8 +113,8 @@ export default function CampaignImportDialog({
       setResult(importResult);
       setStep('done');
       onSuccess?.();
-    } catch (err: any) {
-      const msg = err.response?.data?.message || err.message || t('import.importFailedFallback');
+    } catch (err) {
+      const msg = apiErrorMessage(err) || thrownMessage(err) || t('import.importFailedFallback');
       setErrorMessage(msg);
       setStep('error');
     }

@@ -16,6 +16,7 @@ import api from '@/services/api';
 import { CampaignStatus } from '@/types';
 import EndSessionModal from '@/components/campaign/EndSessionModal';
 import Button from '@/components/ui/Button';
+import { apiErrorMessage } from '@/utils/errors';
 
 // ============================================
 // Session timer hook
@@ -87,8 +88,8 @@ export default function SessionControls() {
         startedAt: result.session.startedAt,
       });
       showToast(t('session.startedToast', { number: result.session.sessionNumber }), 'success');
-    } catch (err: any) {
-      showToast(err.response?.data?.message || t('session.errors.start'), 'error');
+    } catch (err) {
+      showToast(apiErrorMessage(err) || t('session.errors.start'), 'error');
     } finally {
       setIsLoading(false);
     }
@@ -101,8 +102,8 @@ export default function SessionControls() {
       await api.pauseSession(campaign.id, activeSession.id);
       updateCampaignStatus(CampaignStatus.PAUSED);
       showToast(t('session.pausedToast'), 'success');
-    } catch (err: any) {
-      showToast(err.response?.data?.message || t('session.errors.pause'), 'error');
+    } catch (err) {
+      showToast(apiErrorMessage(err) || t('session.errors.pause'), 'error');
     } finally {
       setIsLoading(false);
     }
@@ -120,8 +121,8 @@ export default function SessionControls() {
         startedAt: new Date().toISOString(), // Resume resets timer display to now
       });
       showToast(t('session.resumedToast', { number: result.session.sessionNumber }), 'success');
-    } catch (err: any) {
-      showToast(err.response?.data?.message || t('session.errors.resume'), 'error');
+    } catch (err) {
+      showToast(apiErrorMessage(err) || t('session.errors.resume'), 'error');
     } finally {
       setIsLoading(false);
     }
@@ -142,8 +143,8 @@ export default function SessionControls() {
           : t('session.endedToast', { number: activeSession.sessionNumber }),
         'success'
       );
-    } catch (err: any) {
-      showToast(err.response?.data?.message || t('session.errors.end'), 'error');
+    } catch (err) {
+      showToast(apiErrorMessage(err) || t('session.errors.end'), 'error');
     } finally {
       setIsLoading(false);
     }

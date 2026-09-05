@@ -30,6 +30,7 @@ import EditMapModal from './EditMapModal';
 import ConfirmDialog from '@/components/common/ConfirmDialog';
 import Button from '@/components/ui/Button';
 import { extractAssetId } from '@/utils/assetUrl';
+import { apiErrorMessage } from '@/utils/errors';
 
 interface MapManagerProps {
   isOpen: boolean;
@@ -369,8 +370,8 @@ export default function MapManager({ isOpen, onClose }: MapManagerProps) {
       document.body.appendChild(link);
       link.click();
       document.body.removeChild(link);
-    } catch (err: any) {
-      setError(err.response?.data?.message || t('map.errors.exportFailed'));
+    } catch (err: unknown) {
+      setError(apiErrorMessage(err) || t('map.errors.exportFailed'));
     }
   };
 
@@ -385,8 +386,8 @@ export default function MapManager({ isOpen, onClose }: MapManagerProps) {
     try {
       await mapService.deleteMap(campaign.id, map.id);
       setMaps((prev) => prev.filter((m) => m.id !== map.id));
-    } catch (err: any) {
-      setError(err.response?.data?.message || t('map.errors.deleteFailed'));
+    } catch (err: unknown) {
+      setError(apiErrorMessage(err) || t('map.errors.deleteFailed'));
     }
   };
 
@@ -406,12 +407,12 @@ export default function MapManager({ isOpen, onClose }: MapManagerProps) {
       setMaps((prev) => [result.map, ...prev]);
       const parts = [t('map.uvttImport.segments', { count: result.totalSegments })];
       if (result.portalCount > 0) parts.push(t('map.uvttImport.doors', { count: result.portalCount }));
-      if ((result as any).lightCount > 0) parts.push(t('map.uvttImport.lights', { count: (result as any).lightCount }));
+      if (result.lightCount > 0) parts.push(t('map.uvttImport.lights', { count: result.lightCount }));
       setImportSuccess(t('map.uvttImport.successMessage', { name: result.map.name, parts: parts.join(', ') }));
       // Auto-clear success message after 5 seconds
       setTimeout(() => setImportSuccess(null), 5000);
-    } catch (err: any) {
-      const msg = err.response?.data?.message || t('map.errors.importFailed');
+    } catch (err: unknown) {
+      const msg = apiErrorMessage(err) || t('map.errors.importFailed');
       setError(msg);
     } finally {
       setIsImportingUVTT(false);
@@ -513,8 +514,8 @@ export default function MapManager({ isOpen, onClose }: MapManagerProps) {
       if (socket) {
         socket.emitMapChange(targetMap.id);
       }
-    } catch (err: any) {
-      setError(err.response?.data?.message || t('map.errors.switchFailed'));
+    } catch (err: unknown) {
+      setError(apiErrorMessage(err) || t('map.errors.switchFailed'));
     } finally {
       setIsSwitching(false);
     }
