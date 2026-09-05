@@ -22,14 +22,28 @@ import {
   Dices,
 } from 'lucide-react';
 import { Character } from '../../../types';
+import type {
+  DnD5eCharacterData,
+  DnD5eSavingThrow,
+  SheetChrome,
+} from '../../../types/game-systems';
 import { StatBlock } from './components/StatBlock';
 import { SkillsList } from './components/SkillsList';
 import { AttacksList } from './components/AttacksList';
 import { InventoryList } from './components/InventoryList';
 import { SpellcastingBlock } from './components/SpellcastingBlock';
 import { withAdvantage, withDisadvantage } from '../../../utils/characterRolls';
-import { passiveScore } from '../../../utils/rules/dnd5e';
+import {
+  passiveScore,
+  hasSpellcasting,
+  exhaustionLevel,
+  exhaustionEffects,
+  readCustomSkills,
+  dnd5eCustomSkillBonus,
+} from '../../../utils/rules/dnd5e';
 import { dnd5eInitiativeModifier } from '../../../utils/rules/initiative';
+import { collectSheetFeatures } from '../../../utils/featureEntries';
+import { readProficiencyGroups } from '../../../utils/proficiencies';
 
 interface DnD5eCharacterViewProps {
   character: Character;
@@ -62,6 +76,17 @@ const TABS: Tab[] = [
   { id: 'bio', label: 'character:sheet.bio', icon: User },
 ];
 
+// Maps the full ability names used as data.savingThrows keys to the
+// abbreviated keys used by game-systems:dnd5e.abilities translations.
+const SAVING_THROW_ABILITY_ABBR: Record<string, string> = {
+  strength: 'str',
+  dexterity: 'dex',
+  constitution: 'con',
+  intelligence: 'int',
+  wisdom: 'wis',
+  charisma: 'cha',
+};
+
 // D&D 5e color presets for character sheets (same as editor)
 const COLOR_PRESETS = [
   { name: 'Classic Red', from: 'from-red-700', to: 'to-red-900', accent: 'red-700', hex: '#b91c1c' },
@@ -84,7 +109,7 @@ const COLOR_PRESETS = [
 export const DnD5eCharacterView: React.FC<DnD5eCharacterViewProps> = ({ character, onEdit, onRoll }) => {
   const { t } = useTranslation(['character', 'game-systems']);
   const [activeTab, setActiveTab] = useState<TabId>('stats');
-  const data = character.data as any; // Type will be DnD5eCharacterData
+  const data = character.data as DnD5eCharacterData & SheetChrome;
   const [themeColor, setThemeColor] = useState(COLOR_PRESETS[0]);
   const [isCustomColor, setIsCustomColor] = useState(false);
   const [customColorHex, setCustomColorHex] = useState('');
@@ -165,7 +190,7 @@ export const DnD5eCharacterView: React.FC<DnD5eCharacterViewProps> = ({ characte
             {character.tokenImageUrl ? (
               <img
                 src={character.tokenImageUrl}
-                alt={data.characterName || 'Character'}
+                alt={data.characterName || t('sheet.unnamedCharacter')}
                 className="w-20 h-20 rounded-full border-4 border-white/20 object-cover"
               />
             ) : (
@@ -244,7 +269,7 @@ export const DnD5eCharacterView: React.FC<DnD5eCharacterViewProps> = ({ characte
             return statEntries.map(([label, fullName, key]) => {
               const stat = data.stats[key];
               const expr = stat.modifier >= 0 ? `1d20+${stat.modifier}` : `1d20${stat.modifier}`;
-              const purpose = `${fullName} Check`;
+              const purpose = t('sheet.abilityCheckPurpose', { ability: fullName });
               return (
                 <StatBlock
                   key={key as string}
@@ -269,9 +294,10 @@ export const DnD5eCharacterView: React.FC<DnD5eCharacterViewProps> = ({ characte
         <div>
           <h3 className="text-lg font-semibold text-stone-800 mb-3">{t('sheet.savingThrows')}</h3>
           <div className="grid grid-cols-2 md:grid-cols-3 gap-2 bg-stone-50 border border-stone-200 rounded-lg p-4">
-            {Object.entries(data.savingThrows).map(([key, save]: [string, any]) => {
+            {(Object.entries(data.savingThrows ?? {}) as [string, DnD5eSavingThrow][]).map(([key, save]) => {
+              const fullName = t(`game-systems:dnd5e.abilities.${SAVING_THROW_ABILITY_ABBR[key] ?? key}`, { defaultValue: key });
               const expr = save.bonus >= 0 ? `1d20+${save.bonus}` : `1d20${save.bonus}`;
-              const purpose = `${key.charAt(0).toUpperCase() + key.slice(1)} ${t('sheet.save')}`;
+              const purpose = `${fullName} ${t('sheet.save')}`;
               return (
                 <div
                   key={key}
@@ -282,7 +308,7 @@ export const DnD5eCharacterView: React.FC<DnD5eCharacterViewProps> = ({ characte
                 >
                   <div className="flex items-center gap-1">
                     {onRoll && <Dices className="w-3 h-3 text-red-700 opacity-0 group-hover:opacity-60 transition-opacity" />}
-                    <span className="text-sm capitalize">{key}</span>
+                    <span className="text-sm">{fullName}</span>
                   </div>
                   <span className={`text-sm font-semibold ${save.proficient ? 'text-red-700' : 'text-stone-600'}`}>
                     {formatModifier(save.bonus)}
@@ -313,6 +339,15 @@ export const DnD5eCharacterView: React.FC<DnD5eCharacterViewProps> = ({ characte
               passivePerception={passiveScore(
                 (data.skills.perception?.bonus ?? 0) + (data.passivePerceptionBonus ?? 0)
               )}
+              // Derived here for the same reason: the bonus follows the
+              // character's ability scores and level rather than being stored
+              // and going stale.
+              customSkills={readCustomSkills(data).map((custom) => ({
+                name: custom.name,
+                proficient: custom.proficient,
+                expertise: custom.expertise,
+                bonus: dnd5eCustomSkillBonus(data, custom),
+              }))}
               onRoll={onRoll ? (expr, purpose) => handleRoll(expr, purpose) : undefined}
               onRollContext={onRoll ? (e, expr, purpose) => showRollPopup(e, expr, purpose) : undefined}
             />
@@ -390,11 +425,11 @@ export const DnD5eCharacterView: React.FC<DnD5eCharacterViewProps> = ({ characte
         <div className="bg-stone-50 border border-stone-200 rounded-lg p-4">
           <h3 className="text-lg font-semibold text-stone-800 mb-3">{t('sheet.hitDice')}</h3>
           <div className="flex flex-wrap gap-3">
-            {data.hitDice.map((hd: any, idx: number) => (
+            {data.hitDice!.map((hd, idx) => (
               <div key={idx} className="px-4 py-2 bg-white border border-stone-300 rounded-lg">
                 <div className="text-xs text-stone-500 capitalize">{hd.class}</div>
                 <div className="font-semibold text-stone-800">
-                  {hd.remaining}/{hd.total.replace(/\d+/, hd.total.match(/\d+/)[0])}
+                  {hd.remaining}/{hd.total}
                 </div>
               </div>
             ))}
@@ -414,7 +449,7 @@ export const DnD5eCharacterView: React.FC<DnD5eCharacterViewProps> = ({ characte
                   <div
                     key={i}
                     className={`w-8 h-8 rounded-full border-2 ${
-                      i <= data.deathSaves.successes
+                      i <= data.deathSaves!.successes
                         ? 'bg-green-500 border-green-600'
                         : 'bg-white border-stone-300'
                     }`}
@@ -429,7 +464,7 @@ export const DnD5eCharacterView: React.FC<DnD5eCharacterViewProps> = ({ characte
                   <div
                     key={i}
                     className={`w-8 h-8 rounded-full border-2 ${
-                      i <= data.deathSaves.failures
+                      i <= data.deathSaves!.failures
                         ? 'bg-red-500 border-red-600'
                         : 'bg-white border-stone-300'
                     }`}
@@ -451,10 +486,34 @@ export const DnD5eCharacterView: React.FC<DnD5eCharacterViewProps> = ({ characte
                 key={idx}
                 className="px-3 py-1 bg-orange-100 text-orange-800 border border-orange-300 rounded-full capitalize"
               >
-                {condition}
+                {t(`game-systems:dnd5e.conditions.${condition}`, { defaultValue: condition })}
               </span>
             ))}
           </div>
+        </div>
+      )}
+
+      {/* Exhaustion. Six cumulative levels (Basic Rules, Appendix A), so the
+          effects of every level below the current one apply too. */}
+      {exhaustionLevel(data.exhaustionLevel) > 0 && (
+        <div className="bg-red-50 border border-red-200 rounded-lg p-4">
+          <div className="flex items-center space-x-2 mb-2">
+            <h3 className="text-lg font-semibold text-stone-800">Exhaustion</h3>
+            <span className="px-2 py-0.5 bg-red-700 text-white text-sm font-bold rounded-full">
+              Level {exhaustionLevel(data.exhaustionLevel)}
+            </span>
+          </div>
+          <ul className="space-y-0.5">
+            {exhaustionEffects(data.exhaustionLevel).map((effect, idx) => (
+              <li key={idx} className="flex items-start space-x-2 text-stone-700">
+                <span className="text-red-600">•</span>
+                <span>
+                  <span className="text-stone-500 mr-1">{idx + 1}.</span>
+                  {effect}
+                </span>
+              </li>
+            ))}
+          </ul>
         </div>
       )}
 
@@ -475,8 +534,13 @@ export const DnD5eCharacterView: React.FC<DnD5eCharacterViewProps> = ({ characte
   // Render Spells tab
   const renderSpellsTab = () => (
     <div>
-      {data.spellcasting ? (
-        <SpellcastingBlock spellcasting={data.spellcasting} />
+      {/* `data.spellcasting` is an object on every sheet, including a barbarian's,
+          so testing it for truth showed a spellcasting panel to everybody — and
+          because the templates seeded class "Wizard", a Fighter's sheet read
+          "Wizard Spellcasting". What decides is whether the character actually
+          casts: an ability named, or any cantrip, slot or spell recorded. */}
+      {hasSpellcasting(data) ? (
+        <SpellcastingBlock spellcasting={data.spellcasting!} character={data} />
       ) : (
         <div className="text-center py-12 text-stone-500">
           <Sparkles className="w-12 h-12 mx-auto mb-3 text-stone-500" />
@@ -493,59 +557,20 @@ export const DnD5eCharacterView: React.FC<DnD5eCharacterViewProps> = ({ characte
     </div>
   );
 
-  // Helper function to categorize proficiencies
-  const categorizeProficiencies = (items: string[]) => {
-    const armor: string[] = [];
-    const weapons: string[] = [];
-    const tools: string[] = [];
-    const languages: string[] = [];
-
-    // Common D&D 5e languages
-    const knownLanguages = [
-      'Common', 'Dwarvish', 'Elvish', 'Giant', 'Gnomish', 'Goblin', 'Halfling', 'Orc',
-      'Abyssal', 'Celestial', 'Draconic', 'Deep Speech', 'Infernal', 'Primordial',
-      'Sylvan', 'Undercommon', 'Aquan', 'Auran', 'Ignan', 'Terran'
-    ];
-
-    items.forEach(item => {
-      const lower = item.toLowerCase();
-
-      // Check if it's a language
-      if (knownLanguages.some(lang => item.includes(lang))) {
-        languages.push(item);
-      }
-      // Check if it's armor
-      else if (lower.includes('armor') || lower.includes('shield')) {
-        armor.push(item);
-      }
-      // Check if it's a tool
-      else if (
-        lower.includes('tools') || lower.includes('kit') ||
-        lower.includes('instrument') || lower.includes('supplies') ||
-        lower.includes('drum') || lower.includes('flute') ||
-        lower.includes('lute') || lower.includes('viol') || lower.includes('horn')
-      ) {
-        tools.push(item);
-      }
-      // Otherwise, assume it's a weapon
-      else {
-        weapons.push(item);
-      }
-    });
-
-    return { armor, weapons, tools, languages };
-  };
-
   // Render Features tab
   const renderFeaturesTab = () => {
-    const proficiencies = data.proficienciesAndLanguages
-      ? categorizeProficiencies(data.proficienciesAndLanguages)
-      : { armor: [], weapons: [], tools: [], languages: [] };
+    // Read through the shared reader, which returns each box as the player
+    // typed it. The categories used to be re-derived here from a hardcoded list
+    // of language names, so anything it did not recognise — Thieves' Cant,
+    // Druidic, anything homebrew — was shown under Weapons.
+    const proficiencies = readProficiencyGroups(data);
+    const hasProficiencies = Object.values(proficiencies).some((group) => group.trim().length > 0);
+    const features = collectSheetFeatures(data);
 
     return (
       <div className="space-y-6">
         {/* Proficiencies & Training - Organized like D&D character sheet */}
-        {data.proficienciesAndLanguages && data.proficienciesAndLanguages.length > 0 && (
+        {hasProficiencies && (
           <div className="bg-stone-50 border-2 border-stone-300 rounded-lg p-4">
             <h3 className="text-lg font-semibold text-stone-800 mb-4 flex items-center">
               <Shield className="w-5 h-5 mr-2 text-red-700" />
@@ -560,7 +585,7 @@ export const DnD5eCharacterView: React.FC<DnD5eCharacterViewProps> = ({ characte
                     {t('sheet.armor')}
                   </div>
                   <div className="text-stone-800">
-                    {proficiencies.armor.join(', ')}
+                    {proficiencies.armor}
                   </div>
                 </div>
               )}
@@ -572,7 +597,7 @@ export const DnD5eCharacterView: React.FC<DnD5eCharacterViewProps> = ({ characte
                     {t('sheet.weapons')}
                   </div>
                   <div className="text-stone-800">
-                    {proficiencies.weapons.join(', ')}
+                    {proficiencies.weapons}
                   </div>
                 </div>
               )}
@@ -584,7 +609,7 @@ export const DnD5eCharacterView: React.FC<DnD5eCharacterViewProps> = ({ characte
                     {t('sheet.tools')}
                   </div>
                   <div className="text-stone-800">
-                    {proficiencies.tools.join(', ')}
+                    {proficiencies.tools}
                   </div>
                 </div>
               )}
@@ -596,7 +621,7 @@ export const DnD5eCharacterView: React.FC<DnD5eCharacterViewProps> = ({ characte
                     {t('sheet.languages')}
                   </div>
                   <div className="text-stone-800">
-                    {proficiencies.languages.join(', ')}
+                    {proficiencies.languages}
                   </div>
                 </div>
               )}
@@ -604,15 +629,28 @@ export const DnD5eCharacterView: React.FC<DnD5eCharacterViewProps> = ({ characte
           </div>
         )}
 
-      {/* Features & Traits */}
-      {data.featuresAndTraits && data.featuresAndTraits.length > 0 && (
+      {/* Features & Traits.
+          Read through the shared reader so a sheet still holding plain strings,
+          or the separate field the built-in templates used to write, displays
+          the same as a migrated one. Most entries are a bare name — a
+          description only appears when there is one. */}
+      {features.length > 0 && (
         <div className="bg-stone-50 border border-stone-200 rounded-lg p-4">
           <h3 className="text-lg font-semibold text-stone-800 mb-3">{t('sheet.featuresAndTraits')}</h3>
           <ul className="space-y-2">
-            {data.featuresAndTraits.map((feature: string, idx: number) => (
+            {features.map((feature, idx) => (
               <li key={idx} className="flex items-start space-x-2">
                 <span className="text-red-600 mt-1">•</span>
-                <span className="text-stone-700">{feature}</span>
+                <div className="text-stone-700">
+                  <span className={feature.description ? 'font-semibold' : undefined}>
+                    {feature.name}
+                  </span>
+                  {feature.description && (
+                    <p className="text-sm text-stone-600 whitespace-pre-wrap mt-0.5">
+                      {feature.description}
+                    </p>
+                  )}
+                </div>
               </li>
             ))}
           </ul>

@@ -14,6 +14,7 @@ import {
   getPasswordStrength,
 } from '@/utils/validation';
 import Button from '@/components/ui/Button';
+import { apiErrorMessage, apiErrorStatus, apiErrorText } from '@/utils/errors';
 
 export default function RegisterPage() {
   const { t } = useTranslation(['auth', 'common']);
@@ -115,15 +116,16 @@ export default function RegisterPage() {
         return;
       }
       // On success, user is logged in and will be redirected by auth check above
-    } catch (err: any) {
+    } catch (err) {
       // Handle specific error messages
-      if (err.response?.status === 403) {
-        setError(err.response.data.message || t('auth:register.errorDisabled'));
-      } else if (err.response?.data?.error) {
-        setError(err.response.data.error);
-      } else if (err.response?.status === 409) {
+      const serverError = apiErrorText(err);
+      if (apiErrorStatus(err) === 403) {
+        setError(apiErrorMessage(err) || t('auth:register.errorDisabled'));
+      } else if (serverError) {
+        setError(serverError);
+      } else if (apiErrorStatus(err) === 409) {
         setError(t('auth:register.errorAccountExists'));
-      } else if (err.response?.status === 429) {
+      } else if (apiErrorStatus(err) === 429) {
         setError(t('auth:register.errorTooManyAttempts'));
       } else {
         setError(t('auth:register.errorGeneric'));

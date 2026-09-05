@@ -5,11 +5,15 @@
  */
 
 import { useState, useEffect } from 'react';
+import { useTranslation } from 'react-i18next';
 import { useCampaign } from '@/contexts/CampaignContext';
 import { useWebSocket } from '@/contexts/WebSocketContext';
+import { useGameStore } from '@/stores/gameStore';
+import { characterTokenDrag, characterTokenRequest } from '@/utils/characterTokenDrag';
 import { useAuth } from '@/contexts/AuthContext';
 import { api } from '@/services/api';
-import { Users, Crown, Gamepad2, Eye, Edit, UserPlus, X, Minus, Plus, Dices } from 'lucide-react';
+import { Users, Crown, Gamepad2, Eye, Edit, X, Minus, Plus, Dices, MapPin } from 'lucide-react';
+import type { LucideIcon } from 'lucide-react';
 import type { CharacterHpInfo } from '@/utils/characterHp';
 import CharacterSheetViewerModal from '../character/CharacterSheetViewerModal';
 import CharacterSheetEditorModal from '../character/CharacterSheetEditorModal';
@@ -17,26 +21,12 @@ import CharacterContextMenu from './CharacterContextMenu';
 import CharacterRollPicker from './CharacterRollPicker';
 import Toast, { useToast } from '@/components/Toast';
 import ConfirmDialog from '@/components/common/ConfirmDialog';
-import type { CampaignRole, GameSystem, Character } from '@/types';
-
-interface RosterMember {
-  userId: string;
-  userName: string;
-  userAvatar: string | null;
-  role: CampaignRole;
-  joinedAt: string;
-  characters: {
-    id: string;
-    name: string;
-    tokenImageUrl: string | null;
-    gameSystem: GameSystem | null;
-    userId: string;
-    hp: CharacterHpInfo | null;
-  }[];
-}
+import type { CampaignRole, GameSystem, Character, RosterMember } from '@/types';
+import { TokenLayer } from '@/types';
 
 export default function CampaignRoster() {
-  const { campaign, userRole, characterHpCache, seedCharacterHpCache } = useCampaign();
+  const { t } = useTranslation('campaign');
+  const { campaign, currentMap, userRole, characterHpCache, seedCharacterHpCache } = useCampaign();
   const { socket } = useWebSocket();
   const { user } = useAuth();
   const { toast, showToast, hideToast } = useToast();
@@ -61,7 +51,7 @@ export default function CampaignRoster() {
       setRoster(response.roster);
 
       // Seed the HP cache in CampaignContext so MapCanvas can render player HP bars
-      const hpEntries = response.roster.flatMap((m: RosterMember) =>
+      const hpEntries = response.roster.flatMap((m) =>
         m.characters.map((c) => ({ id: c.id, hp: c.hp }))
       );
       seedCharacterHpCache(hpEntries);
@@ -168,7 +158,7 @@ export default function CampaignRoster() {
         setEditorCharacter(character);
       } catch (error) {
         console.error('Error fetching character for editing:', error);
-        showToast('Failed to load character for editing', 'error');
+        showToast(t('roster.loadCharacterForEditFailed'), 'error');
       }
     }
   };
@@ -188,8 +178,49 @@ export default function CampaignRoster() {
     socket?.emitCharacterHpUpdate({ characterId, delta });
   };
 
-  const handleReassignCharacter = async () => {
-    showToast('Character reassignment is not yet available', 'info');
+  /**
+   * Put a character on the map from the roster.
+   *
+   * The drag works too, but only if you can see both the roster and the map at
+   * once — and it is the only way there was, so a DM with the roster open over
+   * the map had no way to place anyone. Placed at the centre of the map, the
+   * same as the creature library, because a menu click has no cursor position.
+   */
+  const handleAddTokenToMap = async () => {
+    if (!contextMenu || !campaign || !currentMap) return;
+    const character = roster
+      .flatMap((member) => member.characters)
+      .find((c) => c.id === contextMenu.characterId);
+    handleCloseContextMenu();
+    if (!character) return;
+
+    const position = {
+      x: Math.floor(currentMap.width / 2),
+      y: Math.floor(currentMap.height / 2),
+    };
+
+    try {
+      const result = await api.addToken(
+        campaign.id,
+        currentMap.id,
+        characterTokenRequest(
+          characterTokenDrag({
+            id: character.id,
+            name: character.name,
+            tokenImageUrl: character.tokenImageUrl,
+            userId: character.userId,
+          }),
+          position,
+          TokenLayer.TOKEN,
+        ),
+      );
+      useGameStore.getState().addToken(result.token);
+      socket?.emitMapChange(currentMap.id);
+      showToast(t('roster.placedOnMap', { name: character.name }), 'success');
+    } catch (error) {
+      console.error('Failed to place character on map:', error);
+      showToast(t('roster.placeOnMapFailed'), 'error');
+    }
   };
 
   const handleRemoveFromCampaign = () => {
@@ -205,7 +236,7 @@ export default function CampaignRoster() {
       await fetchRoster();
     } catch (error) {
       console.error('Error removing character from campaign:', error);
-      showToast('Failed to remove character from campaign', 'error');
+      showToast(t('roster.removeCharacterFailed'), 'error');
     }
   };
 
@@ -268,16 +299,16 @@ export default function CampaignRoster() {
       {/* Header */}
       <div className="flex items-center gap-2 pb-2 border-b border-moss-green/20">
         <Users className="w-5 h-5 text-brand-ink" />
-        <h3 className="text-lg font-semibold text-brand-ink">Campaign Roster</h3>
+        <h3 className="text-lg font-semibold text-brand-ink">{t('roster.title')}</h3>
       </div>
 
       {loading ? (
         <div className="text-center py-4">
-          <p className="text-sm text-warm-gray">Loading roster...</p>
+          <p className="text-sm text-warm-gray">{t('roster.loadingRoster')}</p>
         </div>
       ) : roster.length === 0 ? (
         <div className="text-center py-4">
-          <p className="text-sm text-warm-gray">No members yet</p>
+          <p className="text-sm text-warm-gray">{t('roster.noMembers')}</p>
         </div>
       ) : (
         <div className="space-y-4">
@@ -285,7 +316,7 @@ export default function CampaignRoster() {
           {groupedRoster.DM.length > 0 && (
             <div>
               <h4 className="text-xs font-semibold text-brand-ink/60 uppercase tracking-wider mb-2">
-                Dungeon Master
+                {t('roster.dungeonMaster')}
               </h4>
               <div className="space-y-2">
                 {groupedRoster.DM.map((member) => (
@@ -299,7 +330,7 @@ export default function CampaignRoster() {
           {groupedRoster.PLAYER.length > 0 && (
             <div>
               <h4 className="text-xs font-semibold text-brand-ink/60 uppercase tracking-wider mb-2">
-                Players
+                {t('roster.players')}
               </h4>
               <div className="space-y-2">
                 {groupedRoster.PLAYER.map((member) => (
@@ -313,7 +344,7 @@ export default function CampaignRoster() {
           {groupedRoster.SPECTATOR.length > 0 && (
             <div>
               <h4 className="text-xs font-semibold text-brand-ink/60 uppercase tracking-wider mb-2">
-                Spectators
+                {t('roster.spectators')}
               </h4>
               <div className="space-y-2">
                 {groupedRoster.SPECTATOR.map((member) => (
@@ -344,13 +375,13 @@ export default function CampaignRoster() {
           items={[
             {
               icon: Eye,
-              label: 'View Character Sheet',
+              label: t('roster.viewCharacterSheet'),
               onClick: handleViewCharacterSheet,
               visible: true,
             },
             {
               icon: Dices,
-              label: 'Roll...',
+              label: t('roster.rollEllipsis'),
               onClick: () => {
                 setRollPicker({ x: contextMenu.x, y: contextMenu.y, characterId: contextMenu.characterId });
                 handleCloseContextMenu();
@@ -359,19 +390,19 @@ export default function CampaignRoster() {
             },
             {
               icon: Edit,
-              label: 'Edit Character Sheet',
+              label: t('roster.editCharacterSheet'),
               onClick: handleEditCharacterSheet,
               visible: user.id === contextMenu.characterUserId || userMembership.role === 'DM',
             },
             {
-              icon: UserPlus,
-              label: 'Reassign to Player',
-              onClick: handleReassignCharacter,
-              visible: userMembership.role === 'DM',
+              icon: MapPin,
+              label: t('roster.addToMap'),
+              onClick: handleAddTokenToMap,
+              visible: userMembership.role === 'DM' && !!currentMap,
             },
             {
               icon: X,
-              label: 'Remove from Campaign',
+              label: t('roster.removeFromCampaign'),
               onClick: handleRemoveFromCampaign,
               visible: user.id === contextMenu.characterUserId || userMembership.role === 'DM',
               className: 'text-danger-ink hover:bg-danger/10',
@@ -407,9 +438,9 @@ export default function CampaignRoster() {
 
       <ConfirmDialog
         isOpen={confirmRemove}
-        title="Remove from Campaign"
-        message="Are you sure you want to remove this character from the campaign?"
-        confirmLabel="Remove"
+        title={t('roster.removeFromCampaign')}
+        message={t('removeCharacterConfirm')}
+        confirmLabel={t('roster.remove')}
         variant="danger"
         onConfirm={handleConfirmRemove}
         onCancel={() => setConfirmRemove(false)}
@@ -420,7 +451,7 @@ export default function CampaignRoster() {
 
 interface MemberCardProps {
   member: RosterMember;
-  getRoleIcon: (role: CampaignRole) => any;
+  getRoleIcon: (role: CampaignRole) => LucideIcon;
   getSystemBadgeColor: (gameSystem: GameSystem | null) => string;
   getSystemShortName: (gameSystem: GameSystem | null) => string;
   onCharacterClick: (characterId: string) => void;
@@ -434,6 +465,7 @@ interface MemberCardProps {
 }
 
 function MemberCard({ member, getRoleIcon, getSystemBadgeColor, getSystemShortName, onCharacterClick, onCharacterRightClick, isDM, currentUserId, characterHpCache, onHpDelta, isOnline }: MemberCardProps) {
+  const { t } = useTranslation('campaign');
   const RoleIcon = getRoleIcon(member.role);
 
   return (
@@ -462,8 +494,8 @@ function MemberCard({ member, getRoleIcon, getSystemBadgeColor, getSystemShortNa
           </div>
           <span
             role="img"
-            aria-label={`${member.userName} is ${isOnline ? 'in session' : 'not in session'}`}
-            title={isOnline ? 'In session' : 'Not in session'}
+            aria-label={isOnline ? t('roster.presenceAriaOnline', { name: member.userName }) : t('roster.presenceAriaOffline', { name: member.userName })}
+            title={isOnline ? t('roster.inSession') : t('roster.notInSession')}
             className={`absolute -bottom-0.5 -right-0.5 w-2.5 h-2.5 rounded-full border border-parchment ${
               isOnline ? 'bg-success' : 'bg-stone-gray/50'
             }`}
@@ -475,7 +507,7 @@ function MemberCard({ member, getRoleIcon, getSystemBadgeColor, getSystemShortNa
           </p>
           {member.characters.length > 0 && (
             <p className="text-xs text-warm-gray">
-              {member.characters.length} {member.characters.length === 1 ? 'character' : 'characters'}
+              {t('roster.characterCount', { count: member.characters.length })}
             </p>
           )}
         </div>
@@ -485,7 +517,12 @@ function MemberCard({ member, getRoleIcon, getSystemBadgeColor, getSystemShortNa
       {member.characters.length > 0 && (
         <div className="ml-9 space-y-1">
           {member.characters.map((character) => {
-            const canDrag = isDM && !!character.tokenImageUrl;
+            // The DM may place any character. This used to also require a token
+            // picture, which meant the handle only existed on characters that
+            // had one — and the handle was the picture, so a character without
+            // one could not be dragged at all. The canvas draws an imageless
+            // token as a lettered circle, so there is nothing to gate on.
+            const canDrag = isDM;
             return (
             <div
               key={character.id}
@@ -494,27 +531,26 @@ function MemberCard({ member, getRoleIcon, getSystemBadgeColor, getSystemShortNa
               <div
                 onClick={() => onCharacterClick(character.id)}
                 onContextMenu={(e) => onCharacterRightClick(e, character.id, character.userId)}
-                className="flex items-center gap-2 p-1.5 cursor-pointer"
+                draggable={canDrag}
+                onDragStart={canDrag ? (e) => {
+                  e.dataTransfer.effectAllowed = 'copy';
+                  e.dataTransfer.setData('text/plain', JSON.stringify(characterTokenDrag({
+                    id: character.id,
+                    name: character.name,
+                    tokenImageUrl: character.tokenImageUrl,
+                    userId: character.userId,
+                  })));
+                } : undefined}
+                title={canDrag ? `Drag ${character.name} onto the map` : undefined}
+                className={`flex items-center gap-2 p-1.5 cursor-pointer ${canDrag ? 'active:cursor-grabbing' : ''}`}
               >
               {/* Character Token — draggable by DM onto map */}
               {character.tokenImageUrl ? (
                 <img
                   src={character.tokenImageUrl}
                   alt={character.name}
-                  draggable={canDrag}
-                  onDragStart={canDrag ? (e) => {
-                    e.stopPropagation();
-                    e.dataTransfer.effectAllowed = 'copy';
-                    e.dataTransfer.setData('text/plain', JSON.stringify({
-                      type: 'character-token',
-                      characterId: character.id,
-                      name: character.name,
-                      imageUrl: character.tokenImageUrl,
-                      userId: character.userId,
-                    }));
-                  } : undefined}
-                  className={`w-6 h-6 rounded-full object-cover border border-moss-green/20 ${canDrag ? 'cursor-grab active:cursor-grabbing' : ''}`}
-                  title={canDrag ? `Drag ${character.name} onto the map` : character.name}
+                  className="w-6 h-6 rounded-full object-cover border border-moss-green/20"
+                  title={canDrag ? t('roster.dragCharacterOntoMap', { name: character.name }) : character.name}
                 />
               ) : (
                 <div className="w-6 h-6 rounded-full bg-moss-green/10 border border-moss-green/20 flex items-center justify-center">
@@ -572,12 +608,12 @@ function MemberCard({ member, getRoleIcon, getSystemBadgeColor, getSystemShortNa
                       <button
                         onClick={() => onHpDelta(character.id, -5)}
                         className="flex items-center justify-center w-5 h-5 rounded text-xs font-bold text-stone-gray bg-black/10 hover:bg-danger/10 hover:text-danger-ink transition-colors"
-                        title="−5 HP"
+                        title={t('roster.hpMinus5')}
                       >−5</button>
                       <button
                         onClick={() => onHpDelta(character.id, -1)}
                         className="flex items-center justify-center w-5 h-5 rounded text-stone-gray bg-black/10 hover:bg-danger/10 hover:text-danger-ink transition-colors"
-                        title="−1 HP"
+                        title={t('roster.hpMinus1')}
                       ><Minus className="w-3 h-3" /></button>
                       <span className="flex-1 text-center text-xs font-semibold text-stone-gray">
                         {hp.current}<span className="font-normal text-warm-gray">/{hp.max}</span>
@@ -586,12 +622,12 @@ function MemberCard({ member, getRoleIcon, getSystemBadgeColor, getSystemShortNa
                       <button
                         onClick={() => onHpDelta(character.id, 1)}
                         className="flex items-center justify-center w-5 h-5 rounded text-stone-gray bg-black/10 hover:bg-success/10 hover:text-success-ink transition-colors"
-                        title="+1 HP"
+                        title={t('roster.hpPlus1')}
                       ><Plus className="w-3 h-3" /></button>
                       <button
                         onClick={() => onHpDelta(character.id, 5)}
                         className="flex items-center justify-center w-5 h-5 rounded text-xs font-bold text-stone-gray bg-black/10 hover:bg-success/10 hover:text-success-ink transition-colors"
-                        title="+5 HP"
+                        title={t('roster.hpPlus5')}
                       >+5</button>
                     </div>
                   )}

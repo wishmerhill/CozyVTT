@@ -50,11 +50,7 @@ import { extractAssetId } from '@/utils/assetUrl';
 // always one the proficiency-bonus table recognises.
 const CR_OPTIONS = CHALLENGE_RATINGS;
 
-const SOURCE_FILTERS = [
-  { value: '', label: 'All Sources' },
-  { value: 'srd', label: 'SRD (Official)' },
-  { value: 'custom', label: 'Custom / Homebrew' },
-];
+const SOURCE_FILTER_VALUES = ['', 'srd', 'custom'] as const;
 
 // ============================================
 // Props
@@ -407,8 +403,10 @@ export default function CreatureLibrary({ isOpen, onClose }: CreatureLibraryProp
                       onChange={(e) => setSourceFilter(e.target.value)}
                       className="input-cozy text-xs flex-1"
                     >
-                      {SOURCE_FILTERS.map((f) => (
-                        <option key={f.value} value={f.value}>{f.label}</option>
+                      {SOURCE_FILTER_VALUES.map((v) => (
+                        <option key={v} value={v}>
+                          {v === '' ? t('creature.sourceFilterAll') : v === 'srd' ? t('creature.sourceFilterSrd') : t('creature.sourceFilterCustom')}
+                        </option>
                       ))}
                     </select>
                     <select
@@ -425,13 +423,13 @@ export default function CreatureLibrary({ isOpen, onClose }: CreatureLibraryProp
                   {/* Only meaningful when the campaign has a system to match. */}
                   {campaign?.gameSystem && (
                     <select
-                      aria-label="Game system filter"
+                      aria-label={t('creature.gameSystemFilterAria')}
                       value={matchGameSystem ? 'campaign' : 'all'}
                       onChange={(e) => setMatchGameSystem(e.target.value === 'campaign')}
                       className="input-cozy text-xs w-full"
                     >
                       <option value="campaign">
-                        {GAME_SYSTEM_SHORT_LABELS[campaign.gameSystem]} only (this campaign)
+                        {t('creature.onlySystemCampaign', { system: GAME_SYSTEM_SHORT_LABELS[campaign.gameSystem] })}
                       </option>
                       <option value="all">{t('creature.allGameSystems')}</option>
                     </select>
@@ -445,7 +443,7 @@ export default function CreatureLibrary({ isOpen, onClose }: CreatureLibraryProp
                   onClick={() => setShowCreateForm(true)}
                   className="flex items-center gap-1 text-xs text-brand-ink hover:text-brand-ink/80 transition-colors"
                 >
-                  <Plus className="w-3 h-3" /> Create Custom
+                  <Plus className="w-3 h-3" /> {t('creature.createCustom')}
                 </button>
                 {/* The label names the system it imports: this seeds the D&D 5e
                     bestiary whatever the campaign's system, which was not
@@ -457,9 +455,9 @@ export default function CreatureLibrary({ isOpen, onClose }: CreatureLibraryProp
                     className="flex items-center gap-1 text-xs text-info-ink hover:text-info-ink transition-colors"
                   >
                     {isSeeding ? (
-                      <><Loader2 className="w-3 h-3 animate-spin" /> Seeding...</>
+                      <><Loader2 className="w-3 h-3 animate-spin" /> {t('creature.seeding')}</>
                     ) : (
-                      <><BookOpen className="w-3 h-3" /> Import D&amp;D 5e SRD</>
+                      <><BookOpen className="w-3 h-3" /> {t('creature.importSrdShort')}</>
                     )}
                   </button>
                 )}
@@ -488,7 +486,7 @@ export default function CreatureLibrary({ isOpen, onClose }: CreatureLibraryProp
                   <div className="flex items-center gap-2">
                     <Star className="w-3.5 h-3.5 text-warning-ink fill-amber-500" />
                     <span className="text-xs font-semibold text-stone-gray uppercase tracking-wide">
-                      Favorites
+                      {t('creature.favorites')}
                     </span>
                     <span className="text-[10px] text-stone-gray/50">({favoriteCreatures.length})</span>
                   </div>
@@ -503,7 +501,7 @@ export default function CreatureLibrary({ isOpen, onClose }: CreatureLibraryProp
                     {isLoadingFavorites ? (
                       <div className="flex items-center gap-2 text-stone-gray text-xs py-3 px-4">
                         <Loader2 className="w-3 h-3 animate-spin" />
-                        Loading favorites...
+                        {t('creature.loadingFavorites')}
                       </div>
                     ) : (
                       favoriteCreatures.map((creature) => (
@@ -524,7 +522,7 @@ export default function CreatureLibrary({ isOpen, onClose }: CreatureLibraryProp
                       ))
                     )}
                     <p className="text-[9px] text-stone-gray/40 px-4 py-1.5 italic">
-                      Favorites are per campaign
+                      {t('creature.favoritesPerCampaign')}
                     </p>
                   </div>
                 )}
@@ -536,34 +534,34 @@ export default function CreatureLibrary({ isOpen, onClose }: CreatureLibraryProp
               {isLoading && creatures.length === 0 ? (
                 <div className="flex items-center justify-center py-12 text-stone-gray">
                   <Loader2 className="w-5 h-5 animate-spin mr-2" />
-                  Loading creatures...
+                  {t('creature.loadingCreatures')}
                 </div>
               ) : creatures.length === 0 ? (
                 <div className="text-center py-12 px-6">
                   <BookOpen className="w-8 h-8 text-brand-ink/30 mx-auto mb-2" />
                   <p className="text-sm text-stone-gray/70">
-                    {searchQuery ? 'No creatures match your search.' : 'No creatures in the library yet.'}
+                    {searchQuery ? t('creature.noSearchMatch') : t('creature.noCreaturesInLibrary')}
                   </p>
                   {/* The likeliest reason a non-D&D campaign looks empty: only
                       D&D 5e ships SRD content, and the library defaults to this
                       campaign's system. Say so rather than looking broken. */}
                   {!searchQuery && matchGameSystem && campaign?.gameSystem && (srdCount ?? 0) > 0 && (
                     <p className="mt-2 text-xs text-stone-gray/60">
-                      Showing {GAME_SYSTEM_SHORT_LABELS[campaign.gameSystem]} creatures only.{' '}
+                      {t('creature.showingSystemOnly', { system: GAME_SYSTEM_SHORT_LABELS[campaign.gameSystem] })}{' '}
                       <button
                         type="button"
                         onClick={() => { setMatchGameSystem(false); setShowFilters(true); }}
                         className="underline hover:text-brand-ink"
                       >
-                        Show all game systems
+                        {t('creature.showAllSystems')}
                       </button>{' '}
-                      to browse creatures from other systems.
+                      {t('creature.toBrowseOtherSystems')}
                     </p>
                   )}
                   {!searchQuery && srdCount === 0 && (
                     <div className="mt-4 space-y-2">
                       <p className="text-xs text-stone-gray/60">
-                        Import ~320 official D&D 5e SRD creatures with full stat blocks.
+                        {t('creature.srdImportHint')}
                       </p>
                       <Button
                         onClick={handleSeedSrd}
@@ -571,19 +569,19 @@ export default function CreatureLibrary({ isOpen, onClose }: CreatureLibraryProp
                         className="text-xs py-2 px-4"
                       >
                         {isSeeding ? (
-                          <><Loader2 className="w-3 h-3 animate-spin inline mr-1" /> Importing from Open5e...</>
+                          <><Loader2 className="w-3 h-3 animate-spin inline mr-1" /> {t('creature.importingFromOpen5e')}</>
                         ) : (
-                          'Import D&D 5e SRD Creatures'
+                          t('creature.importSrdLong')
                         )}
                       </Button>
                       <p className="text-[10px] text-stone-gray/40">
-                        SRD content used under the Open Game License v1.0a.
+                        {t('creature.srdLicenseNote')}
                       </p>
                     </div>
                   )}
                   {!searchQuery && (srdCount === null || srdCount > 0) && (
                     <p className="text-xs text-stone-gray/50 mt-1">
-                      Try adjusting your filters, or create a custom creature.
+                      {t('creature.adjustFiltersHint')}
                     </p>
                   )}
                 </div>
@@ -617,10 +615,10 @@ export default function CreatureLibrary({ isOpen, onClose }: CreatureLibraryProp
                         {isLoading ? (
                           <>
                             <Loader2 className="w-3 h-3 animate-spin inline mr-1" />
-                            Loading...
+                            {t('chat.loading')}
                           </>
                         ) : (
-                          `Load More (${creatures.length} of ${total})`
+                          t('creature.loadMoreCount', { count: creatures.length, total })
                         )}
                       </Button>
                     </div>
@@ -689,6 +687,7 @@ function CreatureRow({
   onToggleFavorite,
   onEdit,
 }: CreatureRowProps) {
+  const { t } = useTranslation('campaign');
   const statBlock = creature.statBlock as NpcStatBlock;
 
   return (
@@ -730,14 +729,14 @@ function CreatureRow({
             ? 'bg-info/10 text-info-ink'
             : 'bg-moss-green/10 text-brand-ink'
         }`}>
-          {creature.source === 'srd' ? 'SRD' : 'Custom'}
+          {creature.source === 'srd' ? 'SRD' : t('creature.customBadge')}
         </span>
 
         {/* Favorite star */}
         <button
           onClick={(e) => { e.stopPropagation(); onToggleFavorite(); }}
           className="flex-shrink-0 p-0.5 rounded hover:bg-warning/10 transition-colors"
-          title={isFavorite ? 'Remove from favorites' : 'Add to favorites'}
+          title={isFavorite ? t('creature.removeFromFavorites') : t('creature.addToFavorites')}
         >
           <Star className={`w-3.5 h-3.5 transition-colors ${
             isFavorite
@@ -769,30 +768,30 @@ function CreatureRow({
               ) : (
                 <MapPin className="w-3 h-3" />
               )}
-              {isPlacing ? 'Placing...' : 'Place on Map'}
+              {isPlacing ? t('creature.placing') : t('creature.placeOnMap')}
             </button>
             {creature.source !== 'srd' && (
               <button
                 onClick={onEdit}
                 className="flex items-center gap-1 px-3 py-1.5 text-xs rounded-cozy border border-moss-green/20 text-brand-ink hover:bg-moss-green/10 transition-colors"
-                title="Edit creature"
+                title={t('creature.editCreatureTitle')}
               >
-                <Pencil className="w-3 h-3" /> Edit
+                <Pencil className="w-3 h-3" /> {t('creature.editAction')}
               </button>
             )}
             <button
               onClick={onDuplicate}
               className="flex items-center gap-1 px-3 py-1.5 text-xs rounded-cozy border border-moss-green/20 text-stone-gray hover:border-moss-green/40 transition-colors"
-              title="Duplicate as custom creature"
+              title={t('creature.duplicateTitle')}
             >
-              <Copy className="w-3 h-3" /> Duplicate
+              <Copy className="w-3 h-3" /> {t('creature.duplicateAction')}
             </button>
             {creature.source !== 'srd' && (
               <button
                 onClick={onDelete}
                 className="flex items-center gap-1 px-3 py-1.5 text-xs rounded-cozy border border-danger/20 text-danger-ink hover:bg-danger/10 transition-colors"
               >
-                <Trash2 className="w-3 h-3" /> Delete
+                <Trash2 className="w-3 h-3" /> {t('creature.deleteAction')}
               </button>
             )}
           </div>
@@ -824,6 +823,7 @@ function NameDescriptionList({
   items: Array<{ name: string; description: string }>;
   onChange: (items: Array<{ name: string; description: string }>) => void;
 }) {
+  const { t } = useTranslation('campaign');
   return (
     <div className="space-y-1.5">
       <div className="flex items-center justify-between">
@@ -833,7 +833,7 @@ function NameDescriptionList({
           onClick={() => onChange([...items, { name: '', description: '' }])}
           className="text-[10px] text-brand-ink hover:text-brand-ink/80 flex items-center gap-0.5"
         >
-          <Plus className="w-2.5 h-2.5" /> Add
+          <Plus className="w-2.5 h-2.5" /> {t('creature.form.addItem')}
         </button>
       </div>
       {items.map((item, i) => (
@@ -847,7 +847,7 @@ function NameDescriptionList({
                 updated[i] = { ...updated[i], name: e.target.value };
                 onChange(updated);
               }}
-              placeholder="Name"
+              placeholder={t('creature.form.itemNamePlaceholder')}
               className="input-cozy w-full text-[11px]"
             />
             <textarea
@@ -857,7 +857,7 @@ function NameDescriptionList({
                 updated[i] = { ...updated[i], description: e.target.value };
                 onChange(updated);
               }}
-              placeholder="Description"
+              placeholder={t('description')}
               rows={2}
               className="input-cozy w-full text-[11px] resize-y"
             />
@@ -866,7 +866,7 @@ function NameDescriptionList({
             type="button"
             onClick={() => onChange(items.filter((_, idx) => idx !== i))}
             className="p-1 text-danger-ink hover:text-danger-ink flex-shrink-0 mt-0.5"
-            title="Remove"
+            title={t('creature.form.removeItem')}
           >
             <Trash2 className="w-3 h-3" />
           </button>
@@ -890,6 +890,7 @@ interface CreatureFormProps {
 }
 
 function CreatureForm({ campaignId, gameSystem, editingCreature, onCreated, onEdited, onCancel }: CreatureFormProps) {
+  const { t } = useTranslation('campaign');
   const isEdit = !!editingCreature;
   const sb = editingCreature?.statBlock;
 
@@ -962,7 +963,7 @@ function CreatureForm({ campaignId, gameSystem, editingCreature, onCreated, onEd
 
   const handleSubmit = async () => {
     if (!name.trim()) {
-      setFormError('Name is required');
+      setFormError(t('creature.form.nameRequired'));
       return;
     }
     setIsSubmitting(true);
@@ -1013,7 +1014,7 @@ function CreatureForm({ campaignId, gameSystem, editingCreature, onCreated, onEd
         onCreated(creature);
       }
     } catch {
-      setFormError(isEdit ? 'Failed to update creature' : 'Failed to create creature');
+      setFormError(isEdit ? t('creature.errors.updateFailed') : t('creature.errors.createFailed'));
     } finally {
       setIsSubmitting(false);
     }
@@ -1023,7 +1024,7 @@ function CreatureForm({ campaignId, gameSystem, editingCreature, onCreated, onEd
     <div className="border-t border-moss-green/20 bg-parchment/40 p-4 space-y-3 max-h-[70vh] overflow-y-auto">
       <div className="flex items-center justify-between">
         <h3 className="text-xs font-semibold text-brand-ink uppercase tracking-wide">
-          {isEdit ? 'Edit Creature' : 'Create Custom Creature'}
+          {isEdit ? t('creature.form.editHeading') : t('creature.form.createHeading')}
         </h3>
         <button onClick={onCancel} className="text-stone-gray hover:text-stone-gray/80 p-0.5">
           <X className="w-4 h-4" />
@@ -1036,12 +1037,12 @@ function CreatureForm({ campaignId, gameSystem, editingCreature, onCreated, onEd
 
       {/* Name */}
       <div>
-        <label className="text-[10px] text-stone-gray block mb-0.5">Name *</label>
+        <label className="text-[10px] text-stone-gray block mb-0.5">{t('tokenTemplate.nameLabel')}</label>
         <input
           type="text"
           value={name}
           onChange={(e) => setName(e.target.value)}
-          placeholder="e.g. Goblin Boss"
+          placeholder={t('creature.form.namePlaceholder')}
           className="input-cozy w-full text-sm"
         />
       </div>
@@ -1050,35 +1051,35 @@ function CreatureForm({ campaignId, gameSystem, editingCreature, onCreated, onEd
           Uploads go through the same endpoint as before, so magic-byte
           validation and the campaign scope are unchanged. */}
       <AssetPicker
-        label="Token Image"
+        label={t('npcEditor.tokenImageHeading')}
         type={AssetType.TOKEN}
         campaignId={campaignId}
         selectedAssetId={extractAssetId(imageUrl)}
         onSelect={(asset) => setImageUrl(asset ? asset.id : '')}
         columns={5}
-        searchPlaceholder="Search token images..."
-        emptyMessage="No token images yet. Upload one to get started."
+        searchPlaceholder={t('creature.form.tokenImageSearchPlaceholder')}
+        emptyMessage={t('creature.form.tokenImageEmptyMessage')}
       />
 
       {/* Type & Alignment */}
       <div className="grid grid-cols-2 gap-2">
         <div>
-          <label className="text-[10px] text-stone-gray block mb-0.5">Creature Type</label>
+          <label className="text-[10px] text-stone-gray block mb-0.5">{t('creature.form.creatureTypeLabel')}</label>
           <input
             type="text"
             value={creatureType}
             onChange={(e) => setCreatureType(e.target.value)}
-            placeholder="Small humanoid"
+            placeholder={t('creature.form.creatureTypePlaceholder')}
             className="input-cozy w-full text-xs"
           />
         </div>
         <div>
-          <label className="text-[10px] text-stone-gray block mb-0.5">Alignment</label>
+          <label className="text-[10px] text-stone-gray block mb-0.5">{t('creature.form.alignmentLabel')}</label>
           <input
             type="text"
             value={alignment}
             onChange={(e) => setAlignment(e.target.value)}
-            placeholder="neutral evil"
+            placeholder={t('creature.form.alignmentPlaceholder')}
             className="input-cozy w-full text-xs"
           />
         </div>
@@ -1087,7 +1088,7 @@ function CreatureForm({ campaignId, gameSystem, editingCreature, onCreated, onEd
       {/* AC, CR, HP, Speed */}
       <div className="grid grid-cols-4 gap-2">
         <div>
-          <label className="text-[10px] text-stone-gray block mb-0.5">AC</label>
+          <label className="text-[10px] text-stone-gray block mb-0.5">{t('creature.form.acLabel')}</label>
           <input
             type="number"
             value={ac}
@@ -1097,7 +1098,7 @@ function CreatureForm({ campaignId, gameSystem, editingCreature, onCreated, onEd
         </div>
         {isPf2e ? (
           <div>
-            <label className="text-[10px] text-stone-gray block mb-0.5" htmlFor="creature-level">Level</label>
+            <label className="text-[10px] text-stone-gray block mb-0.5" htmlFor="creature-level">{t('creature.form.levelLabel')}</label>
             <input
               id="creature-level"
               type="number"
@@ -1114,7 +1115,7 @@ function CreatureForm({ campaignId, gameSystem, editingCreature, onCreated, onEd
           </div>
         ) : (
           <div>
-            <label className="text-[10px] text-stone-gray block mb-0.5" htmlFor="creature-cr">CR</label>
+            <label className="text-[10px] text-stone-gray block mb-0.5" htmlFor="creature-cr">{t('creature.cr')}</label>
             {/* A select, not free text: CR determines the proficiency bonus, so a
                 typo would silently change every derived save and skill. */}
             <select
@@ -1131,7 +1132,7 @@ function CreatureForm({ campaignId, gameSystem, editingCreature, onCreated, onEd
           </div>
         )}
         <div>
-          <label className="text-[10px] text-stone-gray block mb-0.5">HP Max</label>
+          <label className="text-[10px] text-stone-gray block mb-0.5">{t('npcEditor.maxHpPlaceholder')}</label>
           <input
             type="number"
             value={hpMax}
@@ -1141,7 +1142,7 @@ function CreatureForm({ campaignId, gameSystem, editingCreature, onCreated, onEd
           />
         </div>
         <div>
-          <label className="text-[10px] text-stone-gray block mb-0.5">Speed</label>
+          <label className="text-[10px] text-stone-gray block mb-0.5">{t('creature.form.speedLabel')}</label>
           <input
             type="text"
             value={speed}
@@ -1153,7 +1154,7 @@ function CreatureForm({ campaignId, gameSystem, editingCreature, onCreated, onEd
 
       {/* Ability scores */}
       <div>
-        <label className="text-[10px] text-stone-gray block mb-0.5">Ability Scores</label>
+        <label className="text-[10px] text-stone-gray block mb-0.5">{t('creature.form.abilityScoresLabel')}</label>
         <div className="grid grid-cols-6 gap-1.5">
           {([
             ['STR', str, setStr],
@@ -1180,7 +1181,7 @@ function CreatureForm({ campaignId, gameSystem, editingCreature, onCreated, onEd
           form had no fields for these at all, which is why editing a duplicated
           SRD creature used to delete them. */}
       <div>
-        <label className="text-[10px] text-stone-gray block mb-1">Saving Throws &amp; Skills</label>
+        <label className="text-[10px] text-stone-gray block mb-1">{t('creature.form.savingThrowsSkillsLabel')}</label>
         {isPf2e ? (
           <Pf2eProficiencyEditor
             statBlock={workingStatBlock}
@@ -1208,12 +1209,12 @@ function CreatureForm({ campaignId, gameSystem, editingCreature, onCreated, onEd
 
       {/* Disposition */}
       <div>
-        <label className="text-[10px] text-stone-gray block mb-0.5">Disposition</label>
+        <label className="text-[10px] text-stone-gray block mb-0.5">{t('token.disposition')}</label>
         <div className="flex gap-2">
           {([
-            { d: 'friendly' as const, label: 'Friendly', color: 'teal' },
-            { d: 'neutral' as const, label: 'Neutral', color: 'amber' },
-            { d: 'hostile' as const, label: 'Hostile', color: 'red' },
+            { d: 'friendly' as const, label: t('token.friendly'), color: 'teal' },
+            { d: 'neutral' as const, label: t('token.neutral'), color: 'amber' },
+            { d: 'hostile' as const, label: t('token.hostile'), color: 'red' },
           ]).map(({ d, label, color }) => (
             <button
               key={d}
@@ -1241,7 +1242,7 @@ function CreatureForm({ campaignId, gameSystem, editingCreature, onCreated, onEd
           className="flex items-center gap-1 text-[10px] text-brand-ink hover:text-brand-ink/80 font-medium"
         >
           {showAdvanced ? <ChevronDown className="w-3 h-3" /> : <ChevronRight className="w-3 h-3" />}
-          Advanced Stats
+          {t('creature.form.advancedStatsLabel')}
         </button>
 
         {showAdvanced && (
@@ -1249,37 +1250,37 @@ function CreatureForm({ campaignId, gameSystem, editingCreature, onCreated, onEd
             {/* Text fields — damage/conditions/senses/languages */}
             <div className="grid grid-cols-2 gap-2">
               <div>
-                <label className="text-[10px] text-stone-gray block mb-0.5">Damage Vulnerabilities</label>
-                <input type="text" value={damageVulnerabilities} onChange={(e) => setDamageVulnerabilities(e.target.value)} placeholder="fire" className="input-cozy w-full text-[11px]" />
+                <label className="text-[10px] text-stone-gray block mb-0.5">{t('creature.form.damageVulnerabilitiesLabel')}</label>
+                <input type="text" value={damageVulnerabilities} onChange={(e) => setDamageVulnerabilities(e.target.value)} placeholder={t('creature.form.damageVulnerabilitiesPlaceholder')} className="input-cozy w-full text-[11px]" />
               </div>
               <div>
-                <label className="text-[10px] text-stone-gray block mb-0.5">Damage Resistances</label>
-                <input type="text" value={damageResistances} onChange={(e) => setDamageResistances(e.target.value)} placeholder="cold, bludgeoning" className="input-cozy w-full text-[11px]" />
+                <label className="text-[10px] text-stone-gray block mb-0.5">{t('creature.form.damageResistancesLabel')}</label>
+                <input type="text" value={damageResistances} onChange={(e) => setDamageResistances(e.target.value)} placeholder={t('creature.form.damageResistancesPlaceholder')} className="input-cozy w-full text-[11px]" />
               </div>
               <div>
-                <label className="text-[10px] text-stone-gray block mb-0.5">Damage Immunities</label>
-                <input type="text" value={damageImmunities} onChange={(e) => setDamageImmunities(e.target.value)} placeholder="poison" className="input-cozy w-full text-[11px]" />
+                <label className="text-[10px] text-stone-gray block mb-0.5">{t('creature.form.damageImmunitiesLabel')}</label>
+                <input type="text" value={damageImmunities} onChange={(e) => setDamageImmunities(e.target.value)} placeholder={t('creature.form.damageImmunitiesPlaceholder')} className="input-cozy w-full text-[11px]" />
               </div>
               <div>
-                <label className="text-[10px] text-stone-gray block mb-0.5">Condition Immunities</label>
-                <input type="text" value={conditionImmunities} onChange={(e) => setConditionImmunities(e.target.value)} placeholder="charmed, frightened" className="input-cozy w-full text-[11px]" />
+                <label className="text-[10px] text-stone-gray block mb-0.5">{t('creature.form.conditionImmunitiesLabel')}</label>
+                <input type="text" value={conditionImmunities} onChange={(e) => setConditionImmunities(e.target.value)} placeholder={t('creature.form.conditionImmunitiesPlaceholder')} className="input-cozy w-full text-[11px]" />
               </div>
               <div>
-                <label className="text-[10px] text-stone-gray block mb-0.5">Senses</label>
-                <input type="text" value={senses} onChange={(e) => setSenses(e.target.value)} placeholder="darkvision 60 ft." className="input-cozy w-full text-[11px]" />
+                <label className="text-[10px] text-stone-gray block mb-0.5">{t('creature.form.sensesLabel')}</label>
+                <input type="text" value={senses} onChange={(e) => setSenses(e.target.value)} placeholder={t('creature.form.sensesPlaceholder')} className="input-cozy w-full text-[11px]" />
               </div>
               <div>
-                <label className="text-[10px] text-stone-gray block mb-0.5">Languages</label>
-                <input type="text" value={languages} onChange={(e) => setLanguages(e.target.value)} placeholder="Common, Goblin" className="input-cozy w-full text-[11px]" />
+                <label className="text-[10px] text-stone-gray block mb-0.5">{t('creature.form.languagesLabel')}</label>
+                <input type="text" value={languages} onChange={(e) => setLanguages(e.target.value)} placeholder={t('creature.form.languagesPlaceholder')} className="input-cozy w-full text-[11px]" />
               </div>
             </div>
 
             {/* Name/description lists — traits, actions, etc. */}
-            <NameDescriptionList label="Traits" items={traits} onChange={setTraits} />
-            <NameDescriptionList label="Actions" items={actions} onChange={setActions} />
-            <NameDescriptionList label="Bonus Actions" items={bonusActions} onChange={setBonusActions} />
-            <NameDescriptionList label="Reactions" items={reactions} onChange={setReactions} />
-            <NameDescriptionList label="Legendary Actions" items={legendaryActions} onChange={setLegendaryActions} />
+            <NameDescriptionList label={t('creature.form.traitsLabel')} items={traits} onChange={setTraits} />
+            <NameDescriptionList label={t('creature.form.actionsLabel')} items={actions} onChange={setActions} />
+            <NameDescriptionList label={t('creature.form.bonusActionsLabel')} items={bonusActions} onChange={setBonusActions} />
+            <NameDescriptionList label={t('creature.form.reactionsLabel')} items={reactions} onChange={setReactions} />
+            <NameDescriptionList label={t('creature.form.legendaryActionsLabel')} items={legendaryActions} onChange={setLegendaryActions} />
           </div>
         )}
       </div>
@@ -1294,20 +1295,20 @@ function CreatureForm({ campaignId, gameSystem, editingCreature, onCreated, onEd
           {isSubmitting ? (
             <>
               <Loader2 className="w-3 h-3 animate-spin inline mr-1" />
-              {isEdit ? 'Saving...' : 'Creating...'}
+              {isEdit ? t('common:saving') : t('common:creating')}
             </>
           ) : (
-            isEdit ? 'Save Changes' : 'Create Creature'
+            isEdit ? t('common:saveChanges') : t('creature.add')
           )}
         </Button>
         <Button onClick={onCancel} variant="secondary" className="text-xs py-2 px-4">
-          Cancel
+          {t('common:cancel')}
         </Button>
       </div>
 
       {!isEdit && (
         <p className="text-[9px] text-stone-gray/50">
-          Expand "Advanced Stats" to add traits, actions, and detailed stat block fields.
+          {t('creature.form.advancedStatsHint')}
         </p>
       )}
     </div>

@@ -6,6 +6,7 @@
  */
 
 import React, { useEffect, useMemo, useRef, useState } from 'react';
+import { useTranslation } from 'react-i18next';
 import { Dices, X, ChevronDown, Plus } from 'lucide-react';
 import type { Token } from '@/types';
 import {
@@ -37,17 +38,18 @@ type RollMode = 'normal' | 'advantage' | 'disadvantage';
 // Mode labels
 // ---------------------------------------------------------------------------
 
-const MODE_LABELS: Record<string, Record<RollMode, string>> = {
-  DND_5E:            { normal: 'Normal', advantage: 'Advantage', disadvantage: 'Disadvantage' },
-  PATHFINDER_2E:     { normal: 'Normal', advantage: 'Fortune',   disadvantage: 'Misfortune' },
+function getModeLabels(gameSystem: string | null, t: (key: string) => string): Record<RollMode, string> {
+  const normal = t('character:sheet.normal');
+  if (gameSystem === 'PATHFINDER_2E') {
+    return { normal, advantage: t('rollPicker.fortune'), disadvantage: t('rollPicker.misfortune') };
+  }
   // Listed for parity with CharacterRollPicker, which has always had it. The
   // selector is hidden for d100 systems anyway (systemSupportsAdvantage), but
   // the omission made the two pickers look like they disagreed.
-  CALL_OF_CTHULHU_7E: { normal: 'Normal', advantage: 'Bonus Die', disadvantage: 'Penalty Die' },
-};
-
-function getModeLabels(gameSystem: string | null): Record<RollMode, string> {
-  return MODE_LABELS[gameSystem ?? ''] ?? { normal: 'Normal', advantage: 'Advantage', disadvantage: 'Disadvantage' };
+  if (gameSystem === 'CALL_OF_CTHULHU_7E') {
+    return { normal, advantage: t('rollPicker.bonusDie'), disadvantage: t('rollPicker.penaltyDie') };
+  }
+  return { normal, advantage: t('character:sheet.advantage'), disadvantage: t('character:sheet.disadvantage') };
 }
 
 function systemSupportsAdvantage(gameSystem: string | null): boolean {
@@ -97,6 +99,7 @@ export default function NpcRollPicker({
   anchorX,
   anchorY,
 }: NpcRollPickerProps) {
+  const { t } = useTranslation(['campaign', 'character']);
   const pickerRef = useRef<HTMLDivElement>(null);
   const [pos, setPos] = useState<{ x: number; y: number } | null>(null);
 
@@ -117,7 +120,7 @@ export default function NpcRollPicker({
   );
 
   const hasAdvantage = systemSupportsAdvantage(gameSystem ?? null);
-  const modeLabels = getModeLabels(gameSystem ?? null);
+  const modeLabels = getModeLabels(gameSystem ?? null, t);
 
   const hasAnyRolls =
     rolls.abilities.length > 0 ||
@@ -165,11 +168,11 @@ export default function NpcRollPicker({
 
   const handleCustomRoll = () => {
     const expr = customExpr.trim();
-    if (!expr) { setCustomError('Enter a dice expression'); return; }
-    if (!isValidDiceExpression(expr)) { setCustomError('Invalid dice expression'); return; }
+    if (!expr) { setCustomError(t('npcRollPicker.errorEmptyExpression')); return; }
+    if (!isValidDiceExpression(expr)) { setCustomError(t('npcRollPicker.errorInvalidExpression')); return; }
     const purpose = customLabel.trim()
       ? `${token.name}: ${customLabel.trim()}`
-      : `${token.name}: Custom Roll`;
+      : `${token.name}: ${t('npcRollPicker.customRoll')}`;
     onRoll(expr, purpose);
     onClose();
   };
@@ -192,7 +195,7 @@ export default function NpcRollPicker({
         <div className="flex items-center gap-2">
           <Dices className="w-4 h-4 text-brand-ink" />
           <span className="text-sm font-semibold text-stone-gray truncate">
-            Roll for {token.name}
+            {t('rollPicker.rollFor', { name: token.name })}
           </span>
         </div>
         <button onClick={onClose} className="p-0.5 rounded hover:bg-moss-green/10 transition-colors">
@@ -203,7 +206,7 @@ export default function NpcRollPicker({
       {/* Roll Mode Selector (d20 systems only) */}
       {hasAdvantage && hasAnyRolls && (
         <div className="px-3 py-2 border-b border-moss-green/10 bg-parchment/30">
-          <div className="text-xs text-warm-gray mb-1">Roll mode</div>
+          <div className="text-xs text-warm-gray mb-1">{t('rollPicker.rollMode')}</div>
           <div className="relative">
             <button
               onClick={() => setModeOpen((o) => !o)}
@@ -237,18 +240,18 @@ export default function NpcRollPicker({
       <div className="overflow-y-auto" style={{ maxHeight: 380 }}>
         {!hasAnyRolls && (
           <div className="px-3 py-4 text-sm text-warm-gray text-center">
-            No stat block on this token.
+            {t('npcRollPicker.noStatBlock')}
             <br />
-            <span className="text-xs">Add one via Edit Token, or use a custom roll below.</span>
+            <span className="text-xs">{t('npcRollPicker.addStatBlockHint')}</span>
           </div>
         )}
 
         {hasAnyRolls && (
           <div className="divide-y divide-moss-green/10">
-            <Section title="Abilities"     rolls={rolls.abilities}    onRoll={handleRollOption} />
-            <Section title="Saving Throws" rolls={rolls.savingThrows} onRoll={handleRollOption} />
-            <Section title="Skills"        rolls={rolls.skills}       onRoll={handleRollOption} />
-            <Section title="Combat"        rolls={rolls.combat}       onRoll={handleRollOption} />
+            <Section title={t('rollPicker.abilities')}       rolls={rolls.abilities}    onRoll={handleRollOption} />
+            <Section title={t('character:sheet.savingThrows')} rolls={rolls.savingThrows} onRoll={handleRollOption} />
+            <Section title={t('character:sheet.skillList')}    rolls={rolls.skills}       onRoll={handleRollOption} />
+            <Section title={t('character:sheet.combat')}       rolls={rolls.combat}       onRoll={handleRollOption} />
           </div>
         )}
       </div>
@@ -256,7 +259,7 @@ export default function NpcRollPicker({
       {/* Free-form Custom Roll */}
       <div className="border-t border-moss-green/20 bg-parchment/30 px-3 py-2 space-y-1.5">
         <div className="text-xs font-semibold uppercase tracking-wider text-warm-gray">
-          Custom Roll
+          {t('npcRollPicker.customRoll')}
         </div>
         <div className="flex gap-1.5">
           <input
@@ -264,15 +267,15 @@ export default function NpcRollPicker({
             value={customExpr}
             onChange={(e) => { setCustomExpr(e.target.value); setCustomError(null); }}
             onKeyDown={(e) => e.key === 'Enter' && handleCustomRoll()}
-            placeholder="e.g. 2d6+3"
+            placeholder={t('npcRollPicker.customExprPlaceholder')}
             className="input-cozy flex-1 text-xs py-1"
           />
           <button
             onClick={handleCustomRoll}
             className="flex items-center gap-1 px-2 py-1 text-xs rounded-cozy bg-moss-green/10 text-brand-ink border border-moss-green/30 hover:bg-moss-green/20 transition-colors"
-            title="Roll"
+            title={t('dice.roll')}
           >
-            <Plus className="w-3 h-3" /> Roll
+            <Plus className="w-3 h-3" /> {t('dice.roll')}
           </button>
         </div>
         <input
@@ -280,7 +283,7 @@ export default function NpcRollPicker({
           value={customLabel}
           onChange={(e) => setCustomLabel(e.target.value)}
           onKeyDown={(e) => e.key === 'Enter' && handleCustomRoll()}
-          placeholder="Label (optional, e.g. Fireball Damage)"
+          placeholder={t('npcRollPicker.customLabelPlaceholder')}
           className="input-cozy w-full text-xs py-1"
         />
         {customError && (

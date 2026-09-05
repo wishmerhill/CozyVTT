@@ -6,6 +6,7 @@
  */
 
 import React, { useState, useEffect, useRef } from 'react';
+import { useTranslation } from 'react-i18next';
 import {
   User,
   Target,
@@ -18,6 +19,35 @@ import {
   Palette,
 } from 'lucide-react';
 import { Character } from '../../../types';
+import type { CharacterData } from '../../../types';
+import type {
+  CoC7eCharacterData,
+  CoC7eCharacteristics,
+  CoC7eDerivedStats,
+  CoC7eSkills,
+  CoC7eCombat,
+  CoC7eWealth,
+  CoC7eBackstory,
+  CoC7eAppearance,
+  CoC7eConditions,
+  SheetChrome,
+} from '../../../types/game-systems';
+import { apiErrorMessage } from '@/utils/errors';
+
+/**
+ * The sheet as this editor holds it: `CoC7eCharacterData` plus `themeColor`,
+ * the header colour chosen in the editor. It is not part of the game system but
+ * it is saved with the sheet, because `PUT /characters/:id` validates the body
+ * and stores it as sent rather than storing Zod's parsed output.
+ */
+interface CoC7eFormData extends CoC7eCharacterData, SheetChrome {
+  /**
+   * Not declared by `CoC7eCharacterData`, which keeps the investigator's name
+   * at the top level as `investigatorName`. Only the token-upload filename
+   * reads this, so a sheet without it simply falls back to "Investigator".
+   */
+  personalDetails?: { name?: string };
+}
 import { CharacteristicBlock } from './components/CharacteristicBlock';
 import { orderedCharacteristics } from './characteristics';
 import { SanityTracker } from './components/SanityTracker';
@@ -30,7 +60,7 @@ import NumberField from '../../ui/NumberField';
 interface CallOfCthulhu7eCharacterEditorProps {
   onDirtyChange?: (dirty: boolean) => void;
   character: Character;
-  onSave: (data: any, showToast?: boolean, tokenImageUrl?: string) => Promise<void>;
+  onSave: (data: CharacterData, showToast?: boolean, tokenImageUrl?: string) => Promise<void>;
   onCancel: () => void;
 }
 
@@ -38,36 +68,62 @@ type TabId = 'overview' | 'skills' | 'combat' | 'possessions' | 'backstory';
 
 interface Tab {
   id: TabId;
-  label: string;
+  /** i18n key for the tab label, resolved with `t()` at render time. */
+  labelKey: string;
   icon: React.ElementType;
 }
 
 const TABS: Tab[] = [
-  { id: 'overview', label: 'Overview', icon: User },
-  { id: 'skills', label: 'Skills', icon: Target },
-  { id: 'combat', label: 'Combat', icon: Swords },
-  { id: 'possessions', label: 'Possessions', icon: Package },
-  { id: 'backstory', label: 'Backstory', icon: BookText },
+  { id: 'overview', labelKey: 'sheet.coc7e.tabs.overview', icon: User },
+  { id: 'skills', labelKey: 'sheet.coc7e.tabs.skills', icon: Target },
+  { id: 'combat', labelKey: 'sheet.combat', icon: Swords },
+  { id: 'possessions', labelKey: 'sheet.coc7e.tabs.possessions', icon: Package },
+  { id: 'backstory', labelKey: 'sheet.backstory', icon: BookText },
 ];
 
-// Call of Cthulhu color presets - Vintage 1920s aesthetic (same as view)
+// Call of Cthulhu color presets - Vintage 1920s aesthetic (same as view).
+// `name` doubles as the value persisted to character.themeColor and looked
+// up via `.find()`, so it stays a stable English identifier; `labelKey`
+// resolves the translated label shown in the picker UI.
 const COLOR_PRESETS = [
-  { name: 'Dark Forest', from: 'from-green-900', to: 'to-green-800', accent: 'green-800', border: 'amber-600', hex: '#14532d' },
-  { name: 'Noir Shadow', from: 'from-slate-900', to: 'to-slate-800', accent: 'slate-800', border: 'amber-500', hex: '#0f172a' },
-  { name: 'Deep Sepia', from: 'from-sepia-900', to: 'to-sepia-800', accent: 'sepia-800', border: 'sepia-400', hex: '#2E2419' },
-  { name: 'Midnight Blue', from: 'from-blue-950', to: 'to-blue-900', accent: 'blue-900', border: 'amber-600', hex: '#172554' },
-  { name: 'Burgundy Wine', from: 'from-red-950', to: 'to-red-900', accent: 'red-900', border: 'amber-500', hex: '#450a0a' },
-  { name: 'Victorian Purple', from: 'from-purple-950', to: 'to-purple-900', accent: 'purple-900', border: 'amber-600', hex: '#3b0764' },
-  { name: 'Emerald Mist', from: 'from-emerald-900', to: 'to-emerald-800', accent: 'emerald-800', border: 'amber-600', hex: '#064e3b' },
-  { name: 'Charcoal Gray', from: 'from-gray-900', to: 'to-gray-800', accent: 'gray-800', border: 'amber-500', hex: '#111827' },
-  { name: 'Teal Shadow', from: 'from-teal-950', to: 'to-teal-900', accent: 'teal-900', border: 'amber-600', hex: '#042f2e' },
-  { name: 'Amber Dusk', from: 'from-amber-900', to: 'to-amber-800', accent: 'amber-800', border: 'amber-400', hex: '#78350f' },
+  { name: 'Dark Forest', labelKey: 'darkForest', from: 'from-green-900', to: 'to-green-800', accent: 'green-800', border: 'amber-600', hex: '#14532d' },
+  { name: 'Noir Shadow', labelKey: 'noirShadow', from: 'from-slate-900', to: 'to-slate-800', accent: 'slate-800', border: 'amber-500', hex: '#0f172a' },
+  { name: 'Deep Sepia', labelKey: 'deepSepia', from: 'from-sepia-900', to: 'to-sepia-800', accent: 'sepia-800', border: 'sepia-400', hex: '#2E2419' },
+  { name: 'Midnight Blue', labelKey: 'midnightBlue', from: 'from-blue-950', to: 'to-blue-900', accent: 'blue-900', border: 'amber-600', hex: '#172554' },
+  { name: 'Burgundy Wine', labelKey: 'burgundyWine', from: 'from-red-950', to: 'to-red-900', accent: 'red-900', border: 'amber-500', hex: '#450a0a' },
+  { name: 'Victorian Purple', labelKey: 'victorianPurple', from: 'from-purple-950', to: 'to-purple-900', accent: 'purple-900', border: 'amber-600', hex: '#3b0764' },
+  { name: 'Emerald Mist', labelKey: 'emeraldMist', from: 'from-emerald-900', to: 'to-emerald-800', accent: 'emerald-800', border: 'amber-600', hex: '#064e3b' },
+  { name: 'Charcoal Gray', labelKey: 'charcoalGray', from: 'from-gray-900', to: 'to-gray-800', accent: 'gray-800', border: 'amber-500', hex: '#111827' },
+  { name: 'Teal Shadow', labelKey: 'tealShadow', from: 'from-teal-950', to: 'to-teal-900', accent: 'teal-900', border: 'amber-600', hex: '#042f2e' },
+  { name: 'Amber Dusk', labelKey: 'amberDusk', from: 'from-amber-900', to: 'to-amber-800', accent: 'amber-800', border: 'amber-400', hex: '#78350f' },
 ];
 
 /**
  * Calculate damage bonus and build from STR + SIZ
  * Based on Call of Cthulhu 7e rules
  */
+/**
+ * The five conditions the sheet tracks, in the order the rulebook introduces
+ * them: the three that follow from hit points, then the two from Sanity.
+ */
+const COC_CONDITIONS: { key: keyof CoC7eConditions; label: string }[] = [
+  { key: 'majorWound', label: 'Major Wound' },
+  { key: 'dying', label: 'Dying' },
+  { key: 'unconscious', label: 'Unconscious' },
+  { key: 'temporaryInsanity', label: 'Temporary Insanity' },
+  { key: 'indefiniteInsanity', label: 'Indefinite Insanity' },
+];
+
+/** The appearance fields the official sheet records, in its own order. */
+const COC_APPEARANCE_FIELDS: { key: keyof CoC7eAppearance; label: string }[] = [
+  { key: 'age', label: 'Age' },
+  { key: 'height', label: 'Height' },
+  { key: 'weight', label: 'Weight' },
+  { key: 'eyes', label: 'Eyes' },
+  { key: 'hair', label: 'Hair' },
+  { key: 'skin', label: 'Skin' },
+];
+
 const calculateDamageBonusAndBuild = (str: number, siz: number): { damageBonus: string; build: number } => {
   const total = str + siz;
   if (total <= 64) return { damageBonus: '-2', build: -2 };
@@ -115,6 +171,7 @@ export const CallOfCthulhu7eCharacterEditor: React.FC<CallOfCthulhu7eCharacterEd
   onCancel,
   onDirtyChange,
 }) => {
+  const { t } = useTranslation(['character', 'common']);
   const [activeTab, setActiveTab] = useState<TabId>('overview');
   const [isSaving, setIsSaving] = useState(false);
   const [themeColor, setThemeColor] = useState(COLOR_PRESETS[0]);
@@ -123,21 +180,24 @@ export const CallOfCthulhu7eCharacterEditor: React.FC<CallOfCthulhu7eCharacterEd
   const [showColorPicker, setShowColorPicker] = useState(false);
   const [errors, setErrors] = useState<Record<string, string>>({});
 
-  const data = character.data as any;
+  const data = character.data as CoC7eFormData;
 
   // Form state
-  const [formData, setFormData] = useState<any>(() => ({
+  const [formData, setFormData] = useState<CoC7eFormData>(() => ({
     ...data,
-    characteristics: data.characteristics || {},
-    derivedStats: data.derivedStats || {},
-    skills: data.skills || {},
-    combat: data.combat || { weapons: [] },
+    // TODO(typing): `{}` has none of the keys these types require, and the
+    // effects and inputs below read straight off them. Pre-existing; the casts
+    // keep the behaviour for a sheet stored without one exactly as it was.
+    characteristics: (data.characteristics || {}) as CoC7eCharacteristics,
+    derivedStats: (data.derivedStats || {}) as CoC7eDerivedStats,
+    skills: (data.skills || {}) as CoC7eSkills,
+    combat: (data.combat || { weapons: [] }) as CoC7eCombat,
     possessions: data.possessions || [],
-    wealth: data.wealth || {},
-    backstory: data.backstory || {},
-    appearance: data.appearance || {},
+    wealth: (data.wealth || {}) as CoC7eWealth,
+    backstory: (data.backstory || {}) as CoC7eBackstory,
+    appearance: (data.appearance || {}) as CoC7eAppearance,
     contacts: data.contacts || [],
-    conditions: data.conditions || {},
+    conditions: (data.conditions || {}) as CoC7eConditions,
   }));
 
   // Report the first edit up to whoever is hosting this sheet, so leaving with
@@ -198,9 +258,9 @@ export const CallOfCthulhu7eCharacterEditor: React.FC<CallOfCthulhu7eCharacterEd
     // Rebuild each entry rather than spreading one level and assigning into it:
     // a shallow copy shares the nested characteristic objects with state, so the
     // old version mutated `formData` in place.
-    const updated: Record<string, any> = {};
+    const updated: Partial<CoC7eCharacteristics> = {};
     let changed = false;
-    Object.keys(formData.characteristics).forEach((char) => {
+    (Object.keys(formData.characteristics) as (keyof CoC7eCharacteristics)[]).forEach((char) => {
       const entry = formData.characteristics[char];
       const regular = entry.regular || 0;
       const half = Math.floor(regular / 2);
@@ -212,7 +272,7 @@ export const CallOfCthulhu7eCharacterEditor: React.FC<CallOfCthulhu7eCharacterEd
     // Skip the update when the derived columns already agree, so simply opening
     // a sheet does not queue a state change.
     if (changed) {
-      setFormData((prev: any) => ({ ...prev, characteristics: updated }));
+      setFormData((prev) => ({ ...prev, characteristics: updated as CoC7eCharacteristics }));
     }
   }, [
     formData.characteristics?.STR?.regular,
@@ -257,7 +317,7 @@ export const CallOfCthulhu7eCharacterEditor: React.FC<CallOfCthulhu7eCharacterEd
       const cthulhuMythos = formData.skills?.cthulhuMythos?.currentValue || 0;
       const maxSanity = 99 - cthulhuMythos;
 
-      setFormData((prev: any) => ({
+      setFormData((prev) => ({
         ...prev,
         derivedStats: {
           ...prev.derivedStats,
@@ -292,16 +352,16 @@ export const CallOfCthulhu7eCharacterEditor: React.FC<CallOfCthulhu7eCharacterEd
 
       // Update dodge skill to match derived dodge
       if (formData.skills?.dodge) {
-        setFormData((prev: any) => ({
+        setFormData((prev) => ({
           ...prev,
           skills: {
             ...prev.skills,
             dodge: {
-              ...prev.skills.dodge,
+              ...prev.skills!.dodge,
               baseValue: dodge,
               currentValue: dodge,
             },
-          },
+          } as CoC7eSkills,
         }));
       }
     }
@@ -368,9 +428,9 @@ export const CallOfCthulhu7eCharacterEditor: React.FC<CallOfCthulhu7eCharacterEd
 
           // Store the new token URL to pass separately to onSave
           newTokenImageUrl = `/api/assets/tokens/${assetId}`;
-        } catch (uploadError: any) {
+        } catch (uploadError: unknown) {
           console.error('Error uploading token image:', uploadError);
-          setErrors({ ...errors, tokenImage: uploadError.response?.data?.message || 'Failed to upload token image' });
+          setErrors({ ...errors, tokenImage: apiErrorMessage(uploadError) || t('editor.errors.tokenUploadFailed') });
           setIsSaving(false);
           return;
         }
@@ -431,7 +491,7 @@ export const CallOfCthulhu7eCharacterEditor: React.FC<CallOfCthulhu7eCharacterEd
         <button
           onClick={() => setShowColorPicker(!showColorPicker)}
           className="absolute top-4 right-4 p-2 bg-white/20 hover:bg-white/30 rounded-lg transition-colors"
-          title="Change theme color"
+          title={t('sheet.themeColor.changeTitle')}
         >
           <Palette className="w-5 h-5" />
         </button>
@@ -439,7 +499,7 @@ export const CallOfCthulhu7eCharacterEditor: React.FC<CallOfCthulhu7eCharacterEd
         {/* Color Picker Dropdown */}
         {showColorPicker && (
           <div className="absolute top-16 right-4 bg-white text-stone-800 rounded-lg shadow-xl p-4 z-10 border-2 border-stone-200 max-w-md">
-            <h4 className="font-semibold mb-3">Theme Color</h4>
+            <h4 className="font-semibold mb-3">{t('sheet.themeColor.heading')}</h4>
 
             {/* Preset Colors */}
             <div className="grid grid-cols-3 gap-2 mb-4">
@@ -454,14 +514,14 @@ export const CallOfCthulhu7eCharacterEditor: React.FC<CallOfCthulhu7eCharacterEd
                   }`}
                 >
                   <div className={`w-full h-6 rounded mb-1 bg-gradient-to-r ${color.from} ${color.to}`} />
-                  <div className="text-xs">{color.name}</div>
+                  <div className="text-xs">{t(`sheet.coc7e.colorPresets.${color.labelKey}`)}</div>
                 </button>
               ))}
             </div>
 
             {/* Custom Color Section */}
             <div className="border-t pt-4 space-y-3">
-              <h5 className="text-sm font-semibold text-stone-700">Custom Color</h5>
+              <h5 className="text-sm font-semibold text-stone-700">{t('sheet.themeColor.customHeading')}</h5>
 
               <div className="flex items-center space-x-2">
                 {/* Native Color Picker */}
@@ -470,7 +530,7 @@ export const CallOfCthulhu7eCharacterEditor: React.FC<CallOfCthulhu7eCharacterEd
                   value={customColorHex || '#14532d'}
                   onChange={(e) => handleCustomColorChange(e.target.value)}
                   className="w-12 h-12 rounded cursor-pointer border-2 border-stone-300"
-                  title="Pick a custom color"
+                  title={t('sheet.themeColor.pickerTitle')}
                 />
 
                 {/* Hex Code Input */}
@@ -488,7 +548,7 @@ export const CallOfCthulhu7eCharacterEditor: React.FC<CallOfCthulhu7eCharacterEd
                     placeholder="#14532d"
                     className="w-full px-3 py-2 border border-stone-300 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
                   />
-                  <div className="text-xs text-stone-500 mt-1">Enter hex code (e.g., #14532d)</div>
+                  <div className="text-xs text-stone-500 mt-1">{t('sheet.themeColor.hexHint')}</div>
                 </div>
               </div>
 
@@ -499,7 +559,7 @@ export const CallOfCthulhu7eCharacterEditor: React.FC<CallOfCthulhu7eCharacterEd
                     className="w-8 h-8 rounded"
                     style={{ background: `linear-gradient(to right, ${customColorHex}, ${customColorHex}dd)` }}
                   />
-                  <span className="text-sm font-medium">Custom: {customColorHex}</span>
+                  <span className="text-sm font-medium">{t('sheet.themeColor.customLabel', { hex: customColorHex })}</span>
                 </div>
               )}
             </div>
@@ -514,14 +574,14 @@ export const CallOfCthulhu7eCharacterEditor: React.FC<CallOfCthulhu7eCharacterEd
           className="px-4 py-2 bg-green-600 hover:bg-green-700 text-white rounded-lg transition-colors flex items-center space-x-2 font-medium shadow-lg disabled:opacity-50"
         >
           <Save className="w-4 h-4" />
-          <span>{isSaving ? 'Saving...' : 'Save'}</span>
+          <span>{isSaving ? t('common:saving') : t('common:save')}</span>
         </button>
         <button
           onClick={onCancel}
           className="px-4 py-2 bg-red-600/80 hover:bg-red-600 text-white rounded-lg transition-colors flex items-center space-x-2 font-medium shadow-lg"
         >
           <X className="w-4 h-4" />
-          <span>Cancel</span>
+          <span>{t('common:cancel')}</span>
         </button>
       </div>
 
@@ -535,7 +595,7 @@ export const CallOfCthulhu7eCharacterEditor: React.FC<CallOfCthulhu7eCharacterEd
             {tokenImagePreview ? (
               <img
                 src={tokenImagePreview}
-                alt={formData.investigatorName || 'Investigator'}
+                alt={formData.investigatorName || t('sheet.unnamedCharacter')}
                 className="w-24 h-24 rounded-full border-4 border-amber-600/50 object-cover shadow-xl group-hover:opacity-75 transition-opacity"
               />
             ) : (
@@ -558,7 +618,7 @@ export const CallOfCthulhu7eCharacterEditor: React.FC<CallOfCthulhu7eCharacterEd
           )}
           {!character.campaignId && (
             <div className="absolute top-full mt-1 text-xs text-amber-200 whitespace-nowrap">
-              Saves as personal token
+              {t('sheet.personalTokenNote')}
             </div>
           )}
         </div>
@@ -570,7 +630,7 @@ export const CallOfCthulhu7eCharacterEditor: React.FC<CallOfCthulhu7eCharacterEd
             type="text"
             value={formData.investigatorName || ''}
             onChange={(e) => setFormData({ ...formData, investigatorName: e.target.value })}
-            placeholder="Investigator Name"
+            placeholder={t('sheet.coc7e.investigatorNamePlaceholder')}
             className="text-3xl font-bold bg-white/10 border-2 border-white/30 rounded px-3 py-1 w-full text-parchment placeholder:text-parchment-light/50 focus:outline-none focus:ring-2 focus:ring-amber-500"
           />
 
@@ -584,14 +644,14 @@ export const CallOfCthulhu7eCharacterEditor: React.FC<CallOfCthulhu7eCharacterEd
               type="text"
               value={formData.occupation || ''}
               onChange={(e) => setFormData({ ...formData, occupation: e.target.value })}
-              placeholder="Occupation"
+              placeholder={t('sheet.coc7e.occupationPlaceholder')}
               className="text-sm bg-white/10 border border-white/30 rounded px-2 py-1 text-parchment placeholder:text-parchment-light/50 focus:outline-none focus:ring-2 focus:ring-amber-500"
             />
             <input
               type="text"
               value={formData.era || ''}
               onChange={(e) => setFormData({ ...formData, era: e.target.value })}
-              placeholder="Era (e.g., 1920s)"
+              placeholder={t('sheet.coc7e.eraPlaceholder')}
               className="text-sm bg-white/10 border border-white/30 rounded px-2 py-1 text-parchment placeholder:text-parchment-light/50 focus:outline-none focus:ring-2 focus:ring-amber-500"
             />
           </div>
@@ -600,7 +660,7 @@ export const CallOfCthulhu7eCharacterEditor: React.FC<CallOfCthulhu7eCharacterEd
             <NumberField
               value={formData.age ?? 0}
               onChange={(v: number) => setFormData({ ...formData, age: v })}
-              placeholder="Age"
+              placeholder={t('sheet.age')}
               className="text-sm bg-white/10 border border-white/30 rounded px-2 py-1 text-parchment placeholder:text-parchment-light/50 focus:outline-none focus:ring-2 focus:ring-amber-500"
               fallback={0}
             />
@@ -608,14 +668,14 @@ export const CallOfCthulhu7eCharacterEditor: React.FC<CallOfCthulhu7eCharacterEd
               type="text"
               value={formData.sex || ''}
               onChange={(e) => setFormData({ ...formData, sex: e.target.value })}
-              placeholder="Sex"
+              placeholder={t('sheet.coc7e.sexPlaceholder')}
               className="text-sm bg-white/10 border border-white/30 rounded px-2 py-1 text-parchment placeholder:text-parchment-light/50 focus:outline-none focus:ring-2 focus:ring-amber-500"
             />
             <input
               type="text"
               value={formData.residence || ''}
               onChange={(e) => setFormData({ ...formData, residence: e.target.value })}
-              placeholder="Residence"
+              placeholder={t('sheet.coc7e.residencePlaceholder')}
               className="text-sm bg-white/10 border border-white/30 rounded px-2 py-1 col-span-2 text-parchment placeholder:text-parchment-light/50 focus:outline-none focus:ring-2 focus:ring-amber-500"
             />
           </div>
@@ -624,7 +684,7 @@ export const CallOfCthulhu7eCharacterEditor: React.FC<CallOfCthulhu7eCharacterEd
             type="text"
             value={formData.birthplace || ''}
             onChange={(e) => setFormData({ ...formData, birthplace: e.target.value })}
-            placeholder="Birthplace"
+            placeholder={t('sheet.coc7e.birthplacePlaceholder')}
             className="text-sm bg-white/10 border border-white/30 rounded px-2 py-1 w-full text-parchment placeholder:text-parchment-light/50 focus:outline-none focus:ring-2 focus:ring-amber-500"
           />
         </div>
@@ -653,7 +713,7 @@ export const CallOfCthulhu7eCharacterEditor: React.FC<CallOfCthulhu7eCharacterEd
             `}
           >
             <Icon className="w-4 h-4" />
-            <span>{tab.label}</span>
+            <span>{t(tab.labelKey)}</span>
           </button>
         );
       })}
@@ -665,15 +725,15 @@ export const CallOfCthulhu7eCharacterEditor: React.FC<CallOfCthulhu7eCharacterEd
     <div className="space-y-6">
       {/* Characteristics */}
       <div>
-        <h3 className="text-lg font-bold text-sepia-900 mb-4">Characteristics</h3>
+        <h3 className="text-lg font-bold text-sepia-900 mb-4">{t('sheet.coc7e.characteristicsHeading')}</h3>
         <div className="grid grid-cols-4 md:grid-cols-8 gap-4">
-          {orderedCharacteristics(formData.characteristics).map((charKey) => (
+          {orderedCharacteristics(formData.characteristics as unknown as Record<string, unknown>).map((charKey) => (
             <CharacteristicBlock
               key={charKey}
               label={charKey}
-              regular={formData.characteristics[charKey].regular}
-              half={formData.characteristics[charKey].half}
-              fifth={formData.characteristics[charKey].fifth}
+              regular={formData.characteristics[charKey as keyof CoC7eCharacteristics].regular}
+              half={formData.characteristics[charKey as keyof CoC7eCharacteristics].half}
+              fifth={formData.characteristics[charKey as keyof CoC7eCharacteristics].fifth}
               editable
               onChange={(value) => {
                 setFormData({
@@ -681,7 +741,7 @@ export const CallOfCthulhu7eCharacterEditor: React.FC<CallOfCthulhu7eCharacterEd
                   characteristics: {
                     ...formData.characteristics,
                     [charKey]: {
-                      ...formData.characteristics[charKey],
+                      ...formData.characteristics[charKey as keyof CoC7eCharacteristics],
                       regular: value,
                     },
                   },
@@ -705,8 +765,8 @@ export const CallOfCthulhu7eCharacterEditor: React.FC<CallOfCthulhu7eCharacterEd
               ...formData,
               derivedStats: {
                 ...formData.derivedStats,
-                sanity: { ...formData.derivedStats.sanity, current: value },
-              },
+                sanity: { ...formData.derivedStats!.sanity, current: value },
+              } as CoC7eDerivedStats,
             });
           },
           starting: (value) => {
@@ -714,8 +774,8 @@ export const CallOfCthulhu7eCharacterEditor: React.FC<CallOfCthulhu7eCharacterEd
               ...formData,
               derivedStats: {
                 ...formData.derivedStats,
-                sanity: { ...formData.derivedStats.sanity, starting: value },
-              },
+                sanity: { ...formData.derivedStats!.sanity, starting: value },
+              } as CoC7eDerivedStats,
             });
           },
         }}
@@ -723,48 +783,48 @@ export const CallOfCthulhu7eCharacterEditor: React.FC<CallOfCthulhu7eCharacterEd
 
       {/* Derived Stats (showing auto-calculated values) */}
       <div>
-        <h3 className="text-lg font-bold text-sepia-900 mb-4">Derived Attributes (Auto-Calculated)</h3>
+        <h3 className="text-lg font-bold text-sepia-900 mb-4">{t('sheet.coc7e.derivedAttributesHeading')}</h3>
         <div className="bg-blue-50 border border-blue-300 rounded-lg p-4 space-y-2 text-sm">
           <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
             <div>
-              <span className="text-blue-700 font-semibold">HP Max:</span>{' '}
+              <span className="text-blue-700 font-semibold">{t('sheet.coc7e.hpMaxLabel')}</span>{' '}
               <span className="text-blue-900">{formData.derivedStats?.hp?.maximum || 0}</span>
               <div className="text-xs text-blue-600">(CON + SIZ) / 10</div>
             </div>
             <div>
-              <span className="text-blue-700 font-semibold">MP Max:</span>{' '}
+              <span className="text-blue-700 font-semibold">{t('sheet.coc7e.mpMaxLabel')}</span>{' '}
               <span className="text-blue-900">{formData.derivedStats?.magicPoints?.maximum || 0}</span>
               <div className="text-xs text-blue-600">POW / 5</div>
             </div>
             <div>
-              <span className="text-blue-700 font-semibold">Dodge:</span>{' '}
+              <span className="text-blue-700 font-semibold">{t('sheet.coc7e.dodgeLabel')}</span>{' '}
               <span className="text-blue-900">{formData.derivedStats?.dodge?.value || 0}%</span>
               <div className="text-xs text-blue-600">DEX / 2</div>
             </div>
             <div>
-              <span className="text-blue-700 font-semibold">Move:</span>{' '}
+              <span className="text-blue-700 font-semibold">{t('sheet.coc7e.moveLabel')}</span>{' '}
               <span className="text-blue-900">{formData.derivedStats?.moveRate || 8}</span>
-              <div className="text-xs text-blue-600">Based on STR/DEX/SIZ/Age</div>
+              <div className="text-xs text-blue-600">{t('sheet.coc7e.moveRateFormula')}</div>
             </div>
             <div>
-              <span className="text-blue-700 font-semibold">DB:</span>{' '}
+              <span className="text-blue-700 font-semibold">{t('sheet.coc7e.dbLabel')}</span>{' '}
               <span className="text-blue-900">{formData.derivedStats?.damageBonus || '0'}</span>
-              <div className="text-xs text-blue-600">From STR + SIZ</div>
+              <div className="text-xs text-blue-600">{t('sheet.coc7e.strSizFormula')}</div>
             </div>
             <div>
-              <span className="text-blue-700 font-semibold">Build:</span>{' '}
+              <span className="text-blue-700 font-semibold">{t('sheet.coc7e.buildLabel')}</span>{' '}
               <span className="text-blue-900">{formData.derivedStats?.build || 0}</span>
-              <div className="text-xs text-blue-600">From STR + SIZ</div>
+              <div className="text-xs text-blue-600">{t('sheet.coc7e.strSizFormula')}</div>
             </div>
             <div>
-              <span className="text-blue-700 font-semibold">Max SAN:</span>{' '}
+              <span className="text-blue-700 font-semibold">{t('sheet.coc7e.maxSanLabel')}</span>{' '}
               <span className="text-blue-900">{formData.derivedStats?.sanity?.maximum || 99}</span>
-              <div className="text-xs text-blue-600">99 - Cthulhu Mythos</div>
+              <div className="text-xs text-blue-600">{t('sheet.coc7e.maxSanityFormula')}</div>
             </div>
             <div>
-              <span className="text-blue-700 font-semibold">Major Wound:</span>{' '}
-              <span className="text-blue-900">{formData.derivedStats?.hp?.majorWoundThreshold || 0} HP</span>
-              <div className="text-xs text-blue-600">HP Max / 2</div>
+              <span className="text-blue-700 font-semibold">{t('sheet.coc7e.majorWoundLabel')}</span>{' '}
+              <span className="text-blue-900">{formData.derivedStats?.hp?.majorWoundThreshold || 0} {t('sheet.coc7e.hpAbbr')}</span>
+              <div className="text-xs text-blue-600">{t('sheet.coc7e.majorWoundFormula')}</div>
             </div>
           </div>
         </div>
@@ -772,10 +832,10 @@ export const CallOfCthulhu7eCharacterEditor: React.FC<CallOfCthulhu7eCharacterEd
 
       {/* Current HP, MP, Luck (editable) */}
       <div>
-        <h3 className="text-lg font-bold text-sepia-900 mb-4">Current Status</h3>
+        <h3 className="text-lg font-bold text-sepia-900 mb-4">{t('sheet.coc7e.currentStatusHeading')}</h3>
         <div className="grid grid-cols-3 gap-4">
           <div className="bg-white border border-sepia-400 rounded-md p-3">
-            <label className="text-xs text-sepia-600 uppercase block mb-1">Current HP</label>
+            <label className="text-xs text-sepia-600 uppercase block mb-1">{t('sheet.coc7e.currentHpLabel')}</label>
             <NumberField
 value={formData.derivedStats?.hp?.current}
               onChange={(v: number) => {
@@ -783,8 +843,8 @@ value={formData.derivedStats?.hp?.current}
                   ...formData,
                   derivedStats: {
                     ...formData.derivedStats,
-                    hp: { ...formData.derivedStats.hp, current: v },
-                  },
+                    hp: { ...formData.derivedStats!.hp, current: v },
+                  } as CoC7eDerivedStats,
                 });
               }}
               className="w-full text-center text-2xl font-bold text-red-700 border-none bg-transparent focus:outline-none focus:ring-2 focus:ring-red-500 rounded"
@@ -792,7 +852,7 @@ value={formData.derivedStats?.hp?.current}
             />
           </div>
           <div className="bg-white border border-sepia-400 rounded-md p-3">
-            <label className="text-xs text-sepia-600 uppercase block mb-1">Current MP</label>
+            <label className="text-xs text-sepia-600 uppercase block mb-1">{t('sheet.coc7e.currentMpLabel')}</label>
             <NumberField
 value={formData.derivedStats?.magicPoints?.current}
               onChange={(v: number) => {
@@ -801,10 +861,10 @@ value={formData.derivedStats?.magicPoints?.current}
                   derivedStats: {
                     ...formData.derivedStats,
                     magicPoints: {
-                      ...formData.derivedStats.magicPoints,
+                      ...formData.derivedStats!.magicPoints,
                       current: v,
                     },
-                  },
+                  } as CoC7eDerivedStats,
                 });
               }}
               className="w-full text-center text-2xl font-bold text-purple-700 border-none bg-transparent focus:outline-none focus:ring-2 focus:ring-purple-500 rounded"
@@ -812,7 +872,7 @@ value={formData.derivedStats?.magicPoints?.current}
             />
           </div>
           <div className="bg-white border border-sepia-400 rounded-md p-3">
-            <label className="text-xs text-sepia-600 uppercase block mb-1">Luck Score</label>
+            <label className="text-xs text-sepia-600 uppercase block mb-1">{t('sheet.coc7e.luckScoreLabel')}</label>
             <NumberField
 value={formData.derivedStats?.luck?.score}
               onChange={(v: number) => {
@@ -820,14 +880,42 @@ value={formData.derivedStats?.luck?.score}
                   ...formData,
                   derivedStats: {
                     ...formData.derivedStats,
-                    luck: { ...formData.derivedStats.luck, score: v },
-                  },
+                    luck: { ...formData.derivedStats!.luck, score: v },
+                  } as CoC7eDerivedStats,
                 });
               }}
               className="w-full text-center text-2xl font-bold text-yellow-700 border-none bg-transparent focus:outline-none focus:ring-2 focus:ring-yellow-500 rounded"
             fallback={0}
             />
           </div>
+        </div>
+      </div>
+
+      {/* Current Conditions.
+          Major Wound, Dying and Unconscious follow from hit points; Temporary
+          and Indefinite Insanity from Sanity. All five are core 7th-edition
+          mechanics and all five were readable on the sheet but had nowhere to
+          be set, so an investigator could never actually be marked as hurt or
+          mad through the app. */}
+      <div className="mt-6">
+        <h3 className="text-lg font-bold text-sepia-900 mb-3">Current Conditions</h3>
+        <div className="bg-white border border-sepia-400 rounded-md p-3 grid grid-cols-2 md:grid-cols-3 gap-3">
+          {COC_CONDITIONS.map(({ key, label }) => (
+            <label key={key} className="flex items-center gap-2 text-sm text-sepia-900 cursor-pointer">
+              <input
+                type="checkbox"
+                checked={formData.conditions?.[key] ?? false}
+                onChange={(e) => {
+                  setFormData({
+                    ...formData,
+                    conditions: { ...formData.conditions, [key]: e.target.checked } as CoC7eConditions,
+                  });
+                }}
+                className="rounded border-sepia-400 text-red-700 focus:ring-red-500"
+              />
+              {label}
+            </label>
+          ))}
         </div>
       </div>
     </div>
@@ -846,10 +934,10 @@ value={formData.derivedStats?.luck?.score}
             skills: {
               ...formData.skills,
               [skillName]: {
-                ...formData.skills[skillName],
+                ...formData.skills![skillName as keyof CoC7eSkills],
                 [field]: value,
               },
-            },
+            } as CoC7eSkills,
           });
         }}
       />
@@ -877,30 +965,30 @@ value={formData.derivedStats?.luck?.score}
     <div className="space-y-6">
       {/* Wealth */}
       <div>
-        <h3 className="text-lg font-bold text-sepia-900 mb-4">Wealth</h3>
+        <h3 className="text-lg font-bold text-sepia-900 mb-4">{t('sheet.coc7e.wealthHeading')}</h3>
         <div className="grid grid-cols-2 gap-4">
           <div>
-            <label className="text-sm text-sepia-700 font-semibold block mb-1">Spending Level</label>
+            <label className="text-sm text-sepia-700 font-semibold block mb-1">{t('sheet.coc7e.spendingLevelLabel')}</label>
             <input
               type="text"
               value={formData.wealth?.spendingLevel || ''}
               onChange={(e) =>
                 setFormData({
                   ...formData,
-                  wealth: { ...formData.wealth, spendingLevel: e.target.value },
+                  wealth: { ...formData.wealth, spendingLevel: e.target.value } as CoC7eWealth,
                 })
               }
-              placeholder="e.g., Average, Wealthy"
+              placeholder={t('sheet.coc7e.spendingLevelPlaceholder')}
               className="w-full bg-white border border-sepia-400 rounded px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-sepia-500"
             />
           </div>
           <div>
-            <label className="text-sm text-sepia-700 font-semibold block mb-1">Cash on Hand</label>
+            <label className="text-sm text-sepia-700 font-semibold block mb-1">{t('sheet.coc7e.cashOnHandLabel')}</label>
             <NumberField
 value={formData.wealth?.cash}
               onChange={(v: number) => setFormData({
                   ...formData,
-                  wealth: { ...formData.wealth, cash: v },
+                  wealth: { ...formData.wealth, cash: v } as CoC7eWealth,
                 })
               }
               className="w-full bg-white border border-sepia-400 rounded px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-sepia-500"
@@ -909,16 +997,16 @@ value={formData.wealth?.cash}
           </div>
         </div>
         <div className="mt-3">
-          <label className="text-sm text-sepia-700 font-semibold block mb-1">Assets</label>
+          <label className="text-sm text-sepia-700 font-semibold block mb-1">{t('sheet.coc7e.assetsLabel')}</label>
           <textarea
             value={formData.wealth?.assets || ''}
             onChange={(e) =>
               setFormData({
                 ...formData,
-                wealth: { ...formData.wealth, assets: e.target.value },
+                wealth: { ...formData.wealth, assets: e.target.value } as CoC7eWealth,
               })
             }
-            placeholder="Describe assets, property, investments..."
+            placeholder={t('sheet.coc7e.assetsPlaceholder')}
             rows={2}
             className="w-full bg-white border border-sepia-400 rounded px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-sepia-500"
           />
@@ -927,11 +1015,11 @@ value={formData.wealth?.cash}
 
       {/* Possessions — free-text field */}
       <div>
-        <h3 className="text-lg font-bold text-sepia-900 mb-4">Possessions & Equipment</h3>
+        <h3 className="text-lg font-bold text-sepia-900 mb-4">{t('sheet.coc7e.possessionsHeading')}</h3>
         <textarea
           value={
             Array.isArray(formData.possessions)
-              ? formData.possessions.map((p: any) => `${p.name}${p.notes ? ` - ${p.notes}` : ''}`).join('\n')
+              ? formData.possessions.map((p) => `${p.name}${p.notes ? ` - ${p.notes}` : ''}`).join('\n')
               : ''
           }
           onChange={(e) => {
@@ -942,7 +1030,7 @@ value={formData.wealth?.cash}
             });
             setFormData({ ...formData, possessions });
           }}
-          placeholder="List possessions, one per line. Format: Item Name - Notes"
+          placeholder={t('sheet.coc7e.possessionsPlaceholder')}
           rows={8}
           className="w-full bg-white border border-sepia-400 rounded px-3 py-2 text-sm font-mono focus:outline-none focus:ring-2 focus:ring-sepia-500"
         />
@@ -952,17 +1040,99 @@ value={formData.wealth?.cash}
 
   // Render Backstory tab
   const renderBackstoryTab = () => (
-    <div>
+    <div className="space-y-6">
       <BackstorySection
         backstory={formData.backstory || {}}
         editable
         onChange={(field, value) => {
           setFormData({
             ...formData,
-            backstory: { ...formData.backstory, [field]: value },
+            backstory: { ...formData.backstory, [field]: value } as CoC7eBackstory,
           });
         }}
       />
+
+      {/* Appearance. Shown on the sheet when reading it, but with no field to
+          type into — so these could only ever be empty. */}
+      <div>
+        <h3 className="text-lg font-bold text-sepia-900 mb-3">Appearance</h3>
+        <div className="bg-white border border-sepia-400 rounded-md p-3 grid grid-cols-2 md:grid-cols-3 gap-3">
+          {COC_APPEARANCE_FIELDS.map(({ key, label }) => (
+            <div key={key}>
+              <label className="text-xs text-sepia-600 uppercase block mb-1">{label}</label>
+              <input
+                type="text"
+                value={formData.appearance?.[key] ?? ''}
+                onChange={(e) => {
+                  setFormData({
+                    ...formData,
+                    appearance: { ...formData.appearance, [key]: e.target.value } as CoC7eAppearance,
+                  });
+                }}
+                className="w-full px-2 py-1 border border-sepia-300 rounded text-sm focus:outline-none focus:ring-2 focus:ring-sepia-500"
+              />
+            </div>
+          ))}
+        </div>
+      </div>
+
+      {/* Cthulhu Mythos rating and the spells the investigator knows. Both are
+          on the official sheet and neither had anywhere to live in the app. */}
+      <div>
+        <h3 className="text-lg font-bold text-sepia-900 mb-3">Spells &amp; Mythos</h3>
+        <div className="bg-white border border-sepia-400 rounded-md p-3 space-y-3">
+          <div>
+            <label className="text-xs text-sepia-600 uppercase block mb-1">Cthulhu Mythos</label>
+            <NumberField
+              value={formData.spellsAndMythos?.cthulhuMythos}
+              min={0}
+              max={100}
+              fallback={0}
+              onChange={(v: number) => {
+                setFormData({
+                  ...formData,
+                  spellsAndMythos: {
+                    cthulhuMythos: v,
+                    spells: formData.spellsAndMythos?.spells ?? [],
+                  },
+                });
+              }}
+              className="w-24 px-2 py-1 border border-sepia-300 rounded text-sm focus:outline-none focus:ring-2 focus:ring-sepia-500"
+            />
+          </div>
+          <div>
+            <label className="text-xs text-sepia-600 uppercase block mb-1">Spells (one per line)</label>
+            <textarea
+              rows={4}
+              value={(formData.spellsAndMythos?.spells ?? []).join('\n')}
+              onChange={(e) => {
+                setFormData({
+                  ...formData,
+                  spellsAndMythos: {
+                    cthulhuMythos: formData.spellsAndMythos?.cthulhuMythos ?? 0,
+                    spells: e.target.value.split('\n').map((line) => line.trim()).filter(Boolean),
+                  },
+                });
+              }}
+              placeholder="Contact Nyarlathotep&#10;Elder Sign"
+              className="w-full px-2 py-1 border border-sepia-300 rounded text-sm focus:outline-none focus:ring-2 focus:ring-sepia-500"
+            />
+          </div>
+        </div>
+      </div>
+
+      {/* Keeper's Notes. The sheet has always displayed these when reading it;
+          there was no way to write them. */}
+      <div>
+        <h3 className="text-lg font-bold text-sepia-900 mb-3">Keeper&apos;s Notes</h3>
+        <textarea
+          rows={4}
+          value={formData.notes ?? ''}
+          onChange={(e) => setFormData({ ...formData, notes: e.target.value })}
+          placeholder="Notes kept by the Keeper about this investigator"
+          className="w-full bg-white border border-sepia-400 rounded-md p-3 text-sm focus:outline-none focus:ring-2 focus:ring-sepia-500"
+        />
+      </div>
     </div>
   );
 

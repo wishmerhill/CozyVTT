@@ -31,6 +31,7 @@ import InvitePlayerModal from './InvitePlayerModal';
 import ConfirmDialog from '@/components/common/ConfirmDialog';
 import type { CampaignMembership } from '@/types';
 import Button from '@/components/ui/Button';
+import { apiErrorMessage } from '@/utils/errors';
 
 interface CampaignSettingsModalProps {
   isOpen: boolean;
@@ -112,8 +113,8 @@ export default function CampaignSettingsModal({
       });
       await refreshCampaign();
       showToast(t('settings.saved'), 'success');
-    } catch (err: any) {
-      showToast(err.response?.data?.message ?? t('settings.saveFailed'), 'error');
+    } catch (err) {
+      showToast(apiErrorMessage(err) ?? t('settings.saveFailed'), 'error');
     } finally {
       setSavingGeneral(false);
     }
@@ -128,8 +129,8 @@ export default function CampaignSettingsModal({
       });
       await refreshCampaign();
       showToast(t('settings.chatSaved'), 'success');
-    } catch (err: any) {
-      showToast(err.response?.data?.message ?? t('settings.chatSaveFailed'), 'error');
+    } catch (err) {
+      showToast(apiErrorMessage(err) ?? t('settings.chatSaveFailed'), 'error');
     } finally {
       setSavingChat(false);
     }
@@ -147,8 +148,8 @@ export default function CampaignSettingsModal({
       await api.removeCampaignMember(campaign.id, memberToRemove.userId);
       await refreshCampaign();
       showToast(t('settings.playerRemoved'), 'success');
-    } catch (err: any) {
-      showToast(err.response?.data?.message ?? t('settings.removeMemberFailed'), 'error');
+    } catch (err) {
+      showToast(apiErrorMessage(err) ?? t('settings.removeMemberFailed'), 'error');
     } finally {
       setRemovingMemberId(null);
     }
@@ -161,8 +162,8 @@ export default function CampaignSettingsModal({
       await campaignService.deleteCampaign(campaign.id);
       showToast(t('settings.campaignDeleted', { name: campaign.name }), 'success');
       navigate('/dashboard');
-    } catch (err: any) {
-      showToast(err.response?.data?.message ?? t('settings.deleteFailed'), 'error');
+    } catch (err) {
+      showToast(apiErrorMessage(err) ?? t('settings.deleteFailed'), 'error');
       setDeletingCampaign(false);
     }
   };
@@ -181,8 +182,8 @@ export default function CampaignSettingsModal({
       document.body.removeChild(a);
       URL.revokeObjectURL(url);
       showToast(t('settings.exported'), 'success');
-    } catch (err: any) {
-      showToast(err.response?.data?.message ?? t('settings.exportFailed'), 'error');
+    } catch (err) {
+      showToast(apiErrorMessage(err) ?? t('settings.exportFailed'), 'error');
     } finally {
       setExporting(false);
     }
@@ -271,7 +272,7 @@ export default function CampaignSettingsModal({
                         htmlFor="cs-name"
                         className="block text-sm font-semibold text-stone-gray mb-1.5"
                       >
-                        {t('campaign.name')} <span className="text-danger-ink">*</span>
+                        {t('name')} <span className="text-danger-ink">*</span>
                       </label>
                       <input
                         id="cs-name"
@@ -289,7 +290,7 @@ export default function CampaignSettingsModal({
                         htmlFor="cs-description"
                         className="block text-sm font-semibold text-stone-gray mb-1.5"
                       >
-                        {t('campaign.description')} <span className="text-warm-gray font-normal">({t('common:optional')})</span>
+                        {t('description')} <span className="text-warm-gray font-normal">({t('common:optional')})</span>
                       </label>
                       <textarea
                         id="cs-description"
@@ -509,7 +510,7 @@ export default function CampaignSettingsModal({
                                 <p className="text-sm font-semibold text-stone-gray truncate">
                                   {membership.user?.displayName ?? t('common:unknown')}
                                   {isSelf && (
-                                    <span className="ml-1.5 text-xs font-normal text-warm-gray">({t('common:you')})</span>
+                                    <span className="ml-1.5 text-xs font-normal text-warm-gray">({t('chat.you')})</span>
                                   )}
                                 </p>
                                 <p className="text-xs text-warm-gray truncate">
@@ -630,9 +631,9 @@ export default function CampaignSettingsModal({
       {/* Remove member confirm dialog */}
       <ConfirmDialog
         isOpen={!!memberToRemove}
-        title={t('campaign.removePlayer')}
-        message={t('campaign.removePlayerConfirm', { name: memberToRemove?.user?.displayName ?? t('common:thisPlayer'), campaign: campaign.name })}
-        confirmLabel={t('common:remove')}
+        title={t('removePlayer')}
+        message={t('removePlayerConfirm', { name: memberToRemove?.user?.displayName ?? t('thisPlayer'), campaign: campaign.name })}
+        confirmLabel={t('common:delete')}
         cancelLabel={t('common:cancel')}
         variant="danger"
         onConfirm={handleConfirmRemoveMember}
@@ -644,7 +645,7 @@ export default function CampaignSettingsModal({
         isOpen={showDeleteConfirm}
         title={t('settings.deleteCampaign')}
         message={t('settings.deleteCampaignConfirm', { name: campaign.name })}
-        confirmLabel={t('campaign.deleteForever')}
+        confirmLabel={t('deleteForever')}
         cancelLabel={t('common:cancel')}
         variant="danger"
         isLoading={deletingCampaign}

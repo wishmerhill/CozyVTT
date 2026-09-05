@@ -33,9 +33,9 @@ import AssetGrid from '@/components/assets/AssetGrid';
 // ============================================
 
 const SIZE_OPTIONS = [
-  { labelKey: 'size.smallMed', sublabel: '1×1', value: { width: 1, height: 1 } },
-  { labelKey: 'size.large', sublabel: '2×2', value: { width: 2, height: 2 } },
-  { labelKey: 'size.huge', sublabel: '3×3', value: { width: 3, height: 3 } },
+  { labelKey: 'token.size.smallMed', sublabel: '1×1', value: { width: 1, height: 1 } },
+  { labelKey: 'token.size.large', sublabel: '2×2', value: { width: 2, height: 2 } },
+  { labelKey: 'token.size.huge', sublabel: '3×3', value: { width: 3, height: 3 } },
 ];
 
 // ============================================
@@ -361,7 +361,7 @@ export default function TokenManager({ isOpen, onClose }: TokenManagerProps) {
                 <Swords className="w-5 h-5 text-brand-ink" />
                 <h2 className="text-lg font-bold text-brand-ink">{t('token.manager')}</h2>
               </div>
-              <Button onClick={onClose} variant="secondary" className="p-1.5" title="Close">
+              <Button onClick={onClose} variant="secondary" className="p-1.5" title={t('common:close')}>
                 <X className="w-4 h-4" />
               </Button>
             </div>
@@ -450,10 +450,10 @@ export default function TokenManager({ isOpen, onClose }: TokenManagerProps) {
                   ) : assets.length === 0 ? (
                     <div className="glass-panel p-3">
                       <p className="text-sm text-stone-gray/70 italic">
-                        No TOKEN assets found.
+                        {t('token.assetsEmptyTitle')}
                       </p>
                       <p className="text-xs text-stone-gray/50 mt-1">
-                        Click <strong>Upload</strong> above to add an image, or use the Asset Library.
+                        {t('token.assetsEmptyHint')}
                       </p>
                     </div>
                   ) : (
@@ -468,7 +468,7 @@ export default function TokenManager({ isOpen, onClose }: TokenManagerProps) {
                         <button
                           type="button"
                           onClick={() => setSelectedAsset(null)}
-                          title="Use colored-letter placeholder"
+                          title={t('npcEditor.placeholderTitle')}
                           className={`relative rounded-cozy overflow-hidden border-2 aspect-square transition-all flex items-center justify-center ${
                             !selectedAsset
                               ? 'border-moss-green ring-2 ring-moss-green/30 bg-ink-muted/25'
@@ -476,7 +476,7 @@ export default function TokenManager({ isOpen, onClose }: TokenManagerProps) {
                           }`}
                         >
                           <span className="text-lg font-bold text-ink-secondary">?</span>
-                          <span className="absolute bottom-0.5 text-[8px] text-ink-muted">None</span>
+                          <span className="absolute bottom-0.5 text-[8px] text-ink-muted">{t('common:none')}</span>
                         </button>
                       }
                     />
@@ -486,13 +486,13 @@ export default function TokenManager({ isOpen, onClose }: TokenManagerProps) {
                 {/* Token Name */}
                 <div className="mb-3">
                   <label className="text-xs text-stone-gray font-medium block mb-1">
-                    Token Name
+                    {t('token.name')}
                   </label>
                   <input
                     type="text"
                     value={tokenName}
                     onChange={(e) => setTokenName(e.target.value)}
-                    placeholder="e.g. Goblin Scout, Party Wizard…"
+                    placeholder={t('token.namePlaceholderExample')}
                     className="input-cozy w-full text-sm"
                   />
                 </div>
@@ -500,13 +500,13 @@ export default function TokenManager({ isOpen, onClose }: TokenManagerProps) {
                 {/* Display Mode Selector — all token types */}
                 <div className="mb-3">
                   <label className="text-xs text-stone-gray font-medium block mb-1">
-                    Display Mode
+                    {t('token.displayMode')}
                   </label>
                   <div className="flex gap-2">
                     {([
-                      { mode: 'pog' as TokenDisplayMode,      label: 'Pog',      desc: 'Circular with border' },
-                      { mode: 'top-down' as TokenDisplayMode,  label: 'Top-Down', desc: 'Circular, no border' },
-                      { mode: 'full-art' as TokenDisplayMode,  label: 'Full Art', desc: 'Rectangular with alpha' },
+                      { mode: 'pog' as TokenDisplayMode,      label: t('token.displayModePogLabel'), desc: t('token.displayModePogDesc') },
+                      { mode: 'top-down' as TokenDisplayMode,  label: t('token.topDown'), desc: t('token.displayModeTopDownDesc') },
+                      { mode: 'full-art' as TokenDisplayMode,  label: t('token.fullArt'), desc: t('token.displayModeFullArtDesc') },
                     ] as const).map(({ mode, label, desc }) => (
                       <button
                         key={mode}
@@ -523,9 +523,9 @@ export default function TokenManager({ isOpen, onClose }: TokenManagerProps) {
                     ))}
                   </div>
                   <p className="text-[10px] text-stone-gray/50 mt-1">
-                    {displayMode === 'pog' && 'Classic round token with a colored disposition ring.'}
-                    {displayMode === 'top-down' && 'Circular crop, ideal for overhead/bird\u2019s-eye art.'}
-                    {displayMode === 'full-art' && 'Shows full image including transparency — great for standees and monsters.'}
+                    {displayMode === 'pog' && t('token.displayModeHintPog')}
+                    {displayMode === 'top-down' && t('token.displayModeHintTopDown')}
+                    {displayMode === 'full-art' && t('token.displayModeHintFullArt')}
                   </p>
                 </div>
 
@@ -535,13 +535,13 @@ export default function TokenManager({ isOpen, onClose }: TokenManagerProps) {
                     {/* Disposition */}
                     <div className="mb-3">
                       <label className="text-xs text-stone-gray font-medium block mb-1">
-                        Disposition
+                        {t('token.disposition')}
                       </label>
                       <div className="flex gap-2">
                         {([
-                          { d: TokenDisposition.FRIENDLY, label: 'Friendly', color: 'teal' },
-                          { d: TokenDisposition.NEUTRAL,  label: 'Neutral',  color: 'amber' },
-                          { d: TokenDisposition.HOSTILE,  label: 'Hostile',  color: 'red' },
+                          { d: TokenDisposition.FRIENDLY, label: t('token.friendly'), color: 'teal' },
+                          { d: TokenDisposition.NEUTRAL,  label: t('token.neutral'),  color: 'amber' },
+                          { d: TokenDisposition.HOSTILE,  label: t('token.hostile'),  color: 'red' },
                         ] as const).map(({ d, label, color }) => (
                           <button
                             key={d}
@@ -563,7 +563,7 @@ export default function TokenManager({ isOpen, onClose }: TokenManagerProps) {
                     {/* HP Max */}
                     <div className="mb-3">
                       <label className="text-xs text-stone-gray font-medium block mb-1">
-                        HP Max <span className="font-normal opacity-60">(0 = no HP bar)</span>
+                        {t('npcEditor.maxHpPlaceholder')} <span className="font-normal opacity-60">{t('token.hpMaxNoBarHint')}</span>
                       </label>
                       <input
                         type="number"
@@ -580,7 +580,7 @@ export default function TokenManager({ isOpen, onClose }: TokenManagerProps) {
                             onChange={(e) => setShowHpBar(e.target.checked)}
                             className="rounded"
                           />
-                          <span className="text-xs text-stone-gray">Show HP bar to players</span>
+                          <span className="text-xs text-stone-gray">{t('npcEditor.showHpBarToPlayers')}</span>
                         </label>
                       )}
                     </div>
@@ -588,13 +588,13 @@ export default function TokenManager({ isOpen, onClose }: TokenManagerProps) {
                     {/* Initiative */}
                     <div className="mb-3">
                       <label className="text-xs text-stone-gray font-medium block mb-1">
-                        Initiative <span className="font-normal opacity-60">(optional)</span>
+                        {t('token.initiative')} <span className="font-normal opacity-60">{t('common:optional')}</span>
                       </label>
                       <input
                         type="number"
                         value={initiative}
                         onChange={(e) => setInitiative(e.target.value)}
-                        placeholder="e.g. 14"
+                        placeholder={t('npcEditor.initiativePlaceholder')}
                         className="input-cozy w-full text-sm"
                       />
                     </div>
@@ -602,12 +602,12 @@ export default function TokenManager({ isOpen, onClose }: TokenManagerProps) {
                     {/* DM Notes */}
                     <div className="mb-3">
                       <label className="text-xs text-stone-gray font-medium block mb-1">
-                        DM Notes <span className="font-normal opacity-60">(not shown to players)</span>
+                        {t('npcEditor.dmNotes')} <span className="font-normal opacity-60">{t('npcEditor.notShownToPlayers')}</span>
                       </label>
                       <textarea
                         value={tokenNotes}
                         onChange={(e) => setTokenNotes(e.target.value)}
-                        placeholder="Guard post, key holder…"
+                        placeholder={t('token.notesPlaceholderNpc')}
                         rows={2}
                         className="input-cozy w-full text-sm resize-none"
                       />
@@ -627,22 +627,22 @@ export default function TokenManager({ isOpen, onClose }: TokenManagerProps) {
                           onChange={(e) => setObjectHidden(e.target.checked)}
                           className="rounded"
                         />
-                        <span className="text-xs text-stone-gray">Hidden from players on placement</span>
+                        <span className="text-xs text-stone-gray">{t('token.objectHiddenLabel')}</span>
                       </label>
                       <p className="text-[10px] text-stone-gray/50 mt-0.5">
-                        Reveal later via the context menu — useful for secret doors, hidden chests.
+                        {t('token.objectHiddenHint')}
                       </p>
                     </div>
 
                     {/* DM Notes */}
                     <div className="mb-3">
                       <label className="text-xs text-stone-gray font-medium block mb-1">
-                        DM Notes <span className="font-normal opacity-60">(not shown to players)</span>
+                        {t('npcEditor.dmNotes')} <span className="font-normal opacity-60">{t('npcEditor.notShownToPlayers')}</span>
                       </label>
                       <textarea
                         value={tokenNotes}
                         onChange={(e) => setTokenNotes(e.target.value)}
-                        placeholder="Locked with iron key…"
+                        placeholder={t('token.notesPlaceholderObject')}
                         rows={2}
                         className="input-cozy w-full text-sm resize-none"
                       />
@@ -653,7 +653,7 @@ export default function TokenManager({ isOpen, onClose }: TokenManagerProps) {
                 {/* Size */}
                 <div className="mb-3">
                   <label className="text-xs text-stone-gray font-medium block mb-1">
-                    Size (grid cells)
+                    {t('token.sizeGridCellsLabel')}
                   </label>
                   <div className="flex gap-2">
                     {SIZE_OPTIONS.map((opt) => {
@@ -680,7 +680,7 @@ export default function TokenManager({ isOpen, onClose }: TokenManagerProps) {
                 {tokenType !== TokenType.OBJECT && (
                   <div className="mb-3">
                     <label className="text-xs text-stone-gray font-medium block mb-1">
-                      Place on Layer
+                      {t('token.placeOnLayerLabel')}
                     </label>
                     <div className="flex gap-2">
                       <button
@@ -691,7 +691,7 @@ export default function TokenManager({ isOpen, onClose }: TokenManagerProps) {
                             : 'border-moss-green/20 hover:border-moss-green/40 text-stone-gray'
                         }`}
                       >
-                        Material Plane
+                        {t('token.materialPlaneOption')}
                       </button>
                       <button
                         onClick={() => setTokenLayer(TokenLayer.SPIRIT)}
@@ -701,7 +701,7 @@ export default function TokenManager({ isOpen, onClose }: TokenManagerProps) {
                             : 'border-moss-green/20 hover:border-moss-green/40 text-stone-gray'
                         }`}
                       >
-                        Spirit Realm
+                        {t('token.spiritRealm')}
                       </button>
                     </div>
                   </div>
@@ -711,14 +711,14 @@ export default function TokenManager({ isOpen, onClose }: TokenManagerProps) {
                 {tokenType !== TokenType.OBJECT && players.length > 0 && (
                   <div className="mb-3">
                     <label className="text-xs text-stone-gray font-medium block mb-1">
-                      Controlled by
+                      {t('npcEditor.controlledBy')}
                     </label>
                     <select
                       value={assignTo}
                       onChange={(e) => setAssignTo(e.target.value)}
                       className="input-cozy w-full text-sm"
                     >
-                      <option value="none">Nobody (DM controls)</option>
+                      <option value="none">{t('npcEditor.nobodyDmControls')}</option>
                       {players.map((m) => (
                         <option key={m.userId} value={m.userId}>
                           {m.user?.displayName ?? m.userId}
@@ -730,7 +730,7 @@ export default function TokenManager({ isOpen, onClose }: TokenManagerProps) {
 
                 {!currentMap && (
                   <p className="text-xs text-warning-ink mb-2">
-                    No map is currently loaded — load a map first.
+                    {t('token.noMapLoadedWarning')}
                   </p>
                 )}
 
@@ -744,17 +744,17 @@ export default function TokenManager({ isOpen, onClose }: TokenManagerProps) {
                   ) : (
                     <Plus className="w-4 h-4" />
                   )}
-                  {isAdding ? 'Placing…' : 'Place on Map'}
+                  {isAdding ? t('creature.placing') : t('creature.placeOnMap')}
                 </Button>
                 <p className="text-[10px] text-stone-gray/50 mt-1.5 text-center">
-                  Token is placed at the map center — drag it into position afterwards.
+                  {t('token.placementHint')}
                 </p>
               </section>
 
               {/* ── Section 2: Tokens on This Map ── */}
               <section>
                 <h3 className="text-sm font-semibold text-stone-gray uppercase tracking-wide mb-1">
-                  Tokens on Map
+                  {t('token.tokensOnMapHeading')}
                   {tokens.length > 0 && (
                     <span className="ml-2 text-xs font-normal normal-case text-stone-gray/60">
                       ({tokens.length})
@@ -763,10 +763,10 @@ export default function TokenManager({ isOpen, onClose }: TokenManagerProps) {
                 </h3>
 
                 {!currentMap ? (
-                  <p className="text-sm text-stone-gray/70 italic">No map loaded.</p>
+                  <p className="text-sm text-stone-gray/70 italic">{t('spiritLayer.noMapLoaded')}</p>
                 ) : tokens.length === 0 ? (
                   <p className="text-sm text-stone-gray/70 italic">
-                    No tokens on this map yet. Add one above.
+                    {t('token.noTokensOnMap')}
                   </p>
                 ) : (
                   <div className="space-y-2">
@@ -806,16 +806,16 @@ export default function TokenManager({ isOpen, onClose }: TokenManagerProps) {
                                       : 'bg-moss-green/10 text-brand-ink'
                                   }`}
                                 >
-                                  {isSpirit ? 'Spirit' : 'Material'}
+                                  {isSpirit ? t('token.badgeSpirit') : t('token.badgeMaterial')}
                                 </span>
                                 {!token.visible && (
                                   <span className="text-[10px] px-1.5 py-0.5 rounded font-medium bg-stone-gray/10 text-stone-gray">
-                                    Hidden
+                                    {t('token.hidden')}
                                   </span>
                                 )}
                                 {token.controlledBy && (
                                   <span className="text-[10px] px-1.5 py-0.5 rounded font-medium bg-warm-amber/10 text-warm-amber">
-                                    {players.find((p) => p.userId === token.controlledBy)?.user?.displayName ?? 'Player'}
+                                    {players.find((p) => p.userId === token.controlledBy)?.user?.displayName ?? t('token.player')}
                                   </span>
                                 )}
                               </div>
@@ -828,7 +828,7 @@ export default function TokenManager({ isOpen, onClose }: TokenManagerProps) {
                                 onClick={() => handleToggleVisibility(token)}
                                 disabled={isTogglingVis}
                                 className="p-1.5 rounded hover:bg-moss-green/10 transition-colors"
-                                title={token.visible ? 'Hide from players' : 'Show to players'}
+                                title={token.visible ? t('npcEditor.hideFromPlayers') : t('npcEditor.showToPlayers')}
                               >
                                 {isTogglingVis ? (
                                   <Loader2 className="w-3.5 h-3.5 animate-spin text-stone-gray" />
@@ -844,7 +844,7 @@ export default function TokenManager({ isOpen, onClose }: TokenManagerProps) {
                                 onClick={() => handleToggleLayer(token)}
                                 disabled={isTogglingLyr}
                                 className="p-1.5 rounded hover:bg-spirit-purple/10 transition-colors"
-                                title={isSpirit ? 'Return to Material Plane' : 'Send to Spirit Realm'}
+                                title={isSpirit ? t('spiritLayer.returnToMaterial') : t('spiritLayer.sendToRealm')}
                               >
                                 {isTogglingLyr ? (
                                   <Loader2 className="w-3.5 h-3.5 animate-spin text-stone-gray" />
@@ -868,7 +868,7 @@ export default function TokenManager({ isOpen, onClose }: TokenManagerProps) {
                                       ? 'bg-warm-amber/20 text-warm-amber'
                                       : 'hover:bg-warm-amber/10 text-stone-gray/30 hover:text-warm-amber'
                                   }`}
-                                  title="Move to another map"
+                                  title={t('token.moveToAnotherMapTitle')}
                                 >
                                   <MapIcon className="w-3.5 h-3.5" />
                                 </button>
@@ -879,7 +879,7 @@ export default function TokenManager({ isOpen, onClose }: TokenManagerProps) {
                                 onClick={() => handleDelete(token)}
                                 disabled={isDeleting}
                                 className="p-1.5 rounded hover:bg-danger/10 transition-colors"
-                                title="Remove from map"
+                                title={t('token.removeFromMap')}
                               >
                                 {isDeleting ? (
                                   <Loader2 className="w-3.5 h-3.5 animate-spin text-stone-gray" />
@@ -894,12 +894,12 @@ export default function TokenManager({ isOpen, onClose }: TokenManagerProps) {
                           {isShowingMapPicker && (
                             <div className="mt-2 pt-2 border-t border-moss-green/10">
                               <p className="text-[11px] text-stone-gray mb-1.5">
-                                Move to which map?
+                                {t('token.moveToWhichMap')}
                               </p>
                               {isMovingTokenMap ? (
                                 <div className="flex items-center gap-2 text-stone-gray text-xs py-1">
                                   <Loader2 className="w-3 h-3 animate-spin" />
-                                  Moving token…
+                                  {t('token.movingTokenEllipsis')}
                                 </div>
                               ) : (
                                 <div className="space-y-0.5">

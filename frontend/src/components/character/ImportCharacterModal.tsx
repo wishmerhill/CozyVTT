@@ -6,18 +6,21 @@
  */
 
 import { useState, useCallback } from 'react';
+import { useTranslation } from 'react-i18next';
 import { Upload, AlertCircle, CheckCircle, FileText } from 'lucide-react';
 import { readJSONFile, validateImportedCharacter } from '@/utils/character-export';
 import GameSystemBadge from '@/components/common/GameSystemBadge';
 import type { GameSystem } from '@/types';
 import { Button, Modal } from '@/components/ui';
+import { apiErrorMessage, errorMessage } from '@/utils/errors';
+import type { CharacterData } from '@/types';
 
 interface ImportCharacterModalProps {
   onClose: () => void;
   onImport: (data: {
     name: string;
     gameSystem: string | null;
-    data: any;
+    data: CharacterData;
     description?: string;
   }) => Promise<void>;
   existingCharacterNames: string[];
@@ -39,8 +42,9 @@ export default function ImportCharacterModal({
   existingCharacterNames,
   mode = 'character',
 }: ImportCharacterModalProps) {
+  const { t } = useTranslation(['character', 'common']);
   const isTemplate = mode === 'template';
-  const noun = isTemplate ? 'Template' : 'Character';
+  const noun = isTemplate ? t('modal.import.templateNoun') : t('modal.import.characterNoun');
 
   const [file, setFile] = useState<File | null>(null);
   const [isDragging, setIsDragging] = useState(false);
@@ -49,7 +53,7 @@ export default function ImportCharacterModal({
   const [previewData, setPreviewData] = useState<{
     name: string;
     gameSystem: string | null;
-    data: any;
+    data: CharacterData;
   } | null>(null);
   const [nameConflict, setNameConflict] = useState(false);
   const [importName, setImportName] = useState('');
@@ -68,7 +72,7 @@ export default function ImportCharacterModal({
       const validation = validateImportedCharacter(jsonData);
 
       if (!validation.valid) {
-        setError(validation.error || 'Invalid character data');
+        setError(validation.error || t('modal.import.invalidData'));
         return;
       }
 
@@ -79,13 +83,13 @@ export default function ImportCharacterModal({
         const characterName = validation.character.name;
         if (existingCharacterNames.includes(characterName)) {
           setNameConflict(true);
-          setImportName(`${characterName} (Imported)`);
+          setImportName(`${characterName} ${t('modal.import.importedSuffix')}`);
         } else {
           setImportName(characterName);
         }
       }
-    } catch (err: any) {
-      setError(err.message || 'Failed to read file');
+    } catch (err: unknown) {
+      setError(errorMessage(err) || t('modal.import.readFailed'));
     } finally {
       setIsLoading(false);
     }
@@ -138,11 +142,11 @@ export default function ImportCharacterModal({
       });
 
       onClose();
-    } catch (err: any) {
+    } catch (err: unknown) {
       setError(
-        err.response?.data?.message ||
-          err.message ||
-          `Failed to import ${noun.toLowerCase()}`
+        apiErrorMessage(err) ||
+          errorMessage(err) ||
+          t('modal.import.importFailed', { noun })
       );
     } finally {
       setIsLoading(false);
@@ -153,16 +157,14 @@ export default function ImportCharacterModal({
     <Modal
       open
       onClose={onClose}
-      title={isTemplate ? 'Import Template' : 'Import Character'}
+      title={isTemplate ? t('modal.import.titleTemplate') : t('modal.import.title')}
       icon={Upload}
       size="lg"
       closeDisabled={isLoading}
     >
         {isTemplate && !previewData && (
           <p className="text-sm text-ink-secondary mb-4">
-            Any character JSON works here, including one exported from another CozyVTT
-            instance. Publishing it as a template makes it available for everyone here to
-            copy — the original character is not affected.
+            {t('modal.import.templateInfo')}
           </p>
         )}
         {/* File Upload Area */}
@@ -178,13 +180,13 @@ export default function ImportCharacterModal({
           >
             <Upload className="w-16 h-16 text-brand-ink mx-auto mb-4" />
             <h3 className="text-lg font-semibold text-ink mb-2">
-              {isDragging ? 'Drop file here' : 'Upload Character JSON'}
+              {isDragging ? t('modal.import.dropHere') : t('modal.import.uploadHeading')}
             </h3>
             <p className="sr-only">
-              {isTemplate ? 'The file will be published as a template.' : ''}
+              {isTemplate ? t('modal.import.srPublishNote') : ''}
             </p>
             <p className="text-sm text-ink mb-4">
-              Drag and drop a JSON file, or click to browse
+              {t('modal.import.dragDropHint')}
             </p>
             <input
               type="file"
@@ -197,10 +199,10 @@ export default function ImportCharacterModal({
               htmlFor="character-file-input"
               className="btn-primary inline-block cursor-pointer"
             >
-              Choose File
+              {t('modal.import.chooseFile')}
             </label>
             <p className="text-xs text-ink-muted mt-4">
-              Maximum file size: 5MB
+              {t('modal.import.maxFileSize')}
             </p>
           </div>
         )}
@@ -209,7 +211,7 @@ export default function ImportCharacterModal({
         {isLoading && !previewData && (
           <div className="text-center py-8">
             <div className="inline-block animate-spin rounded-full h-8 w-8 border-b-2 border-moss-green mb-4"></div>
-            <p className="text-ink">Reading file...</p>
+            <p className="text-ink">{t('modal.import.readingFile')}</p>
           </div>
         )}
 
@@ -218,7 +220,7 @@ export default function ImportCharacterModal({
           <div className="bg-spirit-red/10 border border-spirit-red/30 rounded-lg p-4 flex items-start gap-3">
             <AlertCircle className="w-5 h-5 text-spirit-red flex-shrink-0 mt-0.5" />
             <div>
-              <h4 className="font-semibold text-spirit-red mb-1">Import Error</h4>
+              <h4 className="font-semibold text-spirit-red mb-1">{t('modal.import.errorTitle')}</h4>
               <p className="text-sm text-ink">{error}</p>
             </div>
           </div>
@@ -232,12 +234,12 @@ export default function ImportCharacterModal({
                 <CheckCircle className="w-5 h-5 text-brand-ink flex-shrink-0 mt-0.5" />
                 <div>
                   <h4 className="font-semibold text-brand-ink mb-1">
-                    {isTemplate ? 'Sheet Loaded Successfully' : 'Character Loaded Successfully'}
+                    {isTemplate ? t('modal.import.sheetLoaded') : t('modal.import.characterLoaded')}
                   </h4>
                   <p className="text-sm text-ink">
                     {isTemplate
-                      ? 'Review the details below, then publish it as a template.'
-                      : 'Review the character details below before importing.'}
+                      ? t('modal.import.reviewTemplate')
+                      : t('modal.import.reviewCharacter')}
                   </p>
                 </div>
               </div>
@@ -249,11 +251,11 @@ export default function ImportCharacterModal({
                 <div className="flex items-start gap-3">
                   <AlertCircle className="w-5 h-5 text-sunset-orange flex-shrink-0 mt-0.5" />
                   <div>
-                    <h4 className="font-semibold text-sunset-orange mb-1">Name Conflict</h4>
+                    <h4 className="font-semibold text-sunset-orange mb-1">{t('modal.import.nameConflictTitle')}</h4>
                     <p className="text-sm text-ink">
                       {isTemplate
-                        ? `A template named "${previewData.name}" already exists. This one will be named "${importName}" — edit it below if you'd rather use something else.`
-                        : `A character named "${previewData.name}" already exists. The imported character will be renamed to "${importName}".`}
+                        ? t('modal.import.nameConflictTemplateBody', { existingName: previewData.name, newName: importName })
+                        : t('modal.import.nameConflictCharacterBody', { existingName: previewData.name, newName: importName })}
                     </p>
                   </div>
                 </div>
@@ -264,14 +266,14 @@ export default function ImportCharacterModal({
             <div className="bg-parchment rounded-lg border border-moss-green/20 p-6">
               <h3 className="text-lg font-semibold text-brand-ink mb-4 flex items-center gap-2">
                 <FileText className="w-5 h-5" />
-                {isTemplate ? 'Template Preview' : 'Character Preview'}
+                {isTemplate ? t('modal.import.templatePreview') : t('modal.import.characterPreview')}
               </h3>
 
               <div className="space-y-4">
                 {/* Name */}
                 <div>
                   <label htmlFor="import-name" className="block text-sm font-medium text-ink mb-1">
-                    {isTemplate ? 'Template Name' : 'Character Name'}
+                    {isTemplate ? t('modal.import.templateNameLabel') : t('modal.import.characterNameLabel')}
                   </label>
                   <input
                     id="import-name"
@@ -288,7 +290,7 @@ export default function ImportCharacterModal({
                 {isTemplate && (
                   <div>
                     <label htmlFor="import-description" className="block text-sm font-medium text-ink mb-1">
-                      Description <span className="text-ink-muted font-normal">(optional)</span>
+                      {t('modal.import.descriptionLabel')} <span className="text-ink-muted font-normal">({t('common:optional')})</span>
                     </label>
                     <textarea
                       id="import-description"
@@ -296,7 +298,7 @@ export default function ImportCharacterModal({
                       onChange={(e) => setImportDescription(e.target.value)}
                       rows={2}
                       maxLength={2000}
-                      placeholder="What this template is for, and who it suits."
+                      placeholder={t('modal.import.descriptionPlaceholder')}
                       className="w-full px-3 py-2 rounded-lg border border-moss-green/30 bg-paper text-ink
                                focus:outline-none focus:ring-2 focus:ring-moss-green/50 resize-none"
                     />
@@ -306,19 +308,19 @@ export default function ImportCharacterModal({
                 {/* Game System */}
                 <div>
                   <label className="block text-sm font-medium text-ink mb-2">
-                    Game System
+                    {t('modal.import.gameSystemLabel')}
                   </label>
                   {previewData.gameSystem ? (
                     <GameSystemBadge gameSystem={previewData.gameSystem as GameSystem} size="lg" />
                   ) : (
-                    <span className="text-sm text-ink-muted italic">Flexible (No specific system)</span>
+                    <span className="text-sm text-ink-muted italic">{t('modal.import.flexibleNoSystem')}</span>
                   )}
                 </div>
 
                 {/* Data Preview */}
                 <div>
                   <label className="block text-sm font-medium text-ink mb-2">
-                    {isTemplate ? 'Sheet Data' : 'Character Data'}
+                    {isTemplate ? t('modal.import.sheetDataLabel') : t('modal.import.characterDataLabel')}
                   </label>
                   <div className="bg-paper rounded border border-moss-green/20 p-3 max-h-48 overflow-y-auto">
                     <pre className="text-xs text-ink-muted whitespace-pre-wrap">
@@ -336,7 +338,7 @@ export default function ImportCharacterModal({
                 disabled={isLoading}
                 variant="secondary"
               >
-                Cancel
+                {t('modal.import.cancel')}
               </Button>
               <Button
                 onClick={handleImport}
@@ -346,12 +348,12 @@ export default function ImportCharacterModal({
                 {isLoading ? (
                   <>
                     <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-white"></div>
-                    Importing...
+                    {t('modal.import.importing')}
                   </>
                 ) : (
                   <>
                     <Upload className="w-4 h-4" />
-                    {isTemplate ? 'Publish as Template' : 'Import Character'}
+                    {isTemplate ? t('modal.import.publishAsTemplate') : t('modal.import.title')}
                   </>
                 )}
               </Button>
@@ -362,7 +364,7 @@ export default function ImportCharacterModal({
         {/* File Info */}
         {file && !previewData && !error && !isLoading && (
           <div className="mt-4 text-sm text-ink">
-            Selected file: <span className="font-medium text-ink">{file.name}</span>
+            {t('modal.import.selectedFile')} <span className="font-medium text-ink">{file.name}</span>
           </div>
         )}
     </Modal>

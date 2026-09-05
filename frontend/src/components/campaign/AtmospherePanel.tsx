@@ -13,6 +13,7 @@
  */
 
 import { useState, useEffect } from 'react';
+import { useTranslation } from 'react-i18next';
 import { AnimatePresence, motion } from 'framer-motion';
 import {
   X,
@@ -42,18 +43,16 @@ import type { Asset } from '@/types';
 
 interface EffectOption {
   id: string;
-  label: string;
   icon: React.ReactNode;
-  description: string;
 }
 
 const EFFECT_OPTIONS: EffectOption[] = [
-  { id: 'rain',     label: 'Rain',     icon: <CloudRain className="w-5 h-5" />,  description: 'Falling rain drops' },
-  { id: 'mist',     label: 'Mist',     icon: <Cloud className="w-5 h-5" />,      description: 'Drifting fog banks' },
-  { id: 'leaves',   label: 'Leaves',   icon: <Leaf className="w-5 h-5" />,       description: 'Falling autumn leaves' },
-  { id: 'sparkles', label: 'Sparkles', icon: <Sparkles className="w-5 h-5" />,   description: 'Twinkling magic sparks' },
-  { id: 'snow',     label: 'Snow',     icon: <Snowflake className="w-5 h-5" />,  description: 'Gentle snowfall' },
-  { id: 'wind',     label: 'Wind',     icon: <Wind className="w-5 h-5" />,       description: 'Sweeping gusts of wind' },
+  { id: 'rain',     icon: <CloudRain className="w-5 h-5" /> },
+  { id: 'mist',     icon: <Cloud className="w-5 h-5" /> },
+  { id: 'leaves',   icon: <Leaf className="w-5 h-5" /> },
+  { id: 'sparkles', icon: <Sparkles className="w-5 h-5" /> },
+  { id: 'snow',     icon: <Snowflake className="w-5 h-5" /> },
+  { id: 'wind',     icon: <Wind className="w-5 h-5" /> },
 ];
 
 // ============================================
@@ -70,6 +69,7 @@ interface AtmospherePanelProps {
 // ============================================
 
 export default function AtmospherePanel({ isOpen, onClose }: AtmospherePanelProps) {
+  const { t } = useTranslation(['campaign', 'common']);
   const { campaign, activeAtmosphereEffect, activeAtmosphereAudio } = useCampaign();
   const { socket } = useWebSocket();
 
@@ -99,7 +99,7 @@ export default function AtmospherePanel({ isOpen, onClose }: AtmospherePanelProp
     setAssetError(null);
     api.listAssets({ type: 'AUDIO' })
       .then((r) => setAudioAssets(r.assets || []))
-      .catch(() => setAssetError('Failed to load audio assets'))
+      .catch(() => setAssetError(t('vibe.loadAudioAssetsFailed')))
       .finally(() => setLoadingAssets(false));
   }, [isOpen, campaign]);
 
@@ -210,8 +210,8 @@ export default function AtmospherePanel({ isOpen, onClose }: AtmospherePanelProp
                   <Cloud className="w-5 h-5 text-brand-ink" />
                 </div>
                 <div>
-                  <h2 className="text-lg font-bold text-brand-ink">Atmosphere</h2>
-                  <p className="text-xs text-warm-gray">Visual effects + ambient audio</p>
+                  <h2 className="text-lg font-bold text-brand-ink">{t('vibe.title')}</h2>
+                  <p className="text-xs text-warm-gray">{t('vibe.subtitle')}</p>
                 </div>
               </div>
               <button
@@ -229,7 +229,7 @@ export default function AtmospherePanel({ isOpen, onClose }: AtmospherePanelProp
                   ============================================ */}
               <section>
                 <h3 className="text-sm font-semibold text-brand-ink uppercase tracking-wide mb-3">
-                  Particle Overlay
+                  {t('vibe.particleOverlay')}
                 </h3>
 
                 <div className="grid grid-cols-3 gap-2 mb-2">
@@ -239,7 +239,7 @@ export default function AtmospherePanel({ isOpen, onClose }: AtmospherePanelProp
                       <button
                         key={opt.id}
                         onClick={() => handleEffectSelect(isActive ? null : opt.id)}
-                        title={opt.description}
+                        title={t(`vibe.effects.${opt.id}.description`)}
                         className={`flex flex-col items-center gap-2 p-3 rounded-lg border-2 transition-all ${
                           isActive
                             ? 'border-moss-green bg-moss-green/10 text-brand-ink'
@@ -247,7 +247,7 @@ export default function AtmospherePanel({ isOpen, onClose }: AtmospherePanelProp
                         }`}
                       >
                         {opt.icon}
-                        <span className="text-xs font-medium">{opt.label}</span>
+                        <span className="text-xs font-medium">{t(`vibe.effects.${opt.id}.label`)}</span>
                         {isActive && (
                           <CheckCircle className="w-3 h-3 text-brand-ink" />
                         )}
@@ -258,7 +258,7 @@ export default function AtmospherePanel({ isOpen, onClose }: AtmospherePanelProp
                   {/* "None" clear button */}
                   <button
                     onClick={() => handleEffectSelect(null)}
-                    title="No overlay"
+                    title={t('vibe.noOverlayTitle')}
                     className={`flex flex-col items-center gap-2 p-3 rounded-lg border-2 transition-all ${
                       !activeAtmosphereEffect
                         ? 'border-stone-gray/40 bg-stone-gray/10 text-stone-gray'
@@ -266,14 +266,14 @@ export default function AtmospherePanel({ isOpen, onClose }: AtmospherePanelProp
                     }`}
                   >
                     <Square className="w-5 h-5" />
-                    <span className="text-xs font-medium">None</span>
+                    <span className="text-xs font-medium">{t('common:none')}</span>
                   </button>
                 </div>
 
                 <p className="text-xs text-warm-gray">
                   {activeAtmosphereEffect
-                    ? `Active: ${EFFECT_OPTIONS.find((o) => o.id === activeAtmosphereEffect)?.label ?? activeAtmosphereEffect}. Click again to clear.`
-                    : 'No overlay active. Click an effect to apply it to all players.'}
+                    ? t('vibe.activeEffectHint', { effect: t(`vibe.effects.${activeAtmosphereEffect}.label`, { defaultValue: activeAtmosphereEffect }) })
+                    : t('vibe.noOverlayHint')}
                 </p>
               </section>
 
@@ -282,7 +282,7 @@ export default function AtmospherePanel({ isOpen, onClose }: AtmospherePanelProp
                   ============================================ */}
               <section>
                 <h3 className="text-sm font-semibold text-brand-ink uppercase tracking-wide mb-3">
-                  Ambient Audio
+                  {t('vibe.audio')}
                 </h3>
 
                 {/* Now Playing indicator */}
@@ -301,14 +301,14 @@ export default function AtmospherePanel({ isOpen, onClose }: AtmospherePanelProp
                       ))}
                     </div>
                     <div className="flex-1 min-w-0">
-                      <p className="text-xs font-semibold text-brand-ink">Now Playing</p>
+                      <p className="text-xs font-semibold text-brand-ink">{t('vibe.nowPlaying')}</p>
                       <p className="text-xs text-stone-gray truncate">
-                        {audioAssets.find((a) => a.id === activeAtmosphereAudio.assetId)?.name ?? 'Audio Track'}
+                        {audioAssets.find((a) => a.id === activeAtmosphereAudio.assetId)?.name ?? t('vibe.audioTrackFallback')}
                       </p>
                     </div>
                     <button
                       onClick={() => handleAudioSelect(null)}
-                      title="Stop audio"
+                      title={t('vibe.stopAudio')}
                       className="p-1.5 rounded-lg text-danger-ink hover:bg-danger/10 transition-colors flex-shrink-0"
                     >
                       <StopCircle className="w-4 h-4" />
@@ -323,7 +323,7 @@ export default function AtmospherePanel({ isOpen, onClose }: AtmospherePanelProp
                     <div className="flex items-center gap-3">
                       <button
                         onClick={handleMuteToggle}
-                        title={isMuted ? 'Unmute' : 'Mute'}
+                        title={isMuted ? t('vibe.unmute') : t('vibe.mute')}
                         className="text-stone-gray hover:text-brand-ink transition-colors flex-shrink-0"
                       >
                         {isMuted || volume === 0
@@ -339,7 +339,7 @@ export default function AtmospherePanel({ isOpen, onClose }: AtmospherePanelProp
                         value={isMuted ? 0 : volume}
                         onChange={(e) => handleVolumeChange(parseFloat(e.target.value))}
                         className="flex-1 accent-moss-green"
-                        title="Volume"
+                        title={t('vibe.volumeLabel')}
                       />
                       <span className="text-xs text-stone-gray w-8 text-right flex-shrink-0">
                         {Math.round((isMuted ? 0 : volume) * 100)}%
@@ -348,7 +348,7 @@ export default function AtmospherePanel({ isOpen, onClose }: AtmospherePanelProp
 
                     {/* Loop toggle */}
                     <div className="flex items-center justify-between">
-                      <span className="text-xs text-stone-gray">Loop track</span>
+                      <span className="text-xs text-stone-gray">{t('vibe.loopTrack')}</span>
                       <button
                         onClick={handleLoopToggle}
                         className={`relative w-10 h-5 rounded-full transition-colors ${
@@ -370,7 +370,7 @@ export default function AtmospherePanel({ isOpen, onClose }: AtmospherePanelProp
                   {loadingAssets && (
                     <div className="flex items-center justify-center py-6 gap-2 text-stone-gray">
                       <Loader2 className="w-4 h-4 animate-spin" />
-                      <span className="text-sm">Loading audio library...</span>
+                      <span className="text-sm">{t('vibe.loadingAudioLibrary')}</span>
                     </div>
                   )}
 
@@ -381,9 +381,9 @@ export default function AtmospherePanel({ isOpen, onClose }: AtmospherePanelProp
                   {!loadingAssets && !assetError && audioAssets.length === 0 && (
                     <div className="text-center py-6 text-stone-gray">
                       <Music className="w-8 h-8 mx-auto mb-2 opacity-30" />
-                      <p className="text-sm font-medium">No audio assets found</p>
+                      <p className="text-sm font-medium">{t('vibe.noAudioAssetsFound')}</p>
                       <p className="text-xs mt-1">
-                        Upload audio files in the Asset Library (type: Audio).
+                        {t('vibe.uploadAudioHint')}
                       </p>
                     </div>
                   )}
@@ -391,7 +391,7 @@ export default function AtmospherePanel({ isOpen, onClose }: AtmospherePanelProp
                   {!loadingAssets && audioAssets.length > 0 && (
                     <div className="space-y-1.5">
                       <p className="text-xs font-medium text-stone-gray mb-2">
-                        Select a track to play for all players:
+                        {t('vibe.selectTrackHint')}
                       </p>
                       {audioAssets.map((asset) => {
                         const isPlaying = activeAtmosphereAudio?.assetId === asset.id;
@@ -417,7 +417,7 @@ export default function AtmospherePanel({ isOpen, onClose }: AtmospherePanelProp
                               </p>
                               <p className="text-xs text-warm-gray">
                                 {formatSize(asset.fileSize)}
-                                {asset.scope === 'CAMPAIGN' ? ' · Campaign' : ' · Global'}
+                                {' · '}{asset.scope === 'CAMPAIGN' ? t('vibe.scopeCampaign') : t('vibe.scopeGlobal')}
                               </p>
                             </div>
                             {isPlaying && (
@@ -434,7 +434,7 @@ export default function AtmospherePanel({ isOpen, onClose }: AtmospherePanelProp
               {/* Info note */}
               <div className="p-3 rounded-lg bg-moss-green/5 border border-moss-green/15">
                 <p className="text-xs text-stone-gray">
-                  Effects and audio sync to all players in real time. Players can mute audio locally using their browser tab. Atmosphere state is restored when players rejoin.
+                  {t('vibe.syncInfo')}
                 </p>
               </div>
 

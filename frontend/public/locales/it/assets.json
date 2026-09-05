@@ -33,12 +33,12 @@
   "checkConnection": "Controlla la connessione e riprova.",
   "tryAgain": "Riprova",
   "managedByAdmins": "Gestito dagli amministratori",
-  "showingCount": "Mostra {count} risorsa{plural}",
-  "showingCount_plural": "Mostra {count} risorse",
-  "showingOf": "Mostra {count} di {total} risorse",
+  "showingCount_one": "Mostra {{count}} risorsa",
+  "showingCount_other": "Mostra {{count}} risorse",
+  "showingOf": "Mostra {{count}} di {{total}} risorse",
   "previous": "Precedente",
   "next": "Successiva",
-  "pageOf": "Pagina {current} di {total}",
+  "pageOf": "Pagina {{current}} di {{total}}",
   "clearTags": "Cancella filtri",
   "sortBy": "Ordina per"
 }

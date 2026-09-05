@@ -1,4 +1,5 @@
 import { motion } from 'framer-motion';
+import { useTranslation } from 'react-i18next';
 import { Dices, User, Target } from 'lucide-react';
 import type { DiceRolledEvent } from '@/types';
 
@@ -11,13 +12,27 @@ interface DiceResultProps {
  * Display a single dice roll result with breakdown and animations
  */
 export default function DiceResult({ roll, isCurrentUser }: DiceResultProps) {
+  const { t } = useTranslation('campaign');
   const { userName, characterName, expression, result, breakdown, purpose, timestamp, secret } = roll;
 
+  /**
+   * `breakdown` is a JSON column, so its type is a promise rather than a
+   * guarantee — it is erased before the value is ever read. A row written by an
+   * older version, restored from another instance, or imported can arrive
+   * without `rolls`, and this component used to throw on it. Because the error
+   * boundary sits at the page level, one such row took down the whole campaign:
+   * no map, no roster, no chat.
+   *
+   * A roll that cannot be drawn in full still shows its expression and total,
+   * which is the part anyone actually reads.
+   */
+  const detail = Array.isArray(breakdown?.rolls) ? breakdown.rolls : [];
+
   // Determine if critical success or fail (for d20 rolls)
-  const isCriticalSuccess = breakdown.rolls.some(
+  const isCriticalSuccess = detail.some(
     (r) => r.notation === '1d20' && r.results?.includes(20)
   );
-  const isCriticalFail = breakdown.rolls.some(
+  const isCriticalFail = detail.some(
     (r) => r.notation === '1d20' && r.results?.includes(1)
   );
 
@@ -50,9 +65,9 @@ export default function DiceResult({ roll, isCurrentUser }: DiceResultProps) {
     const diffSecs = Math.floor(diffMs / 1000);
     const diffMins = Math.floor(diffSecs / 60);
 
-    if (diffSecs < 10) return 'just now';
-    if (diffSecs < 60) return `${diffSecs}s ago`;
-    if (diffMins < 60) return `${diffMins}m ago`;
+    if (diffSecs < 10) return t('chat.justNow');
+    if (diffSecs < 60) return t('dice.secondsAgoShort', { count: diffSecs });
+    if (diffMins < 60) return t('dice.minutesAgoShort', { count: diffMins });
     return date.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
   };
 
@@ -70,16 +85,27 @@ export default function DiceResult({ roll, isCurrentUser }: DiceResultProps) {
             <User className="w-4 h-4 flex-shrink-0 text-ink-secondary" />
             <span className="font-medium text-sm text-ink truncate">
               {userName}
-              {isCurrentUser && <span className="ml-1 text-xs opacity-60">(You)</span>}
-              {secret && !isCurrentUser && (
-                <span className="ml-2 text-xs bg-ink/10 text-ink-muted px-2 py-0.5 rounded">
-                  🔒 Secret (DM View)
+              {isCurrentUser && <span className="ml-1 text-xs opacity-60">{t('dice.you')}</span>}
+              {/* Every secret roll in the list is labelled, whoever is looking.
+                  It used to be marked only on someone *else's* roll — the DM's
+                  audit view — which left your own secret rolls indistinguishable
+                  from open ones now that they appear in the list at all.
+
+                  The wording differs because the two cases mean different
+                  things: yours is hidden from the other players, and the one
+                  you are reading as DM is somebody else's. */}
+              {secret && (
+                <span
+                  className="ml-2 text-xs bg-ink/10 text-ink-muted px-2 py-0.5 rounded"
+                  title={isCurrentUser ? t('dice.secretHiddenFromPlayersTitle') : t('dice.secretRolledByPlayerTitle')}
+                >
+                  🔒 {isCurrentUser ? t('dice.secretOwnBadge') : t('dice.secretDmView')}
                 </span>
               )}
             </span>
             {characterName && (
               <span className="text-xs text-ink-secondary truncate">
-                as {characterName}
+                {t('dice.asCharacter', { name: characterName })}
               </span>
             )}
           </div>
@@ -122,14 +148,16 @@ export default function DiceResult({ roll, isCurrentUser }: DiceResultProps) {
       <div className="mt-2 pt-2 border-t border-current/10">
         <div className="text-xs text-ink-secondary space-y-1">
           {/* Formula */}
-          <div className="font-mono">
-            <span className="opacity-60">Formula: </span>
-            {breakdown.formula}
-          </div>
+          {breakdown?.formula && (
+            <div className="font-mono">
+              <span className="opacity-60">{t('dice.formulaLabel')}</span>
+              {breakdown.formula}
+            </div>
+          )}
 
           {/* Individual dice rolls */}
           <div className="flex flex-wrap gap-2 mt-2">
-            {breakdown.rolls.map((roll, idx) => (
+            {detail.map((roll, idx) => (
               <div key={idx} className="flex items-center gap-1">
                 {roll.type === 'dice' && roll.notation && (
                   <div className="inline-flex items-center gap-1 bg-ink/5 px-2 py-1 rounded">
@@ -188,8 +216,8 @@ export default function DiceResult({ roll, isCurrentUser }: DiceResultProps) {
             ${isCriticalFail ? 'text-danger-ink dark:text-danger-ink border-danger/20' : ''}
           `}
         >
-          {isCriticalSuccess && '🎉 CRITICAL SUCCESS!'}
-          {isCriticalFail && '💥 CRITICAL FAIL!'}
+          {isCriticalSuccess && t('dice.criticalSuccessBanner')}
+          {isCriticalFail && t('dice.criticalFailBanner')}
         </motion.div>
       )}
     </motion.div>

@@ -30,6 +30,7 @@ import EditMapModal from './EditMapModal';
 import ConfirmDialog from '@/components/common/ConfirmDialog';
 import Button from '@/components/ui/Button';
 import { extractAssetId } from '@/utils/assetUrl';
+import { apiErrorMessage } from '@/utils/errors';
 
 interface MapManagerProps {
   isOpen: boolean;
@@ -224,7 +225,7 @@ function MapCard({
       <div className="p-3">
         <h3 className="font-semibold text-brand-ink truncate text-sm mb-0.5">{map.name}</h3>
         <p className="text-xs text-stone-gray/60">
-          {map.width}×{map.height} grid · {map.gridSize}px/sq
+          {t('map.gridDimensionsSummary', { width: map.width, height: map.height, gridSize: map.gridSize })}
         </p>
 
         {/* Actions */}
@@ -233,7 +234,7 @@ function MapCard({
             type="button"
             onClick={() => onSetActive(map)}
             disabled={isActive || isSwitchingToThis}
-            title={isActive ? t('map.alreadyActive') : t('map.setAsActive')}
+            title={isActive ? t('map.alreadyActive') : t('map.setActive')}
             className={`flex-1 text-xs py-1.5 px-2 rounded-lg transition-colors flex items-center justify-center gap-1 ${
               isActive
                 ? 'bg-moss-green/10 text-brand-ink/50 cursor-not-allowed'
@@ -369,8 +370,8 @@ export default function MapManager({ isOpen, onClose }: MapManagerProps) {
       document.body.appendChild(link);
       link.click();
       document.body.removeChild(link);
-    } catch (err: any) {
-      setError(err.response?.data?.message || t('map.errors.exportFailed'));
+    } catch (err: unknown) {
+      setError(apiErrorMessage(err) || t('map.errors.exportFailed'));
     }
   };
 
@@ -385,8 +386,8 @@ export default function MapManager({ isOpen, onClose }: MapManagerProps) {
     try {
       await mapService.deleteMap(campaign.id, map.id);
       setMaps((prev) => prev.filter((m) => m.id !== map.id));
-    } catch (err: any) {
-      setError(err.response?.data?.message || t('map.errors.deleteFailed'));
+    } catch (err: unknown) {
+      setError(apiErrorMessage(err) || t('map.errors.deleteFailed'));
     }
   };
 
@@ -404,14 +405,14 @@ export default function MapManager({ isOpen, onClose }: MapManagerProps) {
     try {
       const result = await mapService.importUVTT(campaign.id, file);
       setMaps((prev) => [result.map, ...prev]);
-      const parts = [`${result.totalSegments} wall segments`];
-      if (result.portalCount > 0) parts.push(`${result.portalCount} doors`);
-      if ((result as any).lightCount > 0) parts.push(`${(result as any).lightCount} lights`);
-      setImportSuccess(`Imported "${result.map.name}" with ${parts.join(', ')}`);
+      const parts = [t('map.uvttImport.segments', { count: result.totalSegments })];
+      if (result.portalCount > 0) parts.push(t('map.uvttImport.doors', { count: result.portalCount }));
+      if (result.lightCount > 0) parts.push(t('map.uvttImport.lights', { count: result.lightCount }));
+      setImportSuccess(t('map.uvttImport.successMessage', { name: result.map.name, parts: parts.join(', ') }));
       // Auto-clear success message after 5 seconds
       setTimeout(() => setImportSuccess(null), 5000);
-    } catch (err: any) {
-      const msg = err.response?.data?.message || t('map.errors.importFailed');
+    } catch (err: unknown) {
+      const msg = apiErrorMessage(err) || t('map.errors.importFailed');
       setError(msg);
     } finally {
       setIsImportingUVTT(false);
@@ -513,8 +514,8 @@ export default function MapManager({ isOpen, onClose }: MapManagerProps) {
       if (socket) {
         socket.emitMapChange(targetMap.id);
       }
-    } catch (err: any) {
-      setError(err.response?.data?.message || t('map.errors.switchFailed'));
+    } catch (err: unknown) {
+      setError(apiErrorMessage(err) || t('map.errors.switchFailed'));
     } finally {
       setIsSwitching(false);
     }

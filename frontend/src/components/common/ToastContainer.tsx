@@ -47,7 +47,7 @@ function ToastCard({ toast, onDismiss }: { toast: ToastItem; onDismiss: () => vo
         <button
           onClick={onDismiss}
           className="flex-shrink-0 ml-2 hover:opacity-70 transition-opacity focus:outline-none focus:ring-2 focus:ring-current rounded"
-          aria-label={i18n.t('common.dismiss')}
+          aria-label={i18n.t('dismiss')}
         >
           <X className="w-4 h-4" aria-hidden="true" />
         </button>
@@ -94,7 +94,7 @@ export default function ToastContainer() {
 
   return (
     <div
-      aria-label={i18n.t('common.notifications')}
+      aria-label={i18n.t('notifications')}
       className="fixed top-4 right-4 z-[9998] flex flex-col gap-2 pointer-events-none"
     >
       <AnimatePresence mode="sync">

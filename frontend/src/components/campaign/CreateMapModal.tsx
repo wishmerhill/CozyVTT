@@ -4,6 +4,7 @@
 // ============================================
 
 import { useState, useEffect, useCallback, useRef } from 'react';
+import { useTranslation } from 'react-i18next';
 import { MapPin, Loader2, ZoomIn, ZoomOut, Sparkles } from 'lucide-react';
 import { api } from '@/services/api';
 import mapService from '@/services/map.service';
@@ -42,6 +43,7 @@ function MapPreviewCanvas({
   gridSize: number;
   zoom: number;
 }) {
+  const { t } = useTranslation('campaign');
   const canvasRef = useRef<HTMLCanvasElement>(null);
 
   useEffect(() => {
@@ -60,8 +62,8 @@ function MapPreviewCanvas({
       ctx.font = '13px Georgia, serif';
       ctx.textAlign = 'center';
       ctx.textBaseline = 'middle';
-      ctx.fillText('Select a map image', PREVIEW_PX / 2, PREVIEW_PX / 2 - 10);
-      ctx.fillText('to preview the grid', PREVIEW_PX / 2, PREVIEW_PX / 2 + 10);
+      ctx.fillText(t('map.modal.selectImageLine1'), PREVIEW_PX / 2, PREVIEW_PX / 2 - 10);
+      ctx.fillText(t('map.modal.selectImageLine2'), PREVIEW_PX / 2, PREVIEW_PX / 2 + 10);
       return;
     }
 
@@ -120,7 +122,7 @@ function MapPreviewCanvas({
       cx.restore();
     };
     img.src = imageUrl;
-  }, [imageUrl, width, height, gridSize, zoom]);
+  }, [imageUrl, width, height, gridSize, zoom, t]);
 
   return (
     <canvas
@@ -129,7 +131,7 @@ function MapPreviewCanvas({
       height={PREVIEW_PX}
       className="w-full rounded border border-moss-green/30 bg-parchment/50"
       style={{ aspectRatio: '1 / 1' }}
-      aria-label="Grid alignment preview"
+      aria-label={t('map.modal.gridAlignmentPreviewAria')}
     />
   );
 }
@@ -152,6 +154,7 @@ function DimensionField({
   min: number;
   max: number;
 }) {
+  const { t } = useTranslation('campaign');
   const clamp = (v: number) => Math.max(min, Math.min(max, v));
   return (
     <div>
@@ -171,7 +174,7 @@ function DimensionField({
         value={value}
         onChange={(e) => onChange(parseInt(e.target.value))}
         className="w-full mt-1.5 accent-moss-green cursor-pointer"
-        aria-label={`${label} slider`}
+        aria-label={t('map.modal.sliderAria', { label })}
       />
     </div>
   );
@@ -187,6 +190,7 @@ export default function CreateMapModal({
   onClose,
   onCreated,
 }: CreateMapModalProps) {
+  const { t } = useTranslation(['campaign', 'common']);
   // Asset selection
   const [mapAssetId, setMapAssetId] = useState<string | null>(null);
   const [spiritAssetId, setSpiritAssetId] = useState<string | null>(null);
@@ -293,7 +297,7 @@ export default function CreateMapModal({
     } catch (err: unknown) {
       setError(
         (err as { response?: { data?: { message?: string } } }).response?.data?.message ||
-          'Failed to create map. Please try again.'
+          t('map.modal.createFailedError')
       );
     } finally {
       setIsSubmitting(false);
@@ -306,7 +310,7 @@ export default function CreateMapModal({
   if (!isOpen) return null;
 
   return (
-    <Modal open={isOpen} onClose={handleClose} title="Create Map" icon={MapPin} size="xl" closeDisabled={isSubmitting}>
+    <Modal open={isOpen} onClose={handleClose} title={t('map.create')} icon={MapPin} size="xl" closeDisabled={isSubmitting}>
             {/* Body */}
             <div className="space-y-6">
               {/* Error */}
@@ -318,11 +322,11 @@ export default function CreateMapModal({
 
               {/* Map Image */}
               <AssetPicker
-                label="Map Image"
+                label={t('map.modal.mapImageLabel')}
                 required
                 type={AssetType.MAP}
-                searchPlaceholder="Search maps..."
-                emptyMessage="No map assets found. Upload a map image to get started."
+                searchPlaceholder={t('map.modal.searchMapsPlaceholder')}
+                emptyMessage={t('map.modal.noMapAssetsCreateHint')}
                 selectedAssetId={mapAssetId}
                 onSelect={handleMapAssetSelect}
                 campaignId={campaignId}
@@ -330,10 +334,10 @@ export default function CreateMapModal({
 
               {/* Spirit Layer */}
               <AssetPicker
-                label="Spirit Layer Image (optional)"
+                label={t('map.modal.spiritLayerImageLabel')}
                 type={AssetType.MAP}
-                searchPlaceholder="Search maps..."
-                emptyMessage="No map assets found. Upload a map image to get started."
+                searchPlaceholder={t('map.modal.searchMapsPlaceholder')}
+                emptyMessage={t('map.modal.noMapAssetsCreateHint')}
                 selectedAssetId={spiritAssetId}
                 onSelect={handleSpiritAssetSelect}
                 campaignId={campaignId}
@@ -342,13 +346,13 @@ export default function CreateMapModal({
               {/* Map Name */}
               <div>
                 <label className="block text-sm font-medium text-stone-gray mb-1">
-                  Map Name <span className="text-danger-ink">*</span>
+                  {t('map.name')} <span className="text-danger-ink">*</span>
                 </label>
                 <input
                   type="text"
                   value={name}
                   onChange={(e) => setName(e.target.value)}
-                  placeholder="e.g. Tavern Interior, World Map..."
+                  placeholder={t('map.modal.namePlaceholderCreate')}
                   className="input-cozy"
                   maxLength={100}
                 />
@@ -363,25 +367,25 @@ export default function CreateMapModal({
                   {/* Map Dimensions */}
                   <div>
                     <label className="block text-sm font-medium text-stone-gray mb-3">
-                      Map Dimensions
+                      {t('map.modal.dimensionsLabel')}
                     </label>
                     <div className="space-y-3">
                       <DimensionField
-                        label="Width (grid squares)"
+                        label={t('map.modal.widthLabel')}
                         value={width}
                         onChange={setWidth}
                         min={1}
                         max={500}
                       />
                       <DimensionField
-                        label="Height (grid squares)"
+                        label={t('map.modal.heightLabel')}
                         value={height}
                         onChange={setHeight}
                         min={1}
                         max={500}
                       />
                       <DimensionField
-                        label="Grid Size (px/square)"
+                        label={t('map.modal.gridSizePxLabel')}
                         value={gridSize}
                         onChange={setGridSize}
                         min={10}
@@ -389,17 +393,17 @@ export default function CreateMapModal({
                       />
                     </div>
                     <p className="text-xs text-stone-gray/50 mt-2">
-                      Canvas will be {width * gridSize}×{height * gridSize}px
+                      {t('map.modal.canvasSizeHint', { width: width * gridSize, height: height * gridSize })}
                     </p>
                   </div>
 
                   {/* Grid Settings */}
                   <div className="border border-moss-green/20 rounded-lg p-4 space-y-4 bg-moss-green/5">
-                    <h3 className="text-sm font-medium text-brand-ink">Grid Settings</h3>
+                    <h3 className="text-sm font-medium text-brand-ink">{t('map.modal.gridSettingsTitle')}</h3>
 
                     {/* Grid Scale */}
                     <div>
-                      <label className="block text-xs font-medium text-stone-gray mb-2">Grid Scale</label>
+                      <label className="block text-xs font-medium text-stone-gray mb-2">{t('map.modal.gridScaleLabel')}</label>
                       <div className="flex gap-2 flex-wrap">
                         {(['5', '10'] as const).map((v) => (
                           <button
@@ -424,7 +428,7 @@ export default function CreateMapModal({
                               : 'bg-paper-white text-stone-gray border-moss-green/30 hover:border-moss-green/60'
                           }`}
                         >
-                          Custom
+                          {t('map.modal.customLabel')}
                         </button>
                         {feetPreset === 'custom' && (
                           <input
@@ -438,12 +442,12 @@ export default function CreateMapModal({
                           />
                         )}
                       </div>
-                      <p className="text-xs text-stone-gray/50 mt-1">How many feet each grid square represents.</p>
+                      <p className="text-xs text-stone-gray/50 mt-1">{t('map.modal.feetPerSquareHint')}</p>
                     </div>
 
                     {/* Diagonal Movement */}
                     <div>
-                      <label className="block text-xs font-medium text-stone-gray mb-2">Diagonal Movement</label>
+                      <label className="block text-xs font-medium text-stone-gray mb-2">{t('map.modal.diagonalMovementLabel')}</label>
                       <div className="space-y-2">
                         <label className="flex items-start gap-3 cursor-pointer group">
                           <input
@@ -456,9 +460,9 @@ export default function CreateMapModal({
                           />
                           <div>
                             <span className="text-sm text-stone-gray group-hover:text-brand-ink transition-colors">
-                              Flat — every square costs the same
+                              {t('map.modal.diagonalFlatDesc')}
                             </span>
-                            <p className="text-xs text-stone-gray/50">D&D 5e default</p>
+                            <p className="text-xs text-stone-gray/50">{t('map.modal.diagonalFlatHint')}</p>
                           </div>
                         </label>
                         <label className="flex items-start gap-3 cursor-pointer group">
@@ -472,9 +476,9 @@ export default function CreateMapModal({
                           />
                           <div>
                             <span className="text-sm text-stone-gray group-hover:text-brand-ink transition-colors">
-                              Alternating — 5/10/5/10 ft diagonals
+                              {t('map.modal.diagonalAlternatingDesc')}
                             </span>
-                            <p className="text-xs text-stone-gray/50">Pathfinder 2e default</p>
+                            <p className="text-xs text-stone-gray/50">{t('map.modal.diagonalAlternatingHint')}</p>
                           </div>
                         </label>
                       </div>
@@ -485,12 +489,12 @@ export default function CreateMapModal({
                 {/* ── Right: Grid Preview + Zoom ── */}
                 <div className="space-y-3">
                   <div className="flex items-center justify-between">
-                    <label className="block text-sm font-medium text-stone-gray">Grid Preview</label>
+                    <label className="block text-sm font-medium text-stone-gray">{t('map.modal.gridPreviewLabel')}</label>
                     <div className="flex items-center gap-2">
                       {isDetecting && (
                         <span className="flex items-center gap-1 text-xs text-stone-gray/50">
                           <Loader2 className="w-3 h-3 animate-spin" />
-                          Analysing…
+                          {t('map.modal.analysing')}
                         </span>
                       )}
                       <span className="text-xs text-stone-gray/50 tabular-nums">{previewZoom.toFixed(2)}×</span>
@@ -516,7 +520,7 @@ export default function CreateMapModal({
                       value={previewZoom}
                       onChange={(e) => setPreviewZoom(parseFloat(e.target.value))}
                       className="flex-1 accent-moss-green cursor-pointer"
-                      aria-label="Preview zoom level"
+                      aria-label={t('map.modal.previewZoomLevelAria')}
                     />
                     <ZoomIn className="w-4 h-4 text-stone-gray/50 flex-shrink-0" />
                   </div>
@@ -526,11 +530,11 @@ export default function CreateMapModal({
                     <div className="flex items-start gap-2 p-2.5 bg-warning/10 border border-warning/30 rounded-lg">
                       <Sparkles className="w-4 h-4 text-warning-ink flex-shrink-0 mt-0.5" />
                       <div className="flex-1 min-w-0">
-                        <p className="text-xs font-medium text-warning-ink">Grid detected</p>
+                        <p className="text-xs font-medium text-warning-ink">{t('map.modal.gridDetectedLabel')}</p>
                         <p className="text-xs text-warning-ink mt-0.5">
-                          {detectedGrid.width}×{detectedGrid.height} squares · {detectedGrid.gridSize}px/sq
+                          {t('map.modal.gridDetectedInfo', { width: detectedGrid.width, height: detectedGrid.height, gridSize: detectedGrid.gridSize })}
                           <span className="text-warning-ink ml-1">
-                            ({Math.round(detectedGrid.confidence * 100)}% confidence)
+                            {t('map.modal.gridDetectedConfidence', { confidence: Math.round(detectedGrid.confidence * 100) })}
                           </span>
                         </p>
                       </div>
@@ -540,13 +544,13 @@ export default function CreateMapModal({
                           onClick={applyDetectedGrid}
                           className="text-xs px-2 py-1 bg-warning text-white rounded hover:bg-warning transition-colors"
                         >
-                          Apply
+                          {t('map.modal.applyGrid')}
                         </button>
                         <button
                           type="button"
                           onClick={() => setDetectedGrid(null)}
                           className="text-xs px-2 py-1 text-warning-ink hover:text-warning-ink transition-colors"
-                          aria-label="Dismiss suggestion"
+                          aria-label={t('map.modal.dismissSuggestionAria')}
                         >
                           ✕
                         </button>
@@ -556,13 +560,13 @@ export default function CreateMapModal({
 
                   {!isDetecting && !detectedGrid && mapAssetId && (
                     <p className="text-xs text-stone-gray/50 text-center leading-relaxed">
-                      No grid detected automatically.<br />Use the sliders to align manually.
+                      {t('map.modal.noGridDetectedLine1')}<br />{t('map.modal.noGridDetectedLine2')}
                     </p>
                   )}
 
                   {!mapAssetId && (
                     <p className="text-xs text-stone-gray/50 text-center leading-relaxed">
-                      Zoom in to verify the grid aligns<br />with the lines on your map image.
+                      {t('map.modal.zoomVerifyLine1')}<br />{t('map.modal.zoomVerifyLine2')}
                     </p>
                   )}
                 </div>
@@ -577,7 +581,7 @@ export default function CreateMapModal({
                 variant="secondary"
                 disabled={isSubmitting}
               >
-                Cancel
+                {t('common:cancel')}
               </Button>
               <Button
                 type="button"
@@ -586,7 +590,7 @@ export default function CreateMapModal({
                 className="flex items-center gap-2 disabled:opacity-50 disabled:cursor-not-allowed"
               >
                 {isSubmitting && <Loader2 className="w-4 h-4 animate-spin" />}
-                Create Map
+                {t('map.create')}
               </Button>
             </div>
     </Modal>

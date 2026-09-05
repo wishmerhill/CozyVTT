@@ -3,6 +3,7 @@
  */
 
 import React from 'react';
+import { useTranslation } from 'react-i18next';
 import type { TextSection } from '../../../../../types/flexible-character-sheet';
 
 interface TextDisplayProps {
@@ -10,10 +11,12 @@ interface TextDisplayProps {
 }
 
 export const TextDisplay: React.FC<TextDisplayProps> = ({ section }) => {
+  const { t } = useTranslation('character');
+
   if (!section.value || section.value.trim() === '') {
     return (
       <div className="p-4 text-center text-stone-gray">
-        No text content. Switch to edit mode to add content.
+        {t('sheet.flexible.noTextContent')}
       </div>
     );
   }

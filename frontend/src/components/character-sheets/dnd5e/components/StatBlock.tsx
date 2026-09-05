@@ -7,6 +7,7 @@
 
 import React from 'react';
 import { Dices } from 'lucide-react';
+import { useTranslation } from 'react-i18next';
 
 interface StatBlockProps {
   label: string;
@@ -49,6 +50,8 @@ export const StatBlock: React.FC<StatBlockProps> = ({
   onRoll,
   onRollContext,
 }) => {
+  const { t } = useTranslation('character');
+
   const formatModifier = (mod: number): string => {
     return mod >= 0 ? `+${mod}` : `${mod}`;
   };
@@ -78,7 +81,7 @@ export const StatBlock: React.FC<StatBlockProps> = ({
       }`}
       onClick={isClickable ? onRoll : undefined}
       onContextMenu={onRollContext}
-      title={isClickable ? `Left-click: roll ${label} check  |  Right-click: Advantage / Disadvantage` : undefined}
+      title={isClickable ? t('sheet.abilityRollHint', { label }) : undefined}
     >
       {/* Stat Label */}
       <div className="text-xs font-semibold text-stone-600 uppercase tracking-wide">

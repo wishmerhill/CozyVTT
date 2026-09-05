@@ -3,6 +3,7 @@
  */
 
 import { useState } from 'react';
+import { useTranslation } from 'react-i18next';
 import { X } from 'lucide-react';
 import { useFocusTrap } from '@/hooks/useFocusTrap';
 import { useToast } from '@/contexts/ToastContext';
@@ -15,6 +16,8 @@ import DnD5eCharacterEditor from '../character-sheets/dnd5e/DnD5eCharacterEditor
 import Pathfinder2eCharacterEditor from '../character-sheets/pathfinder2e/Pathfinder2eCharacterEditor';
 import CallOfCthulhu7eCharacterEditor from '../character-sheets/call-of-cthulhu-7e/CallOfCthulhu7eCharacterEditor';
 import { FlexibleCharacterSheetEdit } from '../character-sheets/flexible/FlexibleCharacterSheetEdit';
+import { apiErrorMessage, apiValidationIssues } from '@/utils/errors';
+import type { CharacterData } from '@/types';
 
 interface CharacterSheetEditorModalProps {
   character: Character;
@@ -27,6 +30,7 @@ export default function CharacterSheetEditorModal({
   onClose,
   onSaved,
 }: CharacterSheetEditorModalProps) {
+  const { t } = useTranslation(['character', 'common']);
   const [saving, setSaving] = useState(false);
   const [confirmClose, setConfirmClose] = useState(false);
   const { showToast } = useToast();
@@ -35,7 +39,7 @@ export default function CharacterSheetEditorModal({
   // third argument — forward it so the character's token actually updates.
   // (Omit it when undefined so an edit that didn't touch the token keeps the
   // existing image.)
-  const handleSave = async (data: any, _showToast?: boolean, tokenImageUrl?: string) => {
+  const handleSave = async (data: CharacterData, _showToast?: boolean, tokenImageUrl?: string) => {
     try {
       setSaving(true);
       await api.updateCharacter(character.id, {
@@ -50,18 +54,18 @@ export default function CharacterSheetEditorModal({
 
       // Close modal
       onClose();
-    } catch (error: any) {
+    } catch (error) {
       console.error('Error saving character:', error);
 
       // Show detailed error message
-      const errorMessage = error.response?.data?.message || 'Failed to save character. Please try again.';
-      const validationErrors = error.response?.data?.validationErrors;
+      const message = apiErrorMessage(error) || t('editor.saveFailed');
+      const validationErrors = apiValidationIssues(error);
 
       if (validationErrors) {
         console.error('Validation errors:', validationErrors);
-        showToast(`Validation Error: ${errorMessage}`, 'error');
+        showToast(t('editor.validationError', { message }), 'error');
       } else {
-        showToast(errorMessage, 'error');
+        showToast(message, 'error');
       }
     } finally {
       setSaving(false);
@@ -108,16 +112,16 @@ export default function CharacterSheetEditorModal({
           <div className="glass-panel p-6">
             <div className="flex flex-col items-center justify-center py-12 space-y-4">
               <h3 className="text-xl font-semibold text-warm-gray">
-                Shadowrun 6e Character Editor
+                {t('editor.shadowrunEditorTitle')}
               </h3>
               <p className="text-stone-gray text-center max-w-md">
-                The Shadowrun 6th Edition character editor is not yet implemented.
+                {t('editor.shadowrunEditorNotImplemented')}
               </p>
               <button
                 onClick={onClose}
                 className="px-6 py-2 rounded-lg bg-moss-green text-white hover:bg-moss-green/90 transition-colors"
               >
-                Close
+                {t('common:close')}
               </button>
             </div>
           </div>
@@ -154,7 +158,7 @@ export default function CharacterSheetEditorModal({
         <div className="flex justify-end px-3 py-2 border-b border-moss-green/20 flex-shrink-0">
           <button
             onClick={handleCancel}
-            aria-label="Close dialog"
+            aria-label={t('common:closeDialogAria')}
             className="p-2 rounded-lg hover:bg-stone-gray/10 transition-colors"
             disabled={saving}
           >
@@ -164,7 +168,7 @@ export default function CharacterSheetEditorModal({
 
         {/* Visually hidden title for accessibility */}
         <h2 id="character-sheet-editor-title" className="sr-only">
-          Edit Character Sheet: {character.name}
+          {t('editor.editSheetTitle', { name: character.name })}
         </h2>
 
         {/* Editor Content */}
@@ -177,10 +181,10 @@ export default function CharacterSheetEditorModal({
         on top at the same z-50 stacking level (later DOM = visually on top). */}
     <ConfirmDialog
       isOpen={confirmClose}
-      title="Discard Changes?"
-      message="Are you sure you want to cancel? Any unsaved changes will be lost."
-      confirmLabel="Discard"
-      cancelLabel="Keep Editing"
+      title={t('editor.discardTitle')}
+      message={t('editor.discardMessage')}
+      confirmLabel={t('editor.discardConfirm')}
+      cancelLabel={t('editor.keepEditing')}
       variant="warning"
       onConfirm={onClose}
       onCancel={() => setConfirmClose(false)}

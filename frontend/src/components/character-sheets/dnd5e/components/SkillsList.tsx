@@ -36,6 +36,11 @@ interface SkillsListProps {
     survival: Skill;
   };
   passivePerception?: number;
+  /**
+   * Checks the eighteen skills do not cover — tool proficiencies and homebrew.
+   * Already carries a derived bonus, so this row draws exactly like the rest.
+   */
+  customSkills?: { name: string; proficient: boolean; expertise: boolean; bonus: number }[];
   /** Left-click to roll. Omit outside campaign context. */
   onRoll?: (expression: string, purpose: string) => void;
   /** Right-click for Advantage / Disadvantage popup. */
@@ -68,11 +73,14 @@ const SKILL_NAMES: Record<string, string> = {
  * SkillRow - Single skill display with proficiency indicator
  */
 const SkillRow: React.FC<{
-  nameKey: string;
+  /** i18n key for one of the standard eighteen skills. */
+  nameKey?: string;
+  /** Raw label for a custom skill, which has no translation key of its own. */
+  label?: string;
   skill: Skill;
   onRoll?: (expression: string, purpose: string) => void;
   onRollContext?: (e: React.MouseEvent, expression: string, purpose: string) => void;
-}> = ({ nameKey, skill, onRoll, onRollContext }) => {
+}> = ({ nameKey, label, skill, onRoll, onRollContext }) => {
   const { t } = useTranslation('character');
   const formatBonus = (bonus: number): string => {
     return bonus >= 0 ? `+${bonus}` : `${bonus}`;
@@ -88,7 +96,7 @@ const SkillRow: React.FC<{
     }
   };
 
-  const displayName = t(nameKey);
+  const displayName = label ?? t(nameKey ?? '');
   const expression = `1d20${formatBonus(skill.bonus)}`;
   const purpose = t('sheet.skills.rollPurpose', { skill: displayName });
   const isClickable = !!onRoll;
@@ -121,7 +129,7 @@ const SkillRow: React.FC<{
 /**
  * SkillsList - Displays all skills with proficiency indicators
  */
-export const SkillsList: React.FC<SkillsListProps> = ({ skills, passivePerception, onRoll, onRollContext }) => {
+export const SkillsList: React.FC<SkillsListProps> = ({ skills, passivePerception, customSkills, onRoll, onRollContext }) => {
   const { t } = useTranslation('character');
   return (
     <div className="space-y-2">
@@ -131,6 +139,27 @@ export const SkillsList: React.FC<SkillsListProps> = ({ skills, passivePerceptio
           <SkillRow key={key} nameKey={SKILL_NAMES[key]} skill={skill} onRoll={onRoll} onRollContext={onRollContext} />
         ))}
       </div>
+
+      {/* The player's own — separated so it is obvious which are the standard
+          eighteen and which this character added. */}
+      {customSkills && customSkills.length > 0 && (
+        <div className="pt-2 border-t border-stone-200">
+          <div className="text-xs font-semibold text-stone-500 uppercase tracking-wide px-2 mb-1">
+            {t('sheet.yourOwnSkillsHeading')}
+          </div>
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-x-4">
+            {customSkills.map((custom, index) => (
+              <SkillRow
+                key={`${custom.name}-${index}`}
+                label={custom.name}
+                skill={custom}
+                onRoll={onRoll}
+                onRollContext={onRollContext}
+              />
+            ))}
+          </div>
+        </div>
+      )}
 
       {/* Passive Perception */}
       {passivePerception !== undefined && (

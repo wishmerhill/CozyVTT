@@ -6,6 +6,7 @@
 // ============================================
 
 import { useState, useCallback } from 'react';
+import { useTranslation } from 'react-i18next';
 import {
   ChevronDown,
   ChevronRight,
@@ -59,6 +60,7 @@ interface TokenRowProps {
 }
 
 function TokenRow({ token, campaignId, mapId, onEditToken }: TokenRowProps) {
+  const { t } = useTranslation('campaign');
   const { currentMap } = useCampaign();
   const { socket } = useWebSocket();
   const [isDeleting, setIsDeleting] = useState(false);
@@ -146,7 +148,7 @@ function TokenRow({ token, campaignId, mapId, onEditToken }: TokenRowProps) {
       <div className="flex-1 min-w-0">
         <p className={`text-xs font-medium truncate ${!token.visible ? 'text-stone-gray/50' : 'text-charcoal'}`}>
           {token.name}
-          {!token.visible && <span className="ml-1 text-[10px] text-stone-gray/40">(hidden)</span>}
+          {!token.visible && <span className="ml-1 text-[10px] text-stone-gray/40">{t('token.hiddenSuffix')}</span>}
         </p>
         {hp && (
           <p className="text-[10px] text-stone-gray/60">{hp}</p>
@@ -159,7 +161,7 @@ function TokenRow({ token, campaignId, mapId, onEditToken }: TokenRowProps) {
         {canEdit && onEditToken && (
           <button
             onClick={() => onEditToken(token)}
-            title="Edit token"
+            title={t('token.edit')}
             className="p-1 rounded hover:bg-moss-green/10 text-brand-ink transition-colors"
           >
             <Edit2 className="w-3 h-3" />
@@ -169,7 +171,7 @@ function TokenRow({ token, campaignId, mapId, onEditToken }: TokenRowProps) {
         {/* Toggle visibility */}
         <button
           onClick={handleToggleVisible}
-          title={token.visible ? 'Hide from players' : 'Show to players'}
+          title={token.visible ? t('npcEditor.hideFromPlayers') : t('npcEditor.showToPlayers')}
           className="p-1 rounded hover:bg-moss-green/10 text-stone-gray transition-colors"
         >
           {token.visible ? <EyeOff className="w-3 h-3" /> : <Eye className="w-3 h-3" />}
@@ -179,7 +181,7 @@ function TokenRow({ token, campaignId, mapId, onEditToken }: TokenRowProps) {
         <button
           onClick={handleDuplicate}
           disabled={isDuplicating}
-          title="Duplicate token"
+          title={t('token.duplicate')}
           className="p-1 rounded hover:bg-moss-green/10 text-stone-gray transition-colors disabled:opacity-40"
         >
           {isDuplicating ? (
@@ -193,7 +195,7 @@ function TokenRow({ token, campaignId, mapId, onEditToken }: TokenRowProps) {
         <button
           onClick={handleDelete}
           disabled={isDeleting}
-          title="Remove from map"
+          title={t('token.removeFromMap')}
           className="p-1 rounded hover:bg-danger/10 text-danger-ink/60 hover:text-danger-ink transition-colors disabled:opacity-40"
         >
           {isDeleting ? (
@@ -255,6 +257,7 @@ function TokenGroup({ label, tokens, campaignId, mapId, onEditToken, defaultOpen
 // ============================================
 
 export default function TokenRoster({ onEditToken }: TokenRosterProps) {
+  const { t } = useTranslation('campaign');
   const { campaign, currentMap } = useCampaign();
   // Movement-ignoring subscription: the roster renders names/flags/HP, not
   // coordinates, so it stays static while tokens are dragged around the map.
@@ -277,7 +280,7 @@ export default function TokenRoster({ onEditToken }: TokenRosterProps) {
         className="w-full flex items-center justify-between px-3 py-2.5 hover:bg-moss-green/5 transition-colors"
       >
         <div className="flex items-center gap-2">
-          <span className="text-sm font-semibold text-brand-ink">Token Roster</span>
+          <span className="text-sm font-semibold text-brand-ink">{t('token.roster.title')}</span>
           <span className="text-xs text-stone-gray/60">({tokens.length})</span>
         </div>
         {isCollapsed ? (
@@ -291,7 +294,7 @@ export default function TokenRoster({ onEditToken }: TokenRosterProps) {
       {!isCollapsed && (
         <div className="border-t border-moss-green/10 py-1 space-y-0.5">
           <TokenGroup
-            label="Players"
+            label={t('token.players')}
             tokens={players}
             campaignId={campaign.id}
             mapId={currentMap.id}
@@ -299,7 +302,7 @@ export default function TokenRoster({ onEditToken }: TokenRosterProps) {
             defaultOpen={true}
           />
           <TokenGroup
-            label="NPCs"
+            label={t('token.roster.npcs')}
             tokens={npcs}
             campaignId={campaign.id}
             mapId={currentMap.id}
@@ -307,7 +310,7 @@ export default function TokenRoster({ onEditToken }: TokenRosterProps) {
             defaultOpen={true}
           />
           <TokenGroup
-            label="Objects"
+            label={t('token.roster.objects')}
             tokens={objects}
             campaignId={campaign.id}
             mapId={currentMap.id}

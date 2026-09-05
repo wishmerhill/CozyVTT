@@ -7,6 +7,8 @@
 
 import React from 'react';
 import { Award, Star, Zap, Circle, Gift } from 'lucide-react';
+import type { TFunction } from 'i18next';
+import { useTranslation } from 'react-i18next';
 
 export interface Feat {
   level: number;
@@ -26,57 +28,54 @@ interface FeatsListProps {
   feats: FeatsData;
 }
 
-const FEAT_CATEGORIES: Array<{
+const getFeatCategories = (t: TFunction): Array<{
   key: keyof FeatsData;
   label: string;
   icon: React.ElementType;
   color: string;
   bgColor: string;
-  description: string;
-}> = [
+}> => [
   {
     key: 'ancestryAndHeritage',
-    label: 'Ancestry & Heritage',
+    label: t('sheet.pf2e.featCategories.ancestryAndHeritage'),
     icon: Star,
     color: 'text-purple-600',
     bgColor: 'bg-purple-50',
-    description: 'Feats from ancestry and heritage choices',
   },
   {
     key: 'class',
-    label: 'Class Feats',
+    label: t('sheet.pf2e.featCategories.class'),
     icon: Award,
     color: 'text-blue-600',
     bgColor: 'bg-blue-50',
-    description: 'Class-specific feats and abilities',
   },
   {
     key: 'skill',
-    label: 'Skill Feats',
+    label: t('sheet.pf2e.featCategories.skill'),
     icon: Zap,
     color: 'text-green-600',
     bgColor: 'bg-green-50',
-    description: 'Feats that enhance skills',
   },
   {
     key: 'general',
-    label: 'General Feats',
+    label: t('sheet.pf2e.featCategories.general'),
     icon: Circle,
     color: 'text-stone-600',
     bgColor: 'bg-stone-50',
-    description: 'General feats available to all characters',
   },
   {
     key: 'bonus',
-    label: 'Bonus Feats',
+    label: t('sheet.pf2e.featCategories.bonus'),
     icon: Gift,
     color: 'text-amber-600',
     bgColor: 'bg-amber-50',
-    description: 'Bonus feats from class or ancestry',
   },
 ];
 
 export const FeatsList: React.FC<FeatsListProps> = ({ feats }) => {
+  const { t } = useTranslation('character');
+  const FEAT_CATEGORIES = getFeatCategories(t);
+
   return (
     <div className="space-y-6">
       {FEAT_CATEGORIES.map((category) => {
@@ -109,7 +108,7 @@ export const FeatsList: React.FC<FeatsListProps> = ({ feats }) => {
                         <div className="flex items-center space-x-2 mb-1">
                           <span className="font-semibold text-stone-800">{feat.name}</span>
                           <span className="px-2 py-0.5 bg-stone-100 text-stone-600 text-xs rounded-full font-medium">
-                            Level {feat.level}
+                            {t('sheet.pf2e.featLevel', { level: feat.level })}
                           </span>
                         </div>
                         {feat.notes && (
@@ -127,7 +126,7 @@ export const FeatsList: React.FC<FeatsListProps> = ({ feats }) => {
       {/* Empty State */}
       {Object.values(feats).every(arr => !arr || arr.length === 0) && (
         <div className="text-center py-8 text-stone-500 italic">
-          No feats recorded yet
+          {t('sheet.pf2e.noFeats')}
         </div>
       )}
     </div>

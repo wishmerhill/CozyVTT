@@ -8,6 +8,7 @@
  */
 
 import { useState } from 'react';
+import { useTranslation } from 'react-i18next';
 import { Settings, Sun, Moon, Sunset, Sunrise, Clock } from 'lucide-react';
 import { useCampaign } from '@/contexts/CampaignContext';
 import { useWebSocket } from '@/contexts/WebSocketContext';
@@ -31,6 +32,7 @@ function getPeriodIcon(periodName: string) {
 // ============================================
 
 export default function VibeTracker() {
+  const { t } = useTranslation('campaign');
   const { campaign, userRole, currentVibe } = useCampaign();
   const { socket } = useWebSocket();
   const [isConfigureOpen, setIsConfigureOpen] = useState(false);
@@ -67,14 +69,14 @@ export default function VibeTracker() {
         <div className="flex items-center justify-between">
           <div className="flex items-center gap-2">
             <Sun className="w-4 h-4 text-warm-amber" />
-            <h3 className="text-sm font-semibold text-brand-ink">Vibe Tracker</h3>
+            <h3 className="text-sm font-semibold text-brand-ink">{t('vibe.trackerTitle')}</h3>
           </div>
 
           {userRole === 'DM' && (
             <button
               onClick={() => setIsConfigureOpen(true)}
               className="p-1.5 rounded-lg hover:bg-moss-green/10 transition-colors text-stone-gray hover:text-brand-ink"
-              title="Configure periods"
+              title={t('vibe.configurePeriods')}
             >
               <Settings className="w-3.5 h-3.5" />
             </button>
@@ -97,7 +99,7 @@ export default function VibeTracker() {
           ) : (
             <div className="flex items-center gap-1.5 text-warm-gray">
               <Clock className="w-4 h-4" />
-              <span className="text-sm italic">No vibe set</span>
+              <span className="text-sm italic">{t('vibe.noVibeSet')}</span>
             </div>
           )}
         </div>
@@ -112,7 +114,7 @@ export default function VibeTracker() {
                   key={period.name}
                   onClick={() => handleChangePeriod(period.name)}
                   disabled={isSwitching}
-                  title={`Set vibe to ${period.name}`}
+                  title={t('vibe.setVibeTo', { name: period.name })}
                   className={`
                     flex items-center gap-2 px-3 py-2 rounded-lg border text-left
                     transition-all duration-200 text-sm
@@ -140,7 +142,7 @@ export default function VibeTracker() {
         {/* Player-only hint when no vibe is set */}
         {userRole !== 'DM' && !currentVibe && (
           <p className="text-xs text-warm-gray text-center italic">
-            Waiting for the DM to set the scene...
+            {t('vibe.waitingForDm')}
           </p>
         )}
       </div>

@@ -6,15 +6,33 @@
  */
 
 import React from 'react';
+import { useTranslation } from 'react-i18next';
 import { Check, Dices } from 'lucide-react';
+import type {
+  CoC7eSkill,
+  CoC7eSkills,
+  CoC7eLanguageSkill,
+  CoC7eScienceSkill,
+  CoC7eFirearmsSkills,
+  CoC7eFightingSkills,
+} from '@/types/game-systems';
 
-interface Skill {
-  baseValue: number;
-  currentValue: number;
-  improvementChecked: boolean;
-  specialization?: string | null;
+/**
+ * What a skill row can render.
+ *
+ * `CoC7eSkill` plus `language`, because the same row renders the entries of
+ * `languageOther`, which carry one. A science specialisation fits too — its
+ * `specialization` is required there and optional here.
+ */
+interface Skill extends CoC7eSkill {
   language?: string;
-  notes?: string;
+  /**
+   * Custom skills carry their own label. Neither `CoC7eSkill` nor the backend's
+   * `skillSchema` declares it, but it survives a save the same way the other
+   * undeclared keys do: Zod strips it on parse, and the route stores the body
+   * as sent rather than the parsed output.
+   */
+  name?: string;
 }
 
 interface ThemeColor {
@@ -28,7 +46,7 @@ interface ThemeColor {
 
 interface SkillsListProps {
   /** Skills object from character data */
-  skills: Record<string, any>;
+  skills: Partial<CoC7eSkills>;
 
   /** Theme color for styling checkboxes */
   themeColor?: ThemeColor;
@@ -37,88 +55,52 @@ interface SkillsListProps {
   editable?: boolean;
 
   /** onChange handler for edit mode */
-  onChange?: (skillName: string, field: keyof Skill, value: any) => void;
+  onChange?: (skillName: string, field: keyof Skill, value: unknown) => void;
 
   /** Click to roll 1d100. Omit outside campaign context. */
   onRoll?: (expression: string, purpose: string) => void;
 }
 
-// Skill categories for organization
+// Skill categories for organization. Keys are i18n category ids, resolved via
+// `sheet.coc7e.skillCategories.*` at render time.
 const SKILL_CATEGORIES = {
-  'Investigation': [
+  investigation: [
     'accounting', 'anthropology', 'appraise', 'archaeology', 'libraryUse',
     'occult', 'spotHidden', 'listen', 'naturalWorld'
   ],
-  'Social': [
+  social: [
     'charm', 'fastTalk', 'intimidate', 'persuade', 'psychology'
   ],
-  'Physical': [
+  physical: [
     'climb', 'dodge', 'jump', 'ride', 'stealth', 'swim', 'throw'
   ],
-  'Combat': [
+  combat: [
     'fighting', 'firearms', 'firstAid'
   ],
-  'Technical': [
+  technical: [
     'artCraft', 'disguise', 'driveAuto', 'electricalRepair', 'locksmith',
     'mechanicalRepair', 'operateHeavyMachinery', 'pilot'
   ],
-  'Academic': [
+  academic: [
     'history', 'law', 'languageOwn', 'languageOther', 'medicine',
     'navigate', 'science', 'survival'
   ],
-  'Unusual': [
+  unusual: [
     'creditRating', 'cthulhuMythos', 'psychoanalysis', 'sleightOfHand', 'track'
   ]
 };
 
-// Skill display names (formatted)
-const SKILL_NAMES: Record<string, string> = {
-  accounting: 'Accounting',
-  anthropology: 'Anthropology',
-  appraise: 'Appraise',
-  archaeology: 'Archaeology',
-  artCraft: 'Art/Craft',
-  charm: 'Charm',
-  climb: 'Climb',
-  creditRating: 'Credit Rating',
-  cthulhuMythos: 'Cthulhu Mythos',
-  disguise: 'Disguise',
-  dodge: 'Dodge',
-  driveAuto: 'Drive Auto',
-  electricalRepair: 'Electrical Repair',
-  fastTalk: 'Fast Talk',
-  fighting: 'Fighting',
-  firearms: 'Firearms',
-  firstAid: 'First Aid',
-  history: 'History',
-  intimidate: 'Intimidate',
-  jump: 'Jump',
-  languageOwn: 'Language (Own)',
-  languageOther: 'Language (Other)',
-  law: 'Law',
-  libraryUse: 'Library Use',
-  listen: 'Listen',
-  locksmith: 'Locksmith',
-  mechanicalRepair: 'Mechanical Repair',
-  medicine: 'Medicine',
-  naturalWorld: 'Natural World',
-  navigate: 'Navigate',
-  occult: 'Occult',
-  operateHeavyMachinery: 'Operate Heavy Machinery',
-  persuade: 'Persuade',
-  pilot: 'Pilot',
-  psychoanalysis: 'Psychoanalysis',
-  psychology: 'Psychology',
-  ride: 'Ride',
-  science: 'Science',
-  sleightOfHand: 'Sleight of Hand',
-  spotHidden: 'Spot Hidden',
-  stealth: 'Stealth',
-  survival: 'Survival',
-  swim: 'Swim',
-  throw: 'Throw',
-  track: 'Track'
-};
+// Skill ids, resolved via `sheet.coc7e.skillNames.*` at render time.
+const SKILL_IDS = [
+  'accounting', 'anthropology', 'appraise', 'archaeology', 'artCraft', 'charm',
+  'climb', 'creditRating', 'cthulhuMythos', 'disguise', 'dodge', 'driveAuto',
+  'electricalRepair', 'fastTalk', 'fighting', 'firearms', 'firstAid', 'history',
+  'intimidate', 'jump', 'languageOwn', 'languageOther', 'law', 'libraryUse',
+  'listen', 'locksmith', 'mechanicalRepair', 'medicine', 'naturalWorld',
+  'navigate', 'occult', 'operateHeavyMachinery', 'persuade', 'pilot',
+  'psychoanalysis', 'psychology', 'ride', 'science', 'sleightOfHand',
+  'spotHidden', 'stealth', 'survival', 'swim', 'throw', 'track'
+];
 
 /**
  * SkillRow - Single skill display with improvement checkbox
@@ -129,9 +111,11 @@ const SkillRow: React.FC<{
   skill: Skill;
   editable: boolean;
   themeColor?: ThemeColor;
-  onChange?: (field: keyof Skill, value: any) => void;
+  onChange?: (field: keyof Skill, value: unknown) => void;
   onRoll?: (expression: string, purpose: string) => void;
 }> = ({ name, displayName, skill, editable, themeColor, onChange, onRoll }) => {
+  const { t } = useTranslation('character');
+
   if (!skill) return null;
 
   // Determine checkbox styling based on theme color
@@ -146,13 +130,13 @@ const SkillRow: React.FC<{
   };
 
   const isClickable = !!onRoll && !editable;
-  const purpose = `${displayName} — target: ${skill.currentValue}%`;
+  const purpose = t('sheet.coc7e.skillRollPurpose', { name: displayName, value: skill.currentValue });
 
   return (
     <div
       className={`flex items-center space-x-2 py-1.5 px-2 rounded group ${isClickable ? 'cursor-pointer hover:bg-sepia-100/50 select-none' : 'hover:bg-parchment-light/30'}`}
       onClick={isClickable ? () => onRoll!('1d100', purpose) : undefined}
-      title={isClickable ? `Click to roll ${displayName} (target: ${skill.currentValue}%)` : undefined}
+      title={isClickable ? t('sheet.coc7e.skillRollTitle', { name: displayName, value: skill.currentValue }) : undefined}
     >
       {/* Improvement Checkbox */}
       <div
@@ -218,7 +202,9 @@ const SkillRow: React.FC<{
  * SkillsList - Display all skills organized by category
  */
 export const SkillsList: React.FC<SkillsListProps> = ({ skills, themeColor, editable = false, onChange, onRoll }) => {
-  const handleSkillChange = (skillName: string, field: keyof Skill, value: any) => {
+  const { t } = useTranslation('character');
+
+  const handleSkillChange = (skillName: string, field: keyof Skill, value: unknown) => {
     onChange?.(skillName, field, value);
   };
 
@@ -228,9 +214,9 @@ export const SkillsList: React.FC<SkillsListProps> = ({ skills, themeColor, edit
       <div className="flex items-center justify-between px-2 pb-2 border-b-2 border-sepia-400">
         <div className="flex items-center space-x-4 text-xs text-sepia-700 font-semibold uppercase">
           <span className="w-4">✓</span>
-          <span className="flex-1">Skill Name</span>
-          <span className="w-10">Base</span>
-          <span className="w-14">Value</span>
+          <span className="flex-1">{t('sheet.coc7e.skillsHeaderName')}</span>
+          <span className="w-10">{t('sheet.coc7e.skillsHeaderBase')}</span>
+          <span className="w-14">{t('sheet.coc7e.skillsHeaderValue')}</span>
           <span>½ / ⅕</span>
         </div>
       </div>
@@ -239,21 +225,21 @@ export const SkillsList: React.FC<SkillsListProps> = ({ skills, themeColor, edit
       {Object.entries(SKILL_CATEGORIES).map(([category, skillNames]) => (
         <div key={category}>
           <h4 className="text-sm font-bold text-sepia-800 uppercase tracking-wider mb-2 px-2">
-            {category}
+            {t(`sheet.coc7e.skillCategories.${category}`)}
           </h4>
           <div className="space-y-0.5">
             {skillNames.map((skillName) => {
-              const skill = skills[skillName];
+              const skill = skills[skillName as keyof CoC7eSkills];
 
               // Handle special cases
-              if (skillName === 'fighting' && skill?.custom) {
+              if (skillName === 'fighting' && (skill as CoC7eFightingSkills)?.custom) {
                 // Fighting specializations
                 return (
                   <div key={skillName}>
                     <SkillRow
                       name="fighting.brawl"
-                      displayName="Fighting (Brawl)"
-                      skill={skill.brawl}
+                      displayName={t('sheet.coc7e.skillNames.fightingBrawl')}
+                      skill={(skill as CoC7eFightingSkills).brawl}
                       editable={editable}
                       themeColor={themeColor}
                       onRoll={onRoll}
@@ -267,31 +253,31 @@ export const SkillsList: React.FC<SkillsListProps> = ({ skills, themeColor, edit
                 // Firearms specializations
                 return (
                   <div key={skillName} className="space-y-0.5">
-                    {skill.handgun && (
+                    {(skill as CoC7eFirearmsSkills).handgun && (
                       <SkillRow
                         name="firearms.handgun"
-                        displayName="Firearms (Handgun)"
-                        skill={skill.handgun}
+                        displayName={t('sheet.coc7e.skillNames.firearmsHandgun')}
+                        skill={(skill as CoC7eFirearmsSkills).handgun}
                         editable={editable}
                         themeColor={themeColor}
                         onChange={(field, value) => handleSkillChange('firearms.handgun', field, value)}
                       />
                     )}
-                    {skill.rifle && (
+                    {(skill as CoC7eFirearmsSkills).rifle && (
                       <SkillRow
                         name="firearms.rifle"
-                        displayName="Firearms (Rifle)"
-                        skill={skill.rifle}
+                        displayName={t('sheet.coc7e.skillNames.firearmsRifle')}
+                        skill={(skill as CoC7eFirearmsSkills).rifle}
                         editable={editable}
                         themeColor={themeColor}
                         onChange={(field, value) => handleSkillChange('firearms.rifle', field, value)}
                       />
                     )}
-                    {skill.shotgun && (
+                    {(skill as CoC7eFirearmsSkills).shotgun && (
                       <SkillRow
                         name="firearms.shotgun"
-                        displayName="Firearms (Shotgun)"
-                        skill={skill.shotgun}
+                        displayName={t('sheet.coc7e.skillNames.firearmsShotgun')}
+                        skill={(skill as CoC7eFirearmsSkills).shotgun}
                         editable={editable}
                         themeColor={themeColor}
                         onChange={(field, value) => handleSkillChange('firearms.shotgun', field, value)}
@@ -305,11 +291,11 @@ export const SkillsList: React.FC<SkillsListProps> = ({ skills, themeColor, edit
                 // Other languages (array)
                 return (
                   <div key={skillName}>
-                    {skill.map((lang: any, idx: number) => (
+                    {(skill as CoC7eLanguageSkill[]).map((lang, idx) => (
                       <SkillRow
                         key={`language-${idx}`}
                         name={`languageOther.${idx}`}
-                        displayName={`Language (${lang.language})`}
+                        displayName={t('sheet.coc7e.skillNames.languageOtherLabel', { language: lang.language })}
                         skill={lang}
                         editable={editable}
                         themeColor={themeColor}
@@ -324,11 +310,11 @@ export const SkillsList: React.FC<SkillsListProps> = ({ skills, themeColor, edit
                 // Science specializations (array)
                 return (
                   <div key={skillName}>
-                    {skill.map((sci: any, idx: number) => (
+                    {(skill as CoC7eScienceSkill[]).map((sci, idx) => (
                       <SkillRow
                         key={`science-${idx}`}
                         name={`science.${idx}`}
-                        displayName={`Science (${sci.specialization})`}
+                        displayName={t('sheet.coc7e.skillNames.scienceLabel', { specialization: sci.specialization })}
                         skill={sci}
                         editable={editable}
                         themeColor={themeColor}
@@ -345,7 +331,7 @@ export const SkillsList: React.FC<SkillsListProps> = ({ skills, themeColor, edit
                   <SkillRow
                     key={skillName}
                     name={skillName}
-                    displayName={SKILL_NAMES[skillName] || skillName}
+                    displayName={SKILL_IDS.includes(skillName) ? t(`sheet.coc7e.skillNames.${skillName}`) : skillName}
                     skill={skill}
                     editable={editable}
                     themeColor={themeColor}
@@ -365,14 +351,14 @@ export const SkillsList: React.FC<SkillsListProps> = ({ skills, themeColor, edit
       {skills.customSkills && Array.isArray(skills.customSkills) && skills.customSkills.length > 0 && (
         <div>
           <h4 className="text-sm font-bold text-sepia-800 uppercase tracking-wider mb-2 px-2">
-            Custom Skills
+            {t('sheet.coc7e.customSkillsHeading')}
           </h4>
           <div className="space-y-0.5">
-            {skills.customSkills.map((skill: any, idx: number) => (
+            {((skills.customSkills ?? []) as Skill[]).map((skill, idx) => (
               <SkillRow
                 key={`custom-${idx}`}
                 name={`customSkills.${idx}`}
-                displayName={skill.name || `Custom Skill ${idx + 1}`}
+                displayName={skill.name || t('sheet.coc7e.customSkillDefaultName', { number: idx + 1 })}
                 skill={skill}
                 editable={editable}
                 themeColor={themeColor}
@@ -391,14 +377,14 @@ export const SkillsList: React.FC<SkillsListProps> = ({ skills, themeColor, edit
             <div className="w-4 h-4 rounded border border-sepia-400 bg-parchment flex items-center justify-center flex-shrink-0">
               <Check className="w-3 h-3 text-sepia-600" />
             </div>
-            <span>Check this box when you use a skill successfully to mark it for improvement between sessions.</span>
+            <span>{t('sheet.coc7e.skillsLegend.checkboxHint')}</span>
           </div>
           <div className="mt-2 pl-6">
-            <span className="font-semibold">Special Skills:</span>
+            <span className="font-semibold">{t('sheet.coc7e.skillsLegend.specialSkillsHeading')}</span>
             <ul className="list-disc pl-5 mt-1 space-y-0.5">
-              <li><strong>Credit Rating:</strong> Determines wealth tier and spending level.</li>
-              <li><strong>Cthulhu Mythos:</strong> Cannot be improved normally; reduces maximum Sanity by equal amount.</li>
-              <li><strong>Dodge:</strong> Derived from DEX/2; can be improved with successful use.</li>
+              <li><strong>{t('sheet.coc7e.skillNames.creditRating')}:</strong> {t('sheet.coc7e.skillsLegend.creditRatingHint')}</li>
+              <li><strong>{t('sheet.coc7e.skillNames.cthulhuMythos')}:</strong> {t('sheet.coc7e.skillsLegend.cthulhuMythosHint')}</li>
+              <li><strong>{t('sheet.coc7e.skillNames.dodge')}:</strong> {t('sheet.coc7e.skillsLegend.dodgeHint')}</li>
             </ul>
           </div>
         </div>

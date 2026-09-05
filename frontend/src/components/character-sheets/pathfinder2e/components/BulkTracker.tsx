@@ -8,6 +8,7 @@
 
 import React from 'react';
 import { Package } from 'lucide-react';
+import { Trans, useTranslation } from 'react-i18next';
 
 export interface InventoryItem {
   name: string;
@@ -66,6 +67,7 @@ const formatBulk = (bulk: number | string): string => {
 };
 
 export const BulkTracker: React.FC<BulkTrackerProps> = ({ inventory, bulk }) => {
+  const { t } = useTranslation('character');
   const isEncumbered = bulk.current >= bulk.encumbered;
   const isOverloaded = bulk.current > bulk.maximum;
 
@@ -75,29 +77,29 @@ export const BulkTracker: React.FC<BulkTrackerProps> = ({ inventory, bulk }) => 
       <div className="bg-gradient-to-r from-blue-50 to-blue-100 border-2 border-blue-300 rounded-lg p-4">
         <div className="flex items-center justify-between">
           <div>
-            <h4 className="font-bold text-blue-800 text-lg mb-1">Bulk Carried</h4>
+            <h4 className="font-bold text-blue-800 text-lg mb-1">{t('sheet.pf2e.bulkCarried')}</h4>
             <div className="text-sm text-blue-700">
               <span className="font-semibold">{bulk.current.toFixed(1)}</span>
               {' / '}
-              <span>Encumbered: {bulk.encumbered}</span>
+              <span>{t('sheet.pf2e.encumberedThreshold', { value: bulk.encumbered })}</span>
               {' / '}
-              <span>Max: {bulk.maximum}</span>
+              <span>{t('sheet.maximum')}: {bulk.maximum}</span>
             </div>
           </div>
           <div className="text-right">
             {isOverloaded && (
               <div className="px-3 py-1 bg-red-600 text-white text-sm font-bold rounded-lg">
-                OVERLOADED
+                {t('sheet.pf2e.overloaded')}
               </div>
             )}
             {isEncumbered && !isOverloaded && (
               <div className="px-3 py-1 bg-amber-600 text-white text-sm font-bold rounded-lg">
-                ENCUMBERED
+                {t('sheet.pf2e.encumbered')}
               </div>
             )}
             {!isEncumbered && (
               <div className="px-3 py-1 bg-green-600 text-white text-sm font-bold rounded-lg">
-                UNENCUMBERED
+                {t('sheet.pf2e.unencumbered')}
               </div>
             )}
           </div>
@@ -119,7 +121,7 @@ export const BulkTracker: React.FC<BulkTrackerProps> = ({ inventory, bulk }) => 
 
         {isEncumbered && (
           <div className="mt-2 text-xs text-blue-700">
-            <strong>Encumbered:</strong> -10 ft. to all speeds, Clumsy 1 condition
+            <Trans t={t} i18nKey="sheet.pf2e.encumberedHint" components={{ strong: <strong /> }} />
           </div>
         )}
       </div>
@@ -128,7 +130,7 @@ export const BulkTracker: React.FC<BulkTrackerProps> = ({ inventory, bulk }) => 
       <div className="space-y-2">
         {inventory.length === 0 && (
           <div className="text-center py-8 text-stone-500 italic">
-            No items in inventory
+            {t('sheet.noItems')}
           </div>
         )}
 
@@ -145,22 +147,22 @@ export const BulkTracker: React.FC<BulkTrackerProps> = ({ inventory, bulk }) => 
                   <span className="font-semibold text-stone-800">{item.name}</span>
                   {item.equipped && (
                     <span className="px-2 py-0.5 bg-green-100 text-green-700 text-xs rounded-full font-medium">
-                      Equipped
+                      {t('sheet.equipped')}
                     </span>
                   )}
                   {item.invested && (
                     <span className="px-2 py-0.5 bg-purple-100 text-purple-700 text-xs rounded-full font-medium">
-                      Invested
+                      {t('sheet.pf2e.invested')}
                     </span>
                   )}
                 </div>
 
                 <div className="grid grid-cols-3 gap-2 text-xs text-stone-600 mt-2">
                   <div>
-                    <span className="font-semibold">Qty:</span> {item.quantity}
+                    <span className="font-semibold">{t('sheet.qty')}:</span> {item.quantity}
                   </div>
                   <div>
-                    <span className="font-semibold">Bulk:</span> {formatBulk(item.bulk)}
+                    <span className="font-semibold">{t('sheet.pf2e.bulk')}:</span> {formatBulk(item.bulk)}
                     {item.quantity > 1 && (
                       <span className="text-stone-500">
                         {' '}(× {item.quantity} = {(bulkToNumber(item.bulk) * item.quantity).toFixed(1)})
@@ -168,7 +170,7 @@ export const BulkTracker: React.FC<BulkTrackerProps> = ({ inventory, bulk }) => 
                     )}
                   </div>
                   <div>
-                    <span className="font-semibold">Value:</span> {item.value} gp
+                    <span className="font-semibold">{t('sheet.value')}:</span> {item.value} gp
                   </div>
                 </div>
 

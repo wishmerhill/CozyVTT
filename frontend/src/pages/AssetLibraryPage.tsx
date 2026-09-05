@@ -307,7 +307,7 @@ export default function AssetLibraryPage() {
               {filteredAssets.length === 0
                 ? t('assets:noAssetsFound')
                 : filteredAssets.length === totalCount
-                ? t('assets:showingCount', { count: filteredAssets.length, plural: filteredAssets.length !== 1 ? 'e' : '' })
+                ? t('assets:showingCount', { count: filteredAssets.length })
                 : t('assets:showingOf', { count: filteredAssets.length, total: totalCount })}
             </p>
 

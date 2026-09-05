@@ -6,6 +6,7 @@
  */
 
 import React, { useState, useEffect } from 'react';
+import { useTranslation } from 'react-i18next';
 import {
   User,
   Target,
@@ -19,6 +20,11 @@ import {
   Palette,
 } from 'lucide-react';
 import { Character } from '../../../types';
+import type {
+  CoC7eCharacterData,
+  CoC7eCharacteristics,
+  SheetChrome,
+} from '../../../types/game-systems';
 import { CharacteristicBlock } from './components/CharacteristicBlock';
 import { orderedCharacteristics } from './characteristics';
 import { SanityTracker } from './components/SanityTracker';
@@ -37,30 +43,34 @@ type TabId = 'overview' | 'skills' | 'combat' | 'possessions' | 'backstory';
 
 interface Tab {
   id: TabId;
-  label: string;
+  /** i18n key for the tab label, resolved with `t()` at render time. */
+  labelKey: string;
   icon: React.ElementType;
 }
 
 const TABS: Tab[] = [
-  { id: 'overview', label: 'Overview', icon: User },
-  { id: 'skills', label: 'Skills', icon: Target },
-  { id: 'combat', label: 'Combat', icon: Swords },
-  { id: 'possessions', label: 'Possessions', icon: Package },
-  { id: 'backstory', label: 'Backstory', icon: BookText },
+  { id: 'overview', labelKey: 'sheet.coc7e.tabs.overview', icon: User },
+  { id: 'skills', labelKey: 'sheet.coc7e.tabs.skills', icon: Target },
+  { id: 'combat', labelKey: 'sheet.combat', icon: Swords },
+  { id: 'possessions', labelKey: 'sheet.coc7e.tabs.possessions', icon: Package },
+  { id: 'backstory', labelKey: 'sheet.backstory', icon: BookText },
 ];
 
-// Call of Cthulhu color presets - Vintage 1920s aesthetic
+// Call of Cthulhu color presets - Vintage 1920s aesthetic (same as editor).
+// `name` doubles as the value persisted to character.themeColor and looked
+// up via `.find()`, so it stays a stable English identifier; `labelKey`
+// resolves the translated label shown in the picker UI.
 const COLOR_PRESETS = [
-  { name: 'Dark Forest', from: 'from-green-900', to: 'to-green-800', accent: 'green-800', border: 'amber-600', hex: '#14532d' },
-  { name: 'Noir Shadow', from: 'from-slate-900', to: 'to-slate-800', accent: 'slate-800', border: 'amber-500', hex: '#0f172a' },
-  { name: 'Deep Sepia', from: 'from-sepia-900', to: 'to-sepia-800', accent: 'sepia-800', border: 'sepia-400', hex: '#2E2419' },
-  { name: 'Midnight Blue', from: 'from-blue-950', to: 'to-blue-900', accent: 'blue-900', border: 'amber-600', hex: '#172554' },
-  { name: 'Burgundy Wine', from: 'from-red-950', to: 'to-red-900', accent: 'red-900', border: 'amber-500', hex: '#450a0a' },
-  { name: 'Victorian Purple', from: 'from-purple-950', to: 'to-purple-900', accent: 'purple-900', border: 'amber-600', hex: '#3b0764' },
-  { name: 'Emerald Mist', from: 'from-emerald-900', to: 'to-emerald-800', accent: 'emerald-800', border: 'amber-600', hex: '#064e3b' },
-  { name: 'Charcoal Gray', from: 'from-gray-900', to: 'to-gray-800', accent: 'gray-800', border: 'amber-500', hex: '#111827' },
-  { name: 'Teal Shadow', from: 'from-teal-950', to: 'to-teal-900', accent: 'teal-900', border: 'amber-600', hex: '#042f2e' },
-  { name: 'Amber Dusk', from: 'from-amber-900', to: 'to-amber-800', accent: 'amber-800', border: 'amber-400', hex: '#78350f' },
+  { name: 'Dark Forest', labelKey: 'darkForest', from: 'from-green-900', to: 'to-green-800', accent: 'green-800', border: 'amber-600', hex: '#14532d' },
+  { name: 'Noir Shadow', labelKey: 'noirShadow', from: 'from-slate-900', to: 'to-slate-800', accent: 'slate-800', border: 'amber-500', hex: '#0f172a' },
+  { name: 'Deep Sepia', labelKey: 'deepSepia', from: 'from-sepia-900', to: 'to-sepia-800', accent: 'sepia-800', border: 'sepia-400', hex: '#2E2419' },
+  { name: 'Midnight Blue', labelKey: 'midnightBlue', from: 'from-blue-950', to: 'to-blue-900', accent: 'blue-900', border: 'amber-600', hex: '#172554' },
+  { name: 'Burgundy Wine', labelKey: 'burgundyWine', from: 'from-red-950', to: 'to-red-900', accent: 'red-900', border: 'amber-500', hex: '#450a0a' },
+  { name: 'Victorian Purple', labelKey: 'victorianPurple', from: 'from-purple-950', to: 'to-purple-900', accent: 'purple-900', border: 'amber-600', hex: '#3b0764' },
+  { name: 'Emerald Mist', labelKey: 'emeraldMist', from: 'from-emerald-900', to: 'to-emerald-800', accent: 'emerald-800', border: 'amber-600', hex: '#064e3b' },
+  { name: 'Charcoal Gray', labelKey: 'charcoalGray', from: 'from-gray-900', to: 'to-gray-800', accent: 'gray-800', border: 'amber-500', hex: '#111827' },
+  { name: 'Teal Shadow', labelKey: 'tealShadow', from: 'from-teal-950', to: 'to-teal-900', accent: 'teal-900', border: 'amber-600', hex: '#042f2e' },
+  { name: 'Amber Dusk', labelKey: 'amberDusk', from: 'from-amber-900', to: 'to-amber-800', accent: 'amber-800', border: 'amber-400', hex: '#78350f' },
 ];
 
 /**
@@ -71,8 +81,9 @@ export const CallOfCthulhu7eCharacterView: React.FC<CallOfCthulhu7eCharacterView
   onEdit,
   onRoll,
 }) => {
+  const { t } = useTranslation(['character', 'common']);
   const [activeTab, setActiveTab] = useState<TabId>('overview');
-  const data = character.data as any; // Type will be CallOfCthulhu7eCharacterData
+  const data = character.data as CoC7eCharacterData & SheetChrome;
   const [themeColor, setThemeColor] = useState(COLOR_PRESETS[0]);
   const [isCustomColor, setIsCustomColor] = useState(false);
   const [customColorHex, setCustomColorHex] = useState('');
@@ -123,7 +134,7 @@ export const CallOfCthulhu7eCharacterView: React.FC<CallOfCthulhu7eCharacterView
         <button
           onClick={() => setShowColorPicker(!showColorPicker)}
           className="absolute top-4 right-4 p-2 bg-white/20 hover:bg-white/30 rounded-lg transition-colors"
-          title="Change theme color"
+          title={t('sheet.themeColor.changeTitle')}
         >
           <Palette className="w-5 h-5" />
         </button>
@@ -131,7 +142,7 @@ export const CallOfCthulhu7eCharacterView: React.FC<CallOfCthulhu7eCharacterView
         {/* Color Picker Dropdown */}
         {showColorPicker && (
           <div className="absolute top-16 right-4 bg-white text-stone-800 rounded-lg shadow-xl p-4 z-10 border-2 border-stone-200 max-w-md">
-            <h4 className="font-semibold mb-3">Theme Color</h4>
+            <h4 className="font-semibold mb-3">{t('sheet.themeColor.heading')}</h4>
 
             {/* Preset Colors */}
             <div className="grid grid-cols-3 gap-2 mb-4">
@@ -146,14 +157,14 @@ export const CallOfCthulhu7eCharacterView: React.FC<CallOfCthulhu7eCharacterView
                   }`}
                 >
                   <div className={`w-full h-6 rounded mb-1 bg-gradient-to-r ${color.from} ${color.to}`} />
-                  <div className="text-xs">{color.name}</div>
+                  <div className="text-xs">{t(`sheet.coc7e.colorPresets.${color.labelKey}`)}</div>
                 </button>
               ))}
             </div>
 
             {/* Custom Color Section */}
             <div className="border-t pt-4 space-y-3">
-              <h5 className="text-sm font-semibold text-stone-700">Custom Color</h5>
+              <h5 className="text-sm font-semibold text-stone-700">{t('sheet.themeColor.customHeading')}</h5>
 
               <div className="flex items-center space-x-2">
                 {/* Native Color Picker */}
@@ -162,7 +173,7 @@ export const CallOfCthulhu7eCharacterView: React.FC<CallOfCthulhu7eCharacterView
                   value={customColorHex || '#14532d'}
                   onChange={(e) => handleCustomColorChange(e.target.value)}
                   className="w-12 h-12 rounded cursor-pointer border-2 border-stone-300"
-                  title="Pick a custom color"
+                  title={t('sheet.themeColor.pickerTitle')}
                 />
 
                 {/* Hex Code Input */}
@@ -180,7 +191,7 @@ export const CallOfCthulhu7eCharacterView: React.FC<CallOfCthulhu7eCharacterView
                     placeholder="#14532d"
                     className="w-full px-3 py-2 border border-stone-300 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
                   />
-                  <div className="text-xs text-stone-500 mt-1">Enter hex code (e.g., #14532d)</div>
+                  <div className="text-xs text-stone-500 mt-1">{t('sheet.themeColor.hexHint')}</div>
                 </div>
               </div>
 
@@ -191,7 +202,7 @@ export const CallOfCthulhu7eCharacterView: React.FC<CallOfCthulhu7eCharacterView
                     className="w-8 h-8 rounded"
                     style={{ background: `linear-gradient(to right, ${customColorHex}, ${customColorHex}dd)` }}
                   />
-                  <span className="text-sm font-medium">Custom: {customColorHex}</span>
+                  <span className="text-sm font-medium">{t('sheet.themeColor.customLabel', { hex: customColorHex })}</span>
                 </div>
               )}
             </div>
@@ -203,10 +214,10 @@ export const CallOfCthulhu7eCharacterView: React.FC<CallOfCthulhu7eCharacterView
           <button
             onClick={onEdit}
             className="absolute top-4 right-16 px-4 py-2 bg-amber-600/80 hover:bg-amber-600 text-white rounded-lg transition-colors flex items-center space-x-2 font-medium shadow-lg"
-            title="Edit investigator"
+            title={t('sheet.coc7e.editInvestigatorTitle')}
           >
             <Edit className="w-4 h-4" />
-            <span>Edit</span>
+            <span>{t('common:edit')}</span>
           </button>
         )}
 
@@ -217,7 +228,7 @@ export const CallOfCthulhu7eCharacterView: React.FC<CallOfCthulhu7eCharacterView
             {character.tokenImageUrl ? (
               <img
                 src={character.tokenImageUrl}
-                alt={data.investigatorName || 'Investigator'}
+                alt={data.investigatorName || t('sheet.unnamedCharacter')}
                 className="w-24 h-24 rounded-full border-4 border-amber-600/50 object-cover shadow-xl"
               />
             ) : (
@@ -230,22 +241,22 @@ export const CallOfCthulhu7eCharacterView: React.FC<CallOfCthulhu7eCharacterView
           {/* Character Info */}
           <div>
             <h2 className="text-3xl font-bold mb-2 text-parchment drop-shadow-lg">
-              {data.investigatorName || 'Unnamed Investigator'}
+              {data.investigatorName || t('sheet.unnamedCharacter')}
             </h2>
             <div className="space-y-1 text-parchment-light">
               <div className="flex items-center space-x-4">
-                <span className="font-medium">{data.occupation || 'No Occupation'}</span>
+                <span className="font-medium">{data.occupation || t('sheet.coc7e.noOccupationFallback')}</span>
                 {data.era && <span>• {data.era}</span>}
               </div>
               {data.residence && (
                 <div className="text-sm">
-                  <span className="text-amber-300">Residence:</span> {data.residence}
+                  <span className="text-amber-300">{t('sheet.coc7e.residenceLabel')}</span> {data.residence}
                 </div>
               )}
               <div className="flex items-center space-x-4 text-sm">
-                {data.age && <span>Age {data.age}</span>}
+                {data.age && <span>{t('sheet.age')} {data.age}</span>}
                 {data.sex && <span>• {data.sex}</span>}
-                {data.birthplace && <span>• Born in {data.birthplace}</span>}
+                {data.birthplace && <span>• {t('sheet.coc7e.bornInPrefix')} {data.birthplace}</span>}
               </div>
             </div>
           </div>
@@ -254,7 +265,7 @@ export const CallOfCthulhu7eCharacterView: React.FC<CallOfCthulhu7eCharacterView
         {/* Player Name */}
         {data.playerName && (
           <div className="text-right">
-            <div className="text-xs text-amber-300 uppercase tracking-wide">Player</div>
+            <div className="text-xs text-amber-300 uppercase tracking-wide">{t('sheet.coc7e.playerLabel')}</div>
             <div className="text-lg font-semibold text-parchment">{data.playerName}</div>
           </div>
         )}
@@ -283,7 +294,7 @@ export const CallOfCthulhu7eCharacterView: React.FC<CallOfCthulhu7eCharacterView
             `}
           >
             <Icon className="w-4 h-4" />
-            <span>{tab.label}</span>
+            <span>{t(tab.labelKey)}</span>
           </button>
         );
       })}
@@ -297,18 +308,18 @@ export const CallOfCthulhu7eCharacterView: React.FC<CallOfCthulhu7eCharacterView
       <div>
         <h3 className="text-lg font-bold text-sepia-900 mb-4 flex items-center space-x-2">
           <Target className="w-5 h-5" />
-          <span>Characteristics</span>
+          <span>{t('sheet.coc7e.characteristicsHeading')}</span>
         </h3>
         <div className="grid grid-cols-4 md:grid-cols-8 gap-4">
           {data.characteristics && (
             <>
-              {orderedCharacteristics(data.characteristics).map((key) => (
+              {orderedCharacteristics(data.characteristics as unknown as Record<string, unknown>).map((key) => (
                 <CharacteristicBlock
                   key={key}
                   label={key}
-                  regular={data.characteristics[key].regular}
-                  half={data.characteristics[key].half}
-                  fifth={data.characteristics[key].fifth}
+                  regular={data.characteristics[key as keyof CoC7eCharacteristics].regular}
+                  half={data.characteristics[key as keyof CoC7eCharacteristics].half}
+                  fifth={data.characteristics[key as keyof CoC7eCharacteristics].fifth}
                   onRoll={onRoll}
                 />
               ))}
@@ -329,7 +340,7 @@ export const CallOfCthulhu7eCharacterView: React.FC<CallOfCthulhu7eCharacterView
 
       {/* Derived Stats Grid */}
       <div>
-        <h3 className="text-lg font-bold text-sepia-900 mb-4">Derived Attributes</h3>
+        <h3 className="text-lg font-bold text-sepia-900 mb-4">{t('sheet.coc7e.derivedAttributesViewHeading')}</h3>
         <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
           {/* Hit Points */}
           {data.derivedStats?.hp && (
@@ -337,7 +348,7 @@ export const CallOfCthulhu7eCharacterView: React.FC<CallOfCthulhu7eCharacterView
               <div className="flex items-center justify-between mb-2">
                 <div className="flex items-center space-x-2">
                   <Heart className="w-4 h-4 text-red-600" />
-                  <span className="text-xs font-semibold text-red-900 uppercase">Hit Points</span>
+                  <span className="text-xs font-semibold text-red-900 uppercase">{t('sheet.coc7e.hitPointsLabel')}</span>
                 </div>
               </div>
               <div className="text-center">
@@ -347,7 +358,7 @@ export const CallOfCthulhu7eCharacterView: React.FC<CallOfCthulhu7eCharacterView
                 <span className="text-lg text-red-500"> / {data.derivedStats.hp.maximum}</span>
               </div>
               <div className="text-xs text-red-600 text-center mt-1">
-                Major Wound: {data.derivedStats.hp.majorWoundThreshold} HP
+                {t('sheet.coc7e.majorWoundViewLabel', { value: data.derivedStats.hp.majorWoundThreshold })}
               </div>
             </div>
           )}
@@ -358,7 +369,7 @@ export const CallOfCthulhu7eCharacterView: React.FC<CallOfCthulhu7eCharacterView
               <div className="flex items-center justify-between mb-2">
                 <div className="flex items-center space-x-2">
                   <Skull className="w-4 h-4 text-purple-600" />
-                  <span className="text-xs font-semibold text-purple-900 uppercase">Magic Points</span>
+                  <span className="text-xs font-semibold text-purple-900 uppercase">{t('sheet.coc7e.magicPointsLabel')}</span>
                 </div>
               </div>
               <div className="text-center">
@@ -377,7 +388,7 @@ export const CallOfCthulhu7eCharacterView: React.FC<CallOfCthulhu7eCharacterView
               <div className="flex items-center justify-between mb-2">
                 <div className="flex items-center space-x-2">
                   <Eye className="w-4 h-4 text-yellow-600" />
-                  <span className="text-xs font-semibold text-yellow-900 uppercase">Luck</span>
+                  <span className="text-xs font-semibold text-yellow-900 uppercase">{t('sheet.coc7e.luckLabel')}</span>
                 </div>
               </div>
               <div className="text-center">
@@ -386,7 +397,7 @@ export const CallOfCthulhu7eCharacterView: React.FC<CallOfCthulhu7eCharacterView
                 </span>
               </div>
               <div className="text-xs text-yellow-600 text-center mt-1">
-                Spend to adjust rolls (1:1)
+                {t('sheet.coc7e.luckSpendNote')}
               </div>
             </div>
           )}
@@ -397,7 +408,7 @@ export const CallOfCthulhu7eCharacterView: React.FC<CallOfCthulhu7eCharacterView
               <div className="flex items-center justify-between mb-2">
                 <div className="flex items-center space-x-2">
                   <Target className="w-4 h-4 text-blue-600" />
-                  <span className="text-xs font-semibold text-blue-900 uppercase">Dodge</span>
+                  <span className="text-xs font-semibold text-blue-900 uppercase">{t('sheet.coc7e.dodgeCardLabel')}</span>
                 </div>
               </div>
               <div className="text-center">
@@ -415,19 +426,19 @@ export const CallOfCthulhu7eCharacterView: React.FC<CallOfCthulhu7eCharacterView
       <div className="grid grid-cols-3 gap-4">
         {data.derivedStats?.moveRate !== undefined && (
           <div className="bg-parchment border border-sepia-400 rounded-md p-3 text-center">
-            <div className="text-xs text-sepia-600 uppercase mb-1">Move Rate</div>
+            <div className="text-xs text-sepia-600 uppercase mb-1">{t('sheet.coc7e.moveRateCardLabel')}</div>
             <div className="text-2xl font-bold text-sepia-900">{data.derivedStats.moveRate}</div>
           </div>
         )}
         {data.derivedStats?.build !== undefined && (
           <div className="bg-parchment border border-sepia-400 rounded-md p-3 text-center">
-            <div className="text-xs text-sepia-600 uppercase mb-1">Build</div>
+            <div className="text-xs text-sepia-600 uppercase mb-1">{t('sheet.coc7e.buildCardLabel')}</div>
             <div className="text-2xl font-bold text-sepia-900">{data.derivedStats.build}</div>
           </div>
         )}
         {data.derivedStats?.damageBonus && (
           <div className="bg-parchment border border-sepia-400 rounded-md p-3 text-center">
-            <div className="text-xs text-sepia-600 uppercase mb-1">Damage Bonus</div>
+            <div className="text-xs text-sepia-600 uppercase mb-1">{t('sheet.coc7e.damageBonusCardLabel')}</div>
             <div className="text-2xl font-bold text-sepia-900">{data.derivedStats.damageBonus}</div>
           </div>
         )}
@@ -436,9 +447,9 @@ export const CallOfCthulhu7eCharacterView: React.FC<CallOfCthulhu7eCharacterView
       {/* Conditions */}
       {data.conditions && (
         <div className="bg-amber-50 border-2 border-amber-300 rounded-lg p-4">
-          <h4 className="text-sm font-semibold text-amber-900 mb-3 uppercase">Current Conditions</h4>
+          <h4 className="text-sm font-semibold text-amber-900 mb-3 uppercase">{t('sheet.coc7e.currentConditionsHeading')}</h4>
           <div className="grid grid-cols-2 md:grid-cols-3 gap-2">
-            {Object.entries(data.conditions).map(([key, value]: [string, any]) => (
+            {(Object.entries(data.conditions ?? {}) as [string, boolean][]).map(([key, value]) => (
               <div
                 key={key}
                 className={`flex items-center space-x-2 px-3 py-2 rounded ${
@@ -482,19 +493,19 @@ export const CallOfCthulhu7eCharacterView: React.FC<CallOfCthulhu7eCharacterView
         <div className="bg-gradient-to-br from-amber-100 to-yellow-50 border-2 border-amber-400 rounded-lg p-5">
           <h3 className="text-lg font-bold text-amber-900 mb-4 flex items-center space-x-2">
             <Package className="w-5 h-5" />
-            <span>Wealth & Assets</span>
+            <span>{t('sheet.coc7e.wealthAssetsHeading')}</span>
           </h3>
           <div className="grid grid-cols-3 gap-4 mb-3">
             <div>
-              <div className="text-xs text-amber-700 uppercase mb-1">Spending Level</div>
+              <div className="text-xs text-amber-700 uppercase mb-1">{t('sheet.coc7e.spendingLevelLabel')}</div>
               <div className="text-xl font-bold text-amber-900">{data.wealth.spendingLevel}</div>
             </div>
             <div>
-              <div className="text-xs text-amber-700 uppercase mb-1">Cash on Hand</div>
+              <div className="text-xs text-amber-700 uppercase mb-1">{t('sheet.coc7e.cashOnHandLabel')}</div>
               <div className="text-xl font-bold text-amber-900">${data.wealth.cash}</div>
             </div>
             <div>
-              <div className="text-xs text-amber-700 uppercase mb-1">Credit Rating</div>
+              <div className="text-xs text-amber-700 uppercase mb-1">{t('sheet.coc7e.creditRatingLabel')}</div>
               <div className="text-xl font-bold text-amber-900">
                 {data.skills?.creditRating?.currentValue || 0}%
               </div>
@@ -502,7 +513,7 @@ export const CallOfCthulhu7eCharacterView: React.FC<CallOfCthulhu7eCharacterView
           </div>
           {data.wealth.assets && (
             <div className="bg-white/50 rounded p-3 mt-3">
-              <div className="text-xs text-amber-700 font-semibold mb-1">Assets</div>
+              <div className="text-xs text-amber-700 font-semibold mb-1">{t('sheet.coc7e.assetsLabel')}</div>
               <p className="text-sm text-amber-900">{data.wealth.assets}</p>
             </div>
           )}
@@ -512,9 +523,9 @@ export const CallOfCthulhu7eCharacterView: React.FC<CallOfCthulhu7eCharacterView
       {/* Possessions */}
       {data.possessions && data.possessions.length > 0 && (
         <div>
-          <h3 className="text-lg font-bold text-sepia-900 mb-4">Possessions</h3>
+          <h3 className="text-lg font-bold text-sepia-900 mb-4">{t('sheet.coc7e.possessionsViewHeading')}</h3>
           <div className="space-y-2">
-            {data.possessions.map((item: any, index: number) => (
+            {data.possessions!.map((item, index) => (
               <div key={index} className="bg-parchment border border-sepia-400 rounded-md p-3">
                 <div className="flex items-start justify-between">
                   <div className="font-semibold text-sepia-900">{item.name}</div>
@@ -529,9 +540,9 @@ export const CallOfCthulhu7eCharacterView: React.FC<CallOfCthulhu7eCharacterView
       {/* Contacts */}
       {data.contacts && data.contacts.length > 0 && (
         <div>
-          <h3 className="text-lg font-bold text-sepia-900 mb-4">Contacts</h3>
+          <h3 className="text-lg font-bold text-sepia-900 mb-4">{t('sheet.coc7e.contactsHeading')}</h3>
           <div className="space-y-2">
-            {data.contacts.map((contact: any, index: number) => (
+            {data.contacts!.map((contact, index) => (
               <div key={index} className="bg-blue-50 border border-blue-300 rounded-md p-3">
                 <div className="flex items-start justify-between">
                   <div>
@@ -556,41 +567,41 @@ export const CallOfCthulhu7eCharacterView: React.FC<CallOfCthulhu7eCharacterView
       {/* Appearance */}
       {data.appearance && (
         <div className="mt-6 bg-parchment-light/50 border border-sepia-400 rounded-lg p-4">
-          <h3 className="text-lg font-bold text-sepia-900 mb-3">Appearance</h3>
+          <h3 className="text-lg font-bold text-sepia-900 mb-3">{t('sheet.coc7e.appearanceHeading')}</h3>
           <div className="grid grid-cols-2 md:grid-cols-3 gap-3 text-sm">
             {data.appearance.age && (
               <div>
-                <span className="text-sepia-600">Age:</span>{' '}
+                <span className="text-sepia-600">{t('sheet.coc7e.appearanceAgeLabel')}</span>{' '}
                 <span className="text-sepia-900 font-medium">{data.appearance.age}</span>
               </div>
             )}
             {data.appearance.height && (
               <div>
-                <span className="text-sepia-600">Height:</span>{' '}
+                <span className="text-sepia-600">{t('sheet.coc7e.appearanceHeightLabel')}</span>{' '}
                 <span className="text-sepia-900 font-medium">{data.appearance.height}</span>
               </div>
             )}
             {data.appearance.weight && (
               <div>
-                <span className="text-sepia-600">Weight:</span>{' '}
+                <span className="text-sepia-600">{t('sheet.coc7e.appearanceWeightLabel')}</span>{' '}
                 <span className="text-sepia-900 font-medium">{data.appearance.weight}</span>
               </div>
             )}
             {data.appearance.eyes && (
               <div>
-                <span className="text-sepia-600">Eyes:</span>{' '}
+                <span className="text-sepia-600">{t('sheet.coc7e.appearanceEyesLabel')}</span>{' '}
                 <span className="text-sepia-900 font-medium">{data.appearance.eyes}</span>
               </div>
             )}
             {data.appearance.hair && (
               <div>
-                <span className="text-sepia-600">Hair:</span>{' '}
+                <span className="text-sepia-600">{t('sheet.coc7e.appearanceHairLabel')}</span>{' '}
                 <span className="text-sepia-900 font-medium">{data.appearance.hair}</span>
               </div>
             )}
             {data.appearance.skin && (
               <div>
-                <span className="text-sepia-600">Skin:</span>{' '}
+                <span className="text-sepia-600">{t('sheet.coc7e.appearanceSkinLabel')}</span>{' '}
                 <span className="text-sepia-900 font-medium">{data.appearance.skin}</span>
               </div>
             )}
@@ -598,10 +609,39 @@ export const CallOfCthulhu7eCharacterView: React.FC<CallOfCthulhu7eCharacterView
         </div>
       )}
 
+      {/* Spells & Mythos.
+          The Cthulhu Mythos rating and the spells an investigator knows are on
+          the official sheet and are among the most consequential things it
+          records — the rating caps maximum Sanity. Neither had anywhere to be
+          shown or set in the app until now. */}
+      {(data.spellsAndMythos?.cthulhuMythos || data.spellsAndMythos?.spells?.length) && (
+        <div className="mt-6 bg-purple-50 border-2 border-purple-300 rounded-lg p-4">
+          <h3 className="text-lg font-bold text-purple-900 mb-3">Spells &amp; Mythos</h3>
+          <div className="flex items-baseline gap-2 mb-3">
+            <span className="text-xs text-purple-700 uppercase">Cthulhu Mythos</span>
+            <span className="text-xl font-bold text-purple-900">
+              {data.spellsAndMythos?.cthulhuMythos ?? 0}%
+            </span>
+          </div>
+          {data.spellsAndMythos?.spells && data.spellsAndMythos.spells.length > 0 && (
+            <div className="flex flex-wrap gap-2">
+              {data.spellsAndMythos.spells.map((spell, index) => (
+                <span
+                  key={index}
+                  className="px-3 py-1 bg-purple-200 text-purple-900 rounded-full text-sm font-medium"
+                >
+                  {spell}
+                </span>
+              ))}
+            </div>
+          )}
+        </div>
+      )}
+
       {/* Notes */}
       {data.notes && (
         <div className="mt-6 bg-yellow-50 border-2 border-yellow-300 rounded-lg p-4">
-          <h3 className="text-lg font-bold text-yellow-900 mb-2">Keeper's Notes</h3>
+          <h3 className="text-lg font-bold text-yellow-900 mb-2">{t('sheet.coc7e.keeperNotesHeading')}</h3>
           <p className="text-sm text-yellow-800 whitespace-pre-wrap">{data.notes}</p>
         </div>
       )}

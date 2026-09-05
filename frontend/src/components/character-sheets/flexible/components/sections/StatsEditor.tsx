@@ -3,6 +3,7 @@
  */
 
 import React from 'react';
+import { useTranslation } from 'react-i18next';
 import { Plus, Trash2 } from 'lucide-react';
 import type { StatsSection } from '../../../../../types/flexible-character-sheet';
 import { calculateModifier, formatModifier, generateId } from '../../utils/section-helpers';
@@ -13,6 +14,8 @@ interface StatsEditorProps {
 }
 
 export const StatsEditor: React.FC<StatsEditorProps> = ({ section, onUpdate }) => {
+  const { t } = useTranslation('character');
+
   const addField = () => {
     const newField = {
       id: generateId(),
@@ -55,7 +58,7 @@ export const StatsEditor: React.FC<StatsEditorProps> = ({ section, onUpdate }) =
             <button
               onClick={() => removeField(field.id)}
               className="absolute top-2 right-2 p-1 rounded bg-red-50 text-red-600 opacity-0 group-hover:opacity-100 transition-opacity hover:bg-red-100"
-              title="Remove stat"
+              title={t('sheet.flexible.removeStat')}
             >
               <Trash2 className="w-4 h-4" />
             </button>
@@ -66,7 +69,7 @@ export const StatsEditor: React.FC<StatsEditorProps> = ({ section, onUpdate }) =
                 value={field.name}
                 onChange={(e) => updateField(field.id, { name: e.target.value })}
                 className="w-full text-sm font-semibold bg-transparent border-b border-moss-green/30 focus:border-moss-green focus:outline-none text-brand-ink"
-                placeholder="Stat name"
+                placeholder={t('sheet.flexible.statNamePlaceholder')}
               />
 
               <div className="flex items-baseline gap-2">
@@ -92,7 +95,7 @@ export const StatsEditor: React.FC<StatsEditorProps> = ({ section, onUpdate }) =
         className="flex items-center gap-2 px-4 py-2 bg-moss-green/10 text-brand-ink rounded-lg hover:bg-moss-green/20 transition-colors w-full justify-center"
       >
         <Plus className="w-4 h-4" />
-        Add Stat
+        {t('sheet.flexible.addStat')}
       </button>
     </div>
   );

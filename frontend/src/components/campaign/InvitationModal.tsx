@@ -3,11 +3,13 @@
  */
 
 import { useState, useEffect } from 'react';
+import { useTranslation } from 'react-i18next';
 import { Check, XCircle, Users } from 'lucide-react';
 import { api } from '@/services/api';
 import Toast, { useToast } from '@/components/Toast';
 import type { CampaignInvitation, Character } from '@/types';
 import { Modal } from '@/components/ui';
+import { apiErrorMessage } from '@/utils/errors';
 
 interface InvitationModalProps {
   invitation: CampaignInvitation;
@@ -22,6 +24,7 @@ export default function InvitationModal({
   onAccept,
   onDecline,
 }: InvitationModalProps) {
+  const { t } = useTranslation('campaign');
   const [characters, setCharacters] = useState<Character[]>([]);
   const [selectedCharacterIds, setSelectedCharacterIds] = useState<string[]>([]);
   const [loading, setLoading] = useState(true);
@@ -75,9 +78,9 @@ export default function InvitationModal({
       setProcessing(true);
       await api.acceptInvitation(invitation.id, selectedCharacterIds);
       onAccept();
-    } catch (error: any) {
+    } catch (error) {
       console.error('Error accepting invitation:', error);
-      showToast(error.response?.data?.message || 'Failed to accept invitation', 'error');
+      showToast(apiErrorMessage(error) || t('invitation.errorAccept'), 'error');
     } finally {
       setProcessing(false);
     }
@@ -89,9 +92,9 @@ export default function InvitationModal({
       setProcessing(true);
       await api.declineInvitation(invitation.id);
       onDecline();
-    } catch (error: any) {
+    } catch (error) {
       console.error('Error declining invitation:', error);
-      showToast(error.response?.data?.message || 'Failed to decline invitation', 'error');
+      showToast(apiErrorMessage(error) || t('invitation.errorDecline'), 'error');
     } finally {
       setProcessing(false);
     }
@@ -101,15 +104,15 @@ export default function InvitationModal({
   const getSystemName = (gameSystem: string | null) => {
     switch (gameSystem) {
       case 'DND_5E':
-        return 'D&D 5th Edition';
+        return t('gameSystemNames.dnd5e');
       case 'PATHFINDER_2E':
-        return 'Pathfinder 2nd Edition';
+        return t('gameSystemNames.pathfinder2e');
       case 'SHADOWRUN_6E':
-        return 'Shadowrun 6th Edition';
+        return t('gameSystemNames.shadowrun6e');
       case 'CALL_OF_CTHULHU_7E':
-        return 'Call of Cthulhu 7th Edition';
+        return t('gameSystemNames.callOfCthulhu7e');
       case null:
-        return 'Flexible/Custom';
+        return t('gameSystemNames.flexible');
       default:
         return gameSystem;
     }
@@ -117,9 +120,9 @@ export default function InvitationModal({
 
   return (
     <>
-      <Modal open onClose={onClose} title="Campaign Invitation" icon={Users} size="lg" closeDisabled={processing}>
+      <Modal open onClose={onClose} title={t('invitation.modalTitle')} icon={Users} size="lg" closeDisabled={processing}>
           <p className="text-sm text-ink-muted -mt-4 mb-4">
-            You've been invited to join a campaign
+            {t('invitation.subtitle')}
           </p>
 
           {/* Campaign Details */}
@@ -134,14 +137,14 @@ export default function InvitationModal({
             )}
             <div className="flex items-center gap-4 text-sm">
               <div>
-                <span className="text-warm-gray">Game System:</span>{' '}
+                <span className="text-warm-gray">{t('invitation.gameSystemLabel')}</span>{' '}
                 <span className="font-medium text-stone-gray">
                   {getSystemName(invitation.campaign?.gameSystem || null)}
                 </span>
               </div>
               {invitation.campaign?.owner && (
                 <div>
-                  <span className="text-warm-gray">DM:</span>{' '}
+                  <span className="text-warm-gray">{t('info.dm')}</span>{' '}
                   <span className="font-medium text-stone-gray">
                     {invitation.campaign.owner.displayName}
                   </span>
@@ -153,23 +156,23 @@ export default function InvitationModal({
           {/* Character Selection */}
           <div className="mb-6">
             <h3 className="text-lg font-semibold text-brand-ink mb-3">
-              Select Characters (Optional)
+              {t('invitation.selectCharacters')}
             </h3>
             <p className="text-sm text-warm-gray mb-4">
-              Choose which characters you'd like to bring to this campaign. You can also join without characters and add them later.
+              {t('invitation.selectCharactersHint')}
             </p>
 
             {loading ? (
               <div className="text-center py-8">
-                <p className="text-sm text-warm-gray">Loading characters...</p>
+                <p className="text-sm text-warm-gray">{t('invitation.loadingCharacters')}</p>
               </div>
             ) : characters.length === 0 ? (
               <div className="text-center py-8 px-4 rounded-lg bg-parchment/50">
                 <p className="text-sm text-warm-gray mb-2">
-                  No compatible characters available
+                  {t('invitation.noCompatibleCharacters')}
                 </p>
                 <p className="text-xs text-warm-gray">
-                  Create a new character or unassign one from another campaign to bring it here.
+                  {t('invitation.noCompatibleCharactersHint')}
                 </p>
               </div>
             ) : (
@@ -222,7 +225,7 @@ export default function InvitationModal({
               className="flex items-center gap-2 px-4 py-2 rounded-lg bg-danger/10 text-danger hover:bg-danger/20 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
             >
               <XCircle className="w-4 h-4" />
-              Decline
+              {t('invitation.decline')}
             </button>
             <button
               onClick={handleAccept}
@@ -230,7 +233,7 @@ export default function InvitationModal({
               className="flex items-center gap-2 px-6 py-2 rounded-lg bg-moss-green text-white hover:bg-moss-green/90 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
             >
               <Check className="w-4 h-4" />
-              {processing ? 'Processing...' : 'Accept Invitation'}
+              {processing ? t('invitation.processing') : t('invitation.acceptButton')}
             </button>
           </div>
       </Modal>

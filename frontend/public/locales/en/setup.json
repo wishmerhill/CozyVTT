@@ -1,0 +1,62 @@
+{
+  "title": "CozyVTT Setup",
+  "subtitle": "Let's get your Virtual Tabletop ready",
+  "back": "Back",
+  "next": "Next",
+  "completing": "Completing Setup...",
+  "completeSetup": "Complete Setup",
+  "alreadyCompleted": "Setup has already been completed",
+  "errorOccurred": "An error occurred during setup. Please try again.",
+  "welcome": {
+    "title": "Welcome to CozyVTT!",
+    "description": "This wizard will guide you through setting up your self-hosted Virtual Tabletop for cozy, narrative-driven campaigns.",
+    "whatWellSetup": "What we'll set up:",
+    "createAdmin": "Create your administrator account",
+    "configureSystem": "Configure the basic system settings",
+    "completeInstallation": "Complete the installation process",
+    "timeInfo": "This process takes about 2 minutes. Click Next to begin."
+  },
+  "adminAccount": {
+    "title": "Create Admin Account",
+    "subtitle": "This account will have full system access",
+    "displayName": "Display Name",
+    "displayNamePlaceholder": "Your name",
+    "email": "Email Address",
+    "emailPlaceholder": "admin@example.com",
+    "password": "Password",
+    "passwordPlaceholder": "At least 12 characters",
+    "confirmPassword": "Confirm Password",
+    "confirmPasswordPlaceholder": "Re-enter your password",
+    "passwordStrength": "Password strength:"
+  },
+  "systemConfig": {
+    "title": "System Configuration",
+    "subtitle": "Customize your CozyVTT instance",
+    "instanceName": "Instance Name",
+    "instanceNamePlaceholder": "CozyVTT",
+    "instanceNameHint": "This will appear in the browser tab and page titles",
+    "timezone": "Timezone",
+    "timezoneHint": "Used for scheduling and timestamps",
+    "detected": "(Detected)",
+    "commonTimezones": "Common Timezones",
+    "enableRegistration": "Enable Public Registration",
+    "enableRegistrationDesc": "Allow anyone to create an account on this instance. You can change this later in the system settings.",
+    "registrationWarning": "⚠️ Recommended: keep this disabled for private instances"
+  },
+  "review": {
+    "title": "Review & Confirm",
+    "subtitle": "Please review your configuration before completing setup",
+    "adminSection": "Administrator Account",
+    "systemSection": "System Configuration",
+    "displayName": "Display Name:",
+    "email": "Email:",
+    "password": "Password:",
+    "passwordMasked": "••••••••••••",
+    "instanceName": "Instance Name:",
+    "timezone": "Timezone:",
+    "publicRegistration": "Public Registration:",
+    "enabled": "Enabled",
+    "disabled": "Disabled",
+    "confirmation": "Click <strong>Complete Setup</strong> to create the administrator account and finish the installation. You'll be automatically signed in and redirected to the dashboard."
+  }
+}

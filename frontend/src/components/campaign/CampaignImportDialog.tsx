@@ -22,6 +22,7 @@ import {
 import api from '@/services/api';
 import type { CampaignImportPreview, CampaignImportResult } from '@/types';
 import Button from '@/components/ui/Button';
+import { apiErrorMessage, errorMessage as thrownMessage } from '@/utils/errors';
 
 interface CampaignImportDialogProps {
   isOpen: boolean;
@@ -79,8 +80,8 @@ export default function CampaignImportDialog({
       setPreview(previewData);
       setCampaignName(previewData.campaignName);
       setStep('preview');
-    } catch (err: any) {
-      const msg = err.response?.data?.message || err.message || 'Failed to read archive.';
+    } catch (err) {
+      const msg = apiErrorMessage(err) || thrownMessage(err) || t('import.readArchiveFailedFallback');
       setErrorMessage(msg);
       setStep('error');
     } finally {
@@ -112,8 +113,8 @@ export default function CampaignImportDialog({
       setResult(importResult);
       setStep('done');
       onSuccess?.();
-    } catch (err: any) {
-      const msg = err.response?.data?.message || err.message || 'Import failed.';
+    } catch (err) {
+      const msg = apiErrorMessage(err) || thrownMessage(err) || t('import.importFailedFallback');
       setErrorMessage(msg);
       setStep('error');
     }
@@ -147,12 +148,12 @@ export default function CampaignImportDialog({
           <div className="bg-moss-green/10 border-b border-moss-green/20 px-6 py-4 flex items-center justify-between">
             <div className="flex items-center gap-3">
               <FileArchive className="w-5 h-5 text-brand-ink" />
-              <h2 className="text-lg font-bold text-brand-ink">Import Campaign</h2>
+              <h2 className="text-lg font-bold text-brand-ink">{t('import.dialogTitle')}</h2>
             </div>
             <button
               onClick={handleClose}
               className="p-1.5 hover:bg-moss-green/10 rounded-lg transition-colors"
-              aria-label="Close"
+              aria-label={t('common:close')}
             >
               <X className="w-5 h-5 text-stone-gray" />
             </button>
@@ -173,15 +174,15 @@ export default function CampaignImportDialog({
                   {loading ? (
                     <div className="flex flex-col items-center gap-3">
                       <Loader2 className="w-10 h-10 text-brand-ink animate-spin" />
-                      <p className="text-sm text-stone-gray">Reading archive...</p>
+                      <p className="text-sm text-stone-gray">{t('import.readingArchive')}</p>
                     </div>
                   ) : (
                     <>
                       <Upload className="w-10 h-10 text-brand-ink/50 mx-auto mb-3" />
                       <p className="text-sm font-medium text-stone-gray mb-1">
-                        Drop a <span className="font-mono text-brand-ink">.cozyvtt</span> file here
+                        {t('import.dropFilePrefix')} <span className="font-mono text-brand-ink">.cozyvtt</span> {t('import.dropFileSuffix')}
                       </p>
-                      <p className="text-xs text-warm-gray">or click to browse</p>
+                      <p className="text-xs text-warm-gray">{t('import.orClickToBrowse')}</p>
                     </>
                   )}
                 </div>
@@ -215,15 +216,17 @@ export default function CampaignImportDialog({
                 </div>
 
                 <div className="text-xs text-warm-gray">
-                  Exported from {preview.exportedFrom} on{' '}
-                  {new Date(preview.exportedAt).toLocaleDateString()}
+                  {t('import.exportedFromLine', {
+                    from: preview.exportedFrom,
+                    date: new Date(preview.exportedAt).toLocaleDateString(),
+                  })}
                 </div>
 
                 {/* Options */}
                 <div className="space-y-3 pt-2 border-t border-moss-green/10">
                   <div>
                     <label htmlFor="import-name" className="block text-sm font-semibold text-stone-gray mb-1">
-                      {t('campaign.name')}
+                      {t('name')}
                     </label>
                     <input
                       id="import-name"
@@ -273,7 +276,7 @@ export default function CampaignImportDialog({
                     className="flex-1 flex items-center justify-center gap-2 disabled:opacity-50 disabled:cursor-not-allowed"
                   >
                     <Upload className="w-4 h-4" />
-                    {t('campaign.create')}
+                    {t('create')}
                   </Button>
                 </div>
               </div>
@@ -295,7 +298,7 @@ export default function CampaignImportDialog({
                 <div>
                   <p className="text-lg font-bold text-brand-ink mb-1">{t('import.complete')}</p>
                   <p className="text-sm text-stone-gray">
-                    <span className="font-semibold">{result.campaignName}</span> is ready.
+                    <span className="font-semibold">{result.campaignName}</span>{t('import.readyLine')}
                   </p>
                 </div>
 
@@ -321,7 +324,7 @@ export default function CampaignImportDialog({
                     }}
                     className="flex-1"
                   >
-                    {t('campaign.open')}
+                    {t('import.open')}
                   </Button>
                 </div>
               </div>
@@ -337,7 +340,7 @@ export default function CampaignImportDialog({
                 </div>
                 <div className="flex items-center gap-3 pt-2">
                   <Button onClick={handleClose} variant="secondary" className="flex-1">
-                    Close
+                    {t('common:close')}
                   </Button>
                   <Button onClick={resetState} className="flex-1">
                     {t('common:retry')}

@@ -8,6 +8,7 @@
  */
 
 import { useState, useEffect, useCallback } from 'react';
+import { useTranslation } from 'react-i18next';
 import { Play, Pause, Square, RotateCcw, Clock, Hash } from 'lucide-react';
 import { useCampaign } from '@/contexts/CampaignContext';
 import Toast, { useToast } from '@/components/Toast';
@@ -15,6 +16,7 @@ import api from '@/services/api';
 import { CampaignStatus } from '@/types';
 import EndSessionModal from '@/components/campaign/EndSessionModal';
 import Button from '@/components/ui/Button';
+import { apiErrorMessage } from '@/utils/errors';
 
 // ============================================
 // Session timer hook
@@ -57,6 +59,7 @@ function useSessionTimer(startedAt: string | null): string {
 // ============================================
 
 export default function SessionControls() {
+  const { t } = useTranslation('campaign');
   const { campaign, userRole, activeSession, setActiveSession, updateCampaignStatus } = useCampaign();
   const { toast, showToast, hideToast } = useToast();
 
@@ -84,9 +87,9 @@ export default function SessionControls() {
         sessionNumber: result.session.sessionNumber,
         startedAt: result.session.startedAt,
       });
-      showToast(`Session ${result.session.sessionNumber} started!`, 'success');
-    } catch (err: any) {
-      showToast(err.response?.data?.message || 'Failed to start session', 'error');
+      showToast(t('session.startedToast', { number: result.session.sessionNumber }), 'success');
+    } catch (err) {
+      showToast(apiErrorMessage(err) || t('session.errors.start'), 'error');
     } finally {
       setIsLoading(false);
     }
@@ -98,9 +101,9 @@ export default function SessionControls() {
     try {
       await api.pauseSession(campaign.id, activeSession.id);
       updateCampaignStatus(CampaignStatus.PAUSED);
-      showToast('Session paused. Game state saved.', 'success');
-    } catch (err: any) {
-      showToast(err.response?.data?.message || 'Failed to pause session', 'error');
+      showToast(t('session.pausedToast'), 'success');
+    } catch (err) {
+      showToast(apiErrorMessage(err) || t('session.errors.pause'), 'error');
     } finally {
       setIsLoading(false);
     }
@@ -117,9 +120,9 @@ export default function SessionControls() {
         sessionNumber: result.session.sessionNumber,
         startedAt: new Date().toISOString(), // Resume resets timer display to now
       });
-      showToast(`Session ${result.session.sessionNumber} resumed!`, 'success');
-    } catch (err: any) {
-      showToast(err.response?.data?.message || 'Failed to resume session', 'error');
+      showToast(t('session.resumedToast', { number: result.session.sessionNumber }), 'success');
+    } catch (err) {
+      showToast(apiErrorMessage(err) || t('session.errors.resume'), 'error');
     } finally {
       setIsLoading(false);
     }
@@ -134,9 +137,14 @@ export default function SessionControls() {
       updateCampaignStatus(CampaignStatus.INACTIVE);
       setActiveSession(null);
       setIsEndModalOpen(false);
-      showToast(`Session ${activeSession.sessionNumber} ended.${saveState ? ' State saved.' : ''}`, 'success');
-    } catch (err: any) {
-      showToast(err.response?.data?.message || 'Failed to end session', 'error');
+      showToast(
+        saveState
+          ? t('session.endedToastSaved', { number: activeSession.sessionNumber })
+          : t('session.endedToast', { number: activeSession.sessionNumber }),
+        'success'
+      );
+    } catch (err) {
+      showToast(apiErrorMessage(err) || t('session.errors.end'), 'error');
     } finally {
       setIsLoading(false);
     }
@@ -160,7 +168,7 @@ export default function SessionControls() {
         <div className="flex items-center justify-between">
           <div className="flex items-center gap-2">
             <Clock className="w-4 h-4 text-warm-amber" />
-            <h3 className="text-sm font-semibold text-brand-ink">Session Controls</h3>
+            <h3 className="text-sm font-semibold text-brand-ink">{t('session.controlsTitle')}</h3>
           </div>
 
           {/* Session number + timer */}
@@ -190,7 +198,7 @@ export default function SessionControls() {
             }`}
           />
           <span className="text-sm font-medium text-stone-gray capitalize">
-            {isActive ? 'Active' : isPaused ? 'Paused' : isInactive ? 'Inactive' : 'Preparation'}
+            {isActive ? t('status.active') : isPaused ? t('status.paused') : isInactive ? t('status.inactive') : t('status.preparation')}
           </span>
         </div>
 
@@ -204,7 +212,7 @@ export default function SessionControls() {
               className="w-full flex items-center justify-center gap-2"
             >
               <Play className="w-4 h-4" />
-              {isLoading ? 'Starting...' : 'Start Session'}
+              {isLoading ? t('session.starting') : t('session.start')}
             </Button>
           )}
 
@@ -216,7 +224,7 @@ export default function SessionControls() {
               className="w-full flex items-center justify-center gap-2"
             >
               <RotateCcw className="w-4 h-4" />
-              {isLoading ? 'Resuming...' : 'Resume Session'}
+              {isLoading ? t('session.resuming') : t('session.resumeSessionButton')}
             </Button>
           )}
 
@@ -228,7 +236,7 @@ export default function SessionControls() {
               variant="secondary" className="w-full flex items-center justify-center gap-2"
             >
               <Pause className="w-4 h-4" />
-              {isLoading ? 'Pausing...' : 'Pause Session'}
+              {isLoading ? t('session.pausing') : t('session.pauseSessionButton')}
             </Button>
           )}
 
@@ -240,7 +248,7 @@ export default function SessionControls() {
               className="w-full flex items-center justify-center gap-2 px-4 py-2 rounded-lg border border-danger/30 text-danger-ink hover:bg-danger/10 transition-colors text-sm font-medium disabled:opacity-50 disabled:cursor-not-allowed"
             >
               <Square className="w-4 h-4" />
-              End Session
+              {t('session.end')}
             </button>
           )}
         </div>
@@ -248,14 +256,14 @@ export default function SessionControls() {
         {/* Paused hint */}
         {isPaused && (
           <p className="text-xs text-warm-gray text-center italic">
-            Players are in read-only mode.
+            {t('session.playersReadOnlyHint')}
           </p>
         )}
 
         {/* Inactive hint */}
         {isInactive && (
           <p className="text-xs text-warm-gray text-center italic">
-            Session ended. Start a new session when ready.
+            {t('session.inactiveHint')}
           </p>
         )}
       </div>

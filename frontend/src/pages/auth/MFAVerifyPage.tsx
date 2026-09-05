@@ -9,6 +9,7 @@ import { useNavigate } from 'react-router-dom';
 import { useTranslation } from 'react-i18next';
 import { useAuth } from '@/contexts/AuthContext';
 import Button from '@/components/ui/Button';
+import { apiErrorStatus, apiErrorText } from '@/utils/errors';
 
 export default function MFAVerifyPage() {
   const { t } = useTranslation(['auth', 'common']);
@@ -59,14 +60,15 @@ export default function MFAVerifyPage() {
       await verifyMFA(token);
 
       // On success, user is logged in and will be redirected
-    } catch (err: any) {
+    } catch (err) {
       console.error('MFA verification error:', err);
 
-      if (err.response?.data?.error) {
-        setError(err.response.data.error);
-      } else if (err.response?.status === 401) {
+      const serverError = apiErrorText(err);
+      if (serverError) {
+        setError(serverError);
+      } else if (apiErrorStatus(err) === 401) {
         setError(t('auth:mfa.verifyTokenErrorInvalidCode'));
-      } else if (err.response?.status === 429) {
+      } else if (apiErrorStatus(err) === 429) {
         setError(t('auth:mfa.verifyTokenErrorTooManyAttempts'));
       } else {
         setError(t('auth:mfa.verifyTokenErrorGeneric'));
@@ -101,14 +103,15 @@ export default function MFAVerifyPage() {
       await verifyMFAWithBackupCode(cleanedCode);
 
       // On success, user is logged in and will be redirected
-    } catch (err: any) {
+    } catch (err) {
       console.error('Backup code verification error:', err);
 
-      if (err.response?.data?.error) {
-        setError(err.response.data.error);
-      } else if (err.response?.status === 401) {
+      const serverError = apiErrorText(err);
+      if (serverError) {
+        setError(serverError);
+      } else if (apiErrorStatus(err) === 401) {
         setError(t('auth:mfa.backupCodeErrorInvalidCode'));
-      } else if (err.response?.status === 429) {
+      } else if (apiErrorStatus(err) === 429) {
         setError(t('auth:mfa.backupCodeErrorTooManyAttempts'));
       } else {
         setError(t('auth:mfa.backupCodeErrorGeneric'));

@@ -3,6 +3,7 @@
 // Display badge for game system with color coding
 // ============================================
 
+import { useTranslation } from 'react-i18next';
 import type { GameSystem } from '@/types';
 import { getGameSystemLabel } from '@/constants/game-systems';
 
@@ -57,6 +58,8 @@ export default function GameSystemBadge({
   size = 'md',
   showFull = false,
 }: GameSystemBadgeProps) {
+  const { t } = useTranslation();
+
   // No badge for null/flexible systems
   if (!gameSystem) {
     return (
@@ -65,7 +68,7 @@ export default function GameSystemBadge({
                    bg-surface text-ink-muted border-ink/20
                    ${size === 'sm' ? 'text-xs' : size === 'lg' ? 'text-sm font-medium' : 'text-xs font-medium'}`}
       >
-        Flexible
+        {t('flexible')}
       </span>
     );
   }

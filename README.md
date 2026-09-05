@@ -49,7 +49,7 @@ If you find a security issue, please report it privately per [SECURITY.md](SECUR
 - **Token templates** — save reusable token configurations (image, stats, HP, size, disposition, full NPC stat block); place from library or save from map context menu; copy templates between campaigns the DM owns
 - **NPC right-click rolls** — DMs right-click any NPC token to roll abilities, saves, skills, attacks, and damage parsed from its stat block; advantage/disadvantage selector for d20 systems; free-form custom roll fallback for non-5e systems
 - **Campaign export/import** — export campaigns as portable `.cozyvtt` archives; import on any CozyVTT instance; includes maps, tokens, creatures, templates, and assets; multi-step preview flow; optional audio toggle; secured against path traversal, zip bombs, and malicious files
-- **Walls & dynamic lighting** — DM-drawn wall segments (walls, doors, windows) with raycasting visibility; draw, polygon, and brush drawing modes; snap-to-grid and snap-to-endpoint; split, select, erase, and merge point tools; snap-to-wall door/window placement (auto-splits existing walls); players only see what their character can; door interactions for both DM and players; bright/dim light radii matching D&D 5e and PF2e rules; named light presets (Candle, Torch, Lamp, Lantern, Campfire); overlapping dim zones combine to bright
+- **Walls & dynamic lighting** — DM-drawn wall segments (walls, doors, windows) with raycasting visibility; draw, polygon, and brush drawing modes; snap-to-grid and snap-to-endpoint; split, select, erase, and merge point tools; snap-to-wall door/window placement (auto-splits existing walls); players only see what their character can, and light never reveals through a wall — a lit room is visible only to someone with line of sight into it; door interactions for both DM and players; bright/dim light radii matching D&D 5e and PF2e rules; named light presets (Candle, Torch, Lamp, Lantern, Campfire); overlapping dim zones combine to bright
 - **Fog of war** — drag a box to reveal or hide chunks of the map; the selection snaps to whole grid squares, with animated fade transitions
 - **Spirit layer** — a second canvas layer for ethereal / astral / out-of-body scenes, hidden from players by default
 - **Initiative tracker** — real-time combat turn order; DM controls, players watch live. The acting token is ringed on the map for everyone, and hovering a name highlights its token (and vice versa)
@@ -68,12 +68,14 @@ If you find a security issue, please report it privately per [SECURITY.md](SECUR
 ### Dice System
 - **Full dice notation** — `1d20+5`, `2d6`, `4d6kh3` (keep highest), advantage/disadvantage
 - **Real-time results** — rolls appear in the campaign chat log for all players
-- **Secret rolls** — rolled result visible only to you and the DM
-- **Dice history** — scrollable log of all session rolls
+- **Secret rolls** — hidden from the other players; your DM can still see them, and they stay in your own list marked as secret
+- **Dice history** — a running log of the session's rolls that survives a refresh, filtered per person by the server
 
 ### Communication
 - **Campaign chat** — in-session messaging between all members
 - **System messages** — automatic logs for joins, session events, and dice rolls
+- **Personal notes** — private per-campaign notes in Markdown, with a rendered preview and autosave; readable only by their author, enforced server-side
+- **Session history** — every finished session with its date, length and the recap the DM wrote; the DM can edit or clear any past recap
 
 ### Theming & Customization
 - **16 built-in color themes** — warm, cool, dark, neutral, and vibrant palettes
@@ -245,6 +247,20 @@ Set these in `.env` and restart — no rebuild needed. If you raise one, raise y
 | [Security Policy](SECURITY.md) | How to report vulnerabilities |
 | [Changelog](CHANGELOG.md) | Release history |
 | [Third-Party Licenses](THIRD_PARTY_LICENSES.md) | Font and content license attributions |
+
+---
+
+## Community Projects
+
+Built by other people, on their own terms. They are not part of CozyVTT, are not maintained by this project, and are listed because they are useful — check their own documentation and licence before running them.
+
+| Project | What it does |
+|---------|--------------|
+| [cozyvtt-mcp](https://github.com/yanjingzhaisun/cozyvtt-mcp) | An MCP bridge that lets an AI assistant act in a campaign — post to chat, roll dice, move tokens, change maps and run initiative. MIT licensed, independent of this codebase. |
+
+A note on building things like this. CozyVTT's HTTP and WebSocket surfaces are **not a public API**: they are what the web client calls, they are not versioned, and they carry no compatibility promise, so they can change in any release. They *can* be driven by a program — signing in with your own email and password returns a session cookie that authenticates both, and a script can do exactly what the web client does, as that user with that user's permissions. Unsupported is the honest word for it, not impossible.
+
+That is why `cozyvtt-mcp` pins to a CozyVTT version and keeps a compatibility table. At the time of writing it targets **v1.2.2**, and 1.3.0 changed enough of the API that you should check its table before pairing the two.
 
 ---
 

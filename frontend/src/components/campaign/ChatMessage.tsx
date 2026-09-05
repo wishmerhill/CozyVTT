@@ -18,7 +18,7 @@ interface ChatMessageProps {
 /**
  * Format timestamp as relative time (e.g., "2 minutes ago")
  */
-function formatRelativeTime(timestamp: string, t: (key: string, options?: any) => string): string {
+function formatRelativeTime(timestamp: string, t: (key: string, options?: any) => string, locale: string): string {
   // Handle undefined, null, or empty timestamps
   if (!timestamp) {
     return t('chat.unknownTime');
@@ -45,7 +45,7 @@ function formatRelativeTime(timestamp: string, t: (key: string, options?: any) =
   if (diffDay < 7) return t('chat.daysAgo', { count: diffDay });
 
   // If older than a week, show the date
-  return date.toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' });
+  return date.toLocaleDateString(locale, { month: 'short', day: 'numeric', year: 'numeric' });
 }
 
 /**
@@ -87,7 +87,7 @@ function getMessageStyle(type: MessageType): { bg: string; textColor: string; bo
 }
 
 function ChatMessageInner({ message, isCurrentUser = false, isPending = false }: ChatMessageProps) {
-  const { t } = useTranslation('campaign');
+  const { t, i18n } = useTranslation('campaign');
   const { bg, textColor, borderColor } = getMessageStyle(message.type);
   const isSystem = message.type === 'SYSTEM';
   const isDM = message.type === 'DM';
@@ -130,7 +130,7 @@ function ChatMessageInner({ message, isCurrentUser = false, isPending = false }:
           <span className="text-xs text-stone-gray/50 italic">{t('chat.sending')}</span>
         ) : (
           <span className="text-xs text-stone-gray/70" title={message.createdAt ? new Date(message.createdAt).toLocaleString() : t('chat.unknownTime')}>
-            {formatRelativeTime(message.createdAt, t)}
+            {formatRelativeTime(message.createdAt, t, i18n.language)}
           </span>
         )}
       </div>

@@ -21,6 +21,7 @@ import CampaignCardSkeleton from '@/components/skeletons/CampaignCardSkeleton';
 import type { Campaign, CampaignInvitation } from '@/types';
 import { CampaignRole, PlatformRole } from '@/types';
 import Button from '@/components/ui/Button';
+import { apiErrorMessage } from '@/utils/errors';
 
 export default function DashboardPage() {
   const { t } = useTranslation(['dashboard', 'common']);
@@ -46,7 +47,7 @@ export default function DashboardPage() {
   const loading = campaignsQuery.isPending || charactersQuery.isPending || invitationsQuery.isPending;
   const queryError = campaignsQuery.error || charactersQuery.error || invitationsQuery.error;
   const error = queryError
-    ? ((queryError as any).response?.data?.message || t('dashboard:failedToLoad'))
+    ? (apiErrorMessage(queryError) || t('dashboard:failedToLoad'))
     : '';
 
   // Refresh button + post-invitation-response resync
@@ -128,7 +129,7 @@ export default function DashboardPage() {
               {/* Profile Avatar Button */}
               <button
                 onClick={() => navigate('/profile')}
-                aria-label={t('dashboard:viewProfile', { name: user?.displayName ?? 'your account' })}
+                aria-label={t('dashboard:viewProfile', { name: user?.displayName ?? t('dashboard:yourAccountFallback') })}
                 className="w-12 h-12 rounded-full border-2 border-moss-green/30 hover:border-moss-green/60 transition-colors overflow-hidden flex items-center justify-center bg-moss-green/10 flex-shrink-0"
               >
                 {user?.avatarUrl ? (
@@ -165,7 +166,7 @@ export default function DashboardPage() {
                     <p className="text-sm text-warm-gray">
                       {loading
                         ? t('dashboard:loading')
-                        : t('dashboard:characterCount', { count: characters.length, plural: characters.length !== 1 ? 'i' : '' })}
+                        : t('dashboard:characterCount', { count: characters.length })}
                     </p>
                   </div>
                 </div>

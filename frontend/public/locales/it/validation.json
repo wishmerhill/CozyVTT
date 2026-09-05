@@ -1,12 +1,12 @@
 {
   "required": "Questo campo è obbligatorio",
   "email": "Inserisci un indirizzo email valido",
-  "minLength": "Il campo deve contenere almeno {min} caratteri",
-  "maxLength": "Il campo non può superare {max} caratteri",
-  "minValue": "Il valore minimo è {min}",
-  "maxValue": "Il valore massimo è {max}",
+  "minLength": "Il campo deve contenere almeno {{min}} caratteri",
+  "maxLength": "Il campo non può superare {{max}} caratteri",
+  "minValue": "Il valore minimo è {{min}}",
+  "maxValue": "Il valore massimo è {{max}}",
   "password": {
-    "minLength": "La password deve contenere almeno {min} caratteri",
+    "minLength": "La password deve contenere almeno {{min}} caratteri",
     "uppercase": "La password deve contenere almeno una lettera maiuscola",
     "lowercase": "La password deve contenere almeno una lettera minuscola",
     "number": "La password deve contenere almeno un numero",
@@ -18,22 +18,22 @@
   },
   "name": {
     "required": "Il nome è obbligatorio",
-    "tooLong": "Il nome non può superare {max} caratteri"
+    "tooLong": "Il nome non può superare {{max}} caratteri"
   },
   "description": {
-    "tooLong": "La descrizione non può superare {max} caratteri"
+    "tooLong": "La descrizione non può superare {{max}} caratteri"
   },
   "url": "Inserisci un URL valido",
   "number": "Inserisci un numero valido",
   "integer": "Inserisci un numero intero valido",
   "positive": "Il valore deve essere positivo",
-  "fileSize": "Il file non può superare {max}",
-  "fileType": "Tipo di file non supportato. Tipi accettati: {types}",
-  "gridSize": "La dimensione della griglia deve essere compresa tra {min} e {max} pixel",
-  "feetPerSquare": "Il valore deve essere compreso tra {min} e {max}",
+  "fileSize": "Il file non può superare {{max}}",
+  "fileType": "Tipo di file non supportato. Tipi accettati: {{types}}",
+  "gridSize": "La dimensione della griglia deve essere compresa tra {{min}} e {{max}} pixel",
+  "feetPerSquare": "Il valore deve essere compreso tra {{min}} e {{max}}",
   "selectRequired": "Seleziona un'opzione",
-  "arrayMin": "Seleziona almeno {min} elemento/i",
-  "arrayMax": "Puoi selezionare al massimo {max} elementi",
+  "arrayMin": "Seleziona almeno {{min}} elemento/i",
+  "arrayMax": "Puoi selezionare al massimo {{max}} elementi",
   "uniqueName": "Esiste già un elemento con questo nome",
   "invalidFormat": "Formato non valido"
 }

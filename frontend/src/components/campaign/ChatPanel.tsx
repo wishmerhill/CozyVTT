@@ -18,6 +18,8 @@ import ChatMessageSkeleton from '@/components/skeletons/ChatMessageSkeleton';
 import { MessageType, PlatformRole } from '@/types';
 import type { Message, ChatMessageBroadcast } from '@/types';
 import Button from '@/components/ui/Button';
+import { errorMessage } from '@/utils/errors';
+import type { MessageMetadata } from '@/types';
 
 export default function ChatPanel() {
   const { t } = useTranslation(['campaign', 'common']);
@@ -132,9 +134,9 @@ export default function ChatPanel() {
 
         // Scroll to bottom after initial load (without smooth)
         setTimeout(() => scrollToBottom(false), 100);
-      } catch (err: any) {
+      } catch (err) {
         console.error('[ChatPanel] Failed to load messages:', err);
-        setError(err.message || t('chat.failedToLoad'));
+        setError(errorMessage(err) || t('chat.failedToLoad'));
       } finally {
         setIsLoading(false);
       }
@@ -211,9 +213,9 @@ export default function ChatPanel() {
       // Add older messages to the beginning
       setMessages((prev) => [...fetchedMessages.reverse(), ...prev]);
       setHasMore(fetchedMessages.length === 50);
-    } catch (err: any) {
+    } catch (err) {
       console.error('[ChatPanel] Failed to load more messages:', err);
-      setError(err.message || t('chat.failedToLoad'));
+      setError(errorMessage(err) || t('chat.failedToLoadMore'));
     } finally {
       setIsLoadingMore(false);
     }
@@ -289,7 +291,7 @@ export default function ChatPanel() {
       }
     };
 
-    const handleSystemMessage = (data: { content: string; metadata?: any; timestamp: string }) => {
+    const handleSystemMessage = (data: { content: string; metadata?: MessageMetadata; timestamp: string }) => {
       console.log('[ChatPanel] Received system message:', data);
 
       const systemMessage: Message = {

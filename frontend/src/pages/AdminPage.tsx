@@ -9,6 +9,7 @@
 
 import React, { useState, useEffect, useCallback, useMemo, useRef } from 'react';
 import { useTranslation } from 'react-i18next';
+import i18n from '@/i18n/i18n';
 import { useDebounce } from '@/hooks/useDebounce';
 import { useNavigate } from 'react-router-dom';
 import {
@@ -76,7 +77,17 @@ import {
 import ThemePicker from '@/components/appearance/ThemePicker';
 import TableSkeleton from '@/components/skeletons/TableSkeleton';
 import ConfirmDialog from '@/components/common/ConfirmDialog';
+import LanguageSelector from '@/components/common/LanguageSelector';
 import Button from '@/components/ui/Button';
+import { apiErrorMessage } from '@/utils/errors';
+
+/** The four colours the appearance form edits. */
+interface AppearanceColors {
+  primary: string;
+  accent: string;
+  background: string;
+  text: string;
+}
 
 // ============================================
 // Helpers
@@ -111,22 +122,22 @@ function formatRelativeTime(dateStr: string | null): string {
   if (!dateStr) return '\u2014';
   const diff = Date.now() - new Date(dateStr).getTime();
   const minutes = Math.floor(diff / 60000);
-  if (minutes < 1) return 'just now';
-  if (minutes < 60) return `${minutes}m ago`;
+  if (minutes < 1) return i18n.t('admin:time.justNow');
+  if (minutes < 60) return i18n.t('admin:time.minutesAgo', { count: minutes });
   const hours = Math.floor(minutes / 60);
-  if (hours < 24) return `${hours}h ago`;
+  if (hours < 24) return i18n.t('admin:time.hoursAgo', { count: hours });
   const days = Math.floor(hours / 24);
-  return `${days}d ago`;
+  return i18n.t('admin:time.daysAgo', { count: days });
 }
 
 function formatExpiry(dateStr: string | null): string {
   if (!dateStr) return '\u2014';
   const diff = new Date(dateStr).getTime() - Date.now();
-  if (diff <= 0) return 'expired';
+  if (diff <= 0) return i18n.t('admin:time.expired');
   const minutes = Math.floor(diff / 60000);
-  if (minutes < 60) return `in ${minutes}m`;
+  if (minutes < 60) return i18n.t('admin:time.inMinutes', { count: minutes });
   const hours = Math.floor(minutes / 60);
-  if (hours < 48) return `in ${hours}h ${minutes % 60}m`;
+  if (hours < 48) return i18n.t('admin:time.inHoursMinutes', { hours, minutes: minutes % 60 });
   return new Date(dateStr).toLocaleTimeString(undefined, { hour: '2-digit', minute: '2-digit' });
 }
 
@@ -229,7 +240,11 @@ export default function AdminPage() {
 
   // ---- Appearance ----
   const { refreshAppearance } = useTheme();
-  const [appearanceForm, setAppearanceForm] = useState({
+  const [appearanceForm, setAppearanceForm] = useState<{
+    themeId: string;
+    fontId: string;
+    customColors: AppearanceColors;
+  }>({
     themeId: 'cozy-default',
     fontId: 'default',
     customColors: {
@@ -414,7 +429,7 @@ export default function AdminPage() {
       setAppearanceForm({
         themeId: settings.themeId || 'cozy-default',
         fontId: settings.fontId || 'default',
-        customColors: settings.customThemeColors as any || {
+        customColors: (settings.customThemeColors as AppearanceColors | null) || {
           primary: '#4A5D4E',
           accent: '#D4A574',
           background: '#FFF9E6',
@@ -465,12 +480,12 @@ export default function AdminPage() {
     try {
       const updated = await adminService.updateUser(u.id, { templateEditor: next });
       setUsers(prev => prev.map(x => x.id === u.id ? updated : x));
-      showToast(`${t('admin:templateEditor')} ${next ? t('common:enabled') : t('common:disabled')} — ${u.displayName}`, 'success');
+      showToast(`${t('admin:users.templateEditor')} ${next ? t('common:enabled') : t('common:disabled')} — ${u.displayName}`, 'success');
     } catch (err: unknown) {
       // Revert on error
       setUsers(prev => prev.map(x => x.id === u.id ? { ...x, templateEditor: !next } : x));
       const e = err as { response?: { data?: { message?: string } } };
-      showToast(e.response?.data?.message ?? t('admin:permissionUpdateFailed'), 'error');
+      showToast(apiErrorMessage(e) ?? t('admin:users.permissionUpdateFailed'), 'error');
     } finally {
       setTogglingTemplateEditor(null);
     }
@@ -484,12 +499,12 @@ export default function AdminPage() {
     try {
       const updated = await adminService.updateUser(u.id, { globalAssetManager: next });
       setUsers(prev => prev.map(x => x.id === u.id ? updated : x));
-      showToast(`${t('admin:globalAssets')} ${next ? t('common:enabled') : t('common:disabled')} — ${u.displayName}`, 'success');
+      showToast(`${t('admin:users.globalAssets')} ${next ? t('common:enabled') : t('common:disabled')} — ${u.displayName}`, 'success');
     } catch (err: unknown) {
       // Revert on error
       setUsers(prev => prev.map(x => x.id === u.id ? { ...x, globalAssetManager: !next } : x));
       const e = err as { response?: { data?: { message?: string } } };
-      showToast(e.response?.data?.message ?? t('admin:permissionUpdateFailed'), 'error');
+      showToast(apiErrorMessage(e) ?? t('admin:users.permissionUpdateFailed'), 'error');
     } finally {
       setTogglingGlobalAssets(null);
     }
@@ -503,10 +518,10 @@ export default function AdminPage() {
         : PlatformRole.ADMIN;
       const updated = await adminService.updateUser(u.id, { platformRole: newRole });
       setUsers(prev => prev.map(x => x.id === u.id ? updated : x));
-      showToast(`${t('admin:roleChanged')} ${newRole}`, 'success');
+      showToast(`${t('admin:users.roleChanged')} ${newRole}`, 'success');
     } catch (err: unknown) {
       const e = err as { response?: { data?: { message?: string } } };
-      showToast(e.response?.data?.message ?? t('common:error'), 'error');
+      showToast(apiErrorMessage(e) ?? t('admin:users.roleChangeFailed'), 'error');
     } finally {
       setRoleChangingId(null);
     }
@@ -521,7 +536,7 @@ export default function AdminPage() {
       setTempPassword(pwd);
     } catch (err: unknown) {
       const e = err as { response?: { data?: { message?: string } } };
-      setResetError(e.response?.data?.message ?? t('common:error'));
+      setResetError(apiErrorMessage(e) ?? t('admin:users.passwordResetFailed'));
     } finally {
       setIsResetting(false);
     }
@@ -536,7 +551,7 @@ export default function AdminPage() {
       setResetLinkSent(true);
     } catch (err: unknown) {
       const e = err as { response?: { data?: { message?: string } } };
-      setResetLinkError(e.response?.data?.message ?? t('common:error'));
+      setResetLinkError(apiErrorMessage(e) ?? t('admin:users.resetLinkFailed'));
     } finally {
       setIsSendingResetLink(false);
     }
@@ -555,7 +570,7 @@ export default function AdminPage() {
       showToast(`${t('common:delete')} "${deletedName}"`, 'success');
     } catch (err: unknown) {
       const e = err as { response?: { data?: { message?: string } } };
-      setDeleteError(e.response?.data?.message ?? t('common:error'));
+      setDeleteError(apiErrorMessage(e) ?? t('admin:users.deleteUserFailed'));
     } finally {
       setIsDeleting(false);
     }
@@ -634,7 +649,7 @@ export default function AdminPage() {
     } catch (err: unknown) {
       const e = err as { response?: { data?: { message?: string } } };
       setCreateUserError(
-        e.response?.data?.message ??
+        apiErrorMessage(e) ??
           (createUserMode === 'invite' ? t('admin:createUser.errorInvite') : t('admin:createUser.error'))
       );
     } finally {
@@ -652,7 +667,7 @@ export default function AdminPage() {
       const e = err as { response?: { data?: { message?: string } } };
       setResendInviteResult({
         id: userId,
-        message: e.response?.data?.message ?? t('common:error'),
+        message: apiErrorMessage(e) ?? t('admin:users.resendInviteFailed'),
       });
     } finally {
       setResendingInviteId(null);
@@ -677,7 +692,7 @@ export default function AdminPage() {
       setResetMfaConfirmId(null);
     } catch (err: unknown) {
       const e = err as { response?: { data?: { message?: string } } };
-      setResetMfaError(e.response?.data?.message ?? t('common:error'));
+      setResetMfaError(apiErrorMessage(e) ?? t('admin:users.resetMfaFailed'));
     } finally {
       setIsResettingMfa(false);
     }
@@ -691,7 +706,7 @@ export default function AdminPage() {
       showToast(t('admin:users.approve') + '!', 'success');
     } catch (err: unknown) {
       const e = err as { response?: { data?: { message?: string } } };
-      showToast(e.response?.data?.message ?? t('common:error'), 'error');
+      showToast(apiErrorMessage(e) ?? t('admin:users.approveUserFailed'), 'error');
     } finally {
       setApprovingUserId(null);
     }
@@ -725,7 +740,7 @@ export default function AdminPage() {
       setAdminAssetsTotal(prev => prev - 1);
     } catch (err: unknown) {
       const e = err as { response?: { data?: { message?: string } } };
-      showToast(e.response?.data?.message ?? t('common:error'), 'error');
+      showToast(apiErrorMessage(e) ?? t('admin:assets.deleteFailed'), 'error');
     } finally {
       setAssetDeleting(null);
     }
@@ -743,7 +758,7 @@ export default function AdminPage() {
       setSmtpTestResult({ ok: true, message });
     } catch (err: unknown) {
       const e = err as { response?: { data?: { message?: string } } };
-      setSmtpTestResult({ ok: false, message: e.response?.data?.message ?? t('common:error') });
+      setSmtpTestResult({ ok: false, message: apiErrorMessage(e) ?? t('admin:settings.smtpTestFailed') });
     } finally {
       setSmtpTesting(false);
     }
@@ -761,7 +776,7 @@ export default function AdminPage() {
       setBackups(prev => [backup, ...prev]);
     } catch (err: unknown) {
       const e = err as { response?: { data?: { message?: string } } };
-      setBackupCreateError(e.response?.data?.message ?? t('common:error'));
+      setBackupCreateError(apiErrorMessage(e) ?? t('admin:backups.createFailed'));
     } finally {
       setCreatingBackup(false);
     }
@@ -774,7 +789,7 @@ export default function AdminPage() {
       setBackups(prev => prev.filter(b => b.filename !== filename));
     } catch (err: unknown) {
       const e = err as { response?: { data?: { message?: string } } };
-      showToast(e.response?.data?.message ?? t('common:error'), 'error');
+      showToast(apiErrorMessage(e) ?? t('admin:backups.backupDeleteFailed'), 'error');
     } finally {
       setDeletingBackupFile(null);
     }
@@ -796,7 +811,7 @@ export default function AdminPage() {
       setRestoreFile(null);
     } catch (err: unknown) {
       const e = err as { response?: { data?: { message?: string } } };
-      setRestoreError(e.response?.data?.message ?? t('common:error'));
+      setRestoreError(apiErrorMessage(e) ?? t('admin:backups.restoreFailed'));
     } finally {
       setRestoring(false);
     }
@@ -815,7 +830,7 @@ export default function AdminPage() {
       showToast(t('admin:settings.success'), 'success');
     } catch (err: unknown) {
       const e = err as { response?: { data?: { message?: string } } };
-      setSettingsError(e.response?.data?.message ?? t('admin:settings.error'));
+      setSettingsError(apiErrorMessage(e) ?? t('admin:settings.error'));
     } finally {
       setSettingsSaving(false);
     }
@@ -999,9 +1014,13 @@ export default function AdminPage() {
                     <p className="text-sm font-bold text-success-ink">{t('admin:dashboard.healthy')}</p>
                     <p className="text-xs text-warm-gray mt-1">{t('admin:dashboard.status')}</p>
                     <div className="mt-2 space-y-1 text-left w-full">
-                      {[['API', true], ['DB', true], ['WS', true]].map(([label, ok]) => (
-                        <div key={String(label)} className="flex items-center justify-between text-xs">
-                          <span className="text-stone-gray">{label}</span>
+                      {[
+                        { key: 'apiLabel', ok: true },
+                        { key: 'dbLabel', ok: true },
+                        { key: 'wsLabel', ok: true },
+                      ].map(({ key, ok }) => (
+                        <div key={key} className="flex items-center justify-between text-xs">
+                          <span className="text-stone-gray">{t(`admin:dashboard.${key}`)}</span>
                           <span className={ok ? 'text-success-ink' : 'text-danger-ink'}>&#9679;</span>
                         </div>
                       ))}
@@ -1311,7 +1330,7 @@ export default function AdminPage() {
                                       variant="secondary" className={`text-xs py-1 px-2 flex items-center gap-1 ${isSelf ? 'opacity-40 cursor-not-allowed' : ''}`}
                                     >
                                       <RefreshCw className="w-3 h-3" />
-                                      Pwd
+                                      {t('admin:users.pwdShort')}
                                     </Button>
                                     {/* Delete */}
                                     <button
@@ -1484,7 +1503,7 @@ export default function AdminPage() {
                                         <div className="flex items-start gap-2 mb-3 p-2.5 bg-warning/10 border border-warning/30 rounded-lg text-xs text-warning-ink">
                                           <AlertCircle className="w-3.5 h-3.5 mt-0.5 flex-shrink-0 text-warning-ink" />
                                           <span dangerouslySetInnerHTML={{
-                                            __html: t('admin:users.deleteAssetWarning', { count: deletingUserAssetCount, context: deletingUserAssetCount === 1 ? '' : 'plural' })
+                                            __html: t('admin:users.deleteAssetWarning', { count: deletingUserAssetCount })
                                           }} />
                                         </div>
                                       )}
@@ -1579,7 +1598,7 @@ export default function AdminPage() {
                 className="input-cozy text-sm"
               >
                 <option value="">{t('admin:assets.filterScope')}</option>
-                <option value="GLOBAL">Global</option>
+                <option value="GLOBAL">{t('admin:assets.global')}</option>
                 <option value="USER">{t('admin:assets.personal')}</option>
                 <option value="CAMPAIGN">{t('admin:assets.campaign')}</option>
               </select>
@@ -1688,7 +1707,7 @@ export default function AdminPage() {
                                   {asset.scope === AssetScope.GLOBAL && <Globe className="w-3 h-3" />}
                                   {asset.scope === AssetScope.USER && <UserIcon className="w-3 h-3" />}
                                   {asset.scope === AssetScope.CAMPAIGN && <Users className="w-3 h-3" />}
-                                  {asset.scope === AssetScope.GLOBAL ? 'Global' : asset.scope === AssetScope.USER ? t('admin:assets.personal') : t('admin:assets.campaign')}
+                                  {asset.scope === AssetScope.GLOBAL ? t('admin:assets.global') : asset.scope === AssetScope.USER ? t('admin:assets.personal') : t('admin:assets.campaign')}
                                 </span>
                               </td>
                               {/* Uploader */}
@@ -1722,7 +1741,7 @@ export default function AdminPage() {
                                       className="text-xs py-1 px-2 pr-6 rounded border border-moss-green/30 text-stone-gray bg-paper-white hover:border-moss-green/60 cursor-pointer disabled:opacity-50 appearance-none"
                                       title={t('admin:assets.scope')}
                                     >
-                                      <option value={AssetScope.GLOBAL}>Global</option>
+                                      <option value={AssetScope.GLOBAL}>{t('admin:assets.global')}</option>
                                       <option value={AssetScope.USER}>{t('admin:assets.personal')}</option>
                                       <option value={AssetScope.CAMPAIGN}>{t('admin:assets.campaign')}…</option>
                                     </select>
@@ -2115,6 +2134,17 @@ export default function AdminPage() {
                     }));
                   }}
                 />
+
+                {/* Language */}
+                <section className="glass-panel p-6 space-y-4">
+                  <div className="flex items-center gap-2 pb-2 border-b border-warm-gray/20">
+                    <Globe className="w-4 h-4 text-warm-amber" />
+                    <h3 className="font-semibold text-brand-ink text-sm">{t('admin:appearance.languageTitle')}</h3>
+                  </div>
+                  <p className="text-xs text-warm-gray">{t('admin:appearance.languageDescription')}</p>
+                  <LanguageSelector />
+                </section>
+
                 {/* Save Appearance */}
                 <div className="flex items-center gap-3">
                   {appearanceError && (
@@ -2125,7 +2155,7 @@ export default function AdminPage() {
                     setAppearanceSaving(true);
                     setAppearanceError('');
                     try {
-                    const updateData: Record<string, any> = {
+                    const updateData: Record<string, unknown> = {
                     themeId: appearanceForm.themeId,
                     fontId: appearanceForm.fontId,
                     };
@@ -2134,9 +2164,9 @@ export default function AdminPage() {
                     }
                     await adminService.updateSettings(updateData);
                     await refreshAppearance();
-                    showToast(t('admin:appearance.save') + '!', 'success');
-                    } catch (err: any) {
-                    setAppearanceError(err.response?.data?.message || t('common:error'));
+                    showToast(t('admin:appearance.savedToast'), 'success');
+                    } catch (err: unknown) {
+                    setAppearanceError(apiErrorMessage(err) || t('admin:appearance.saveFailed'));
                     } finally {
                     setAppearanceSaving(false);
                     }
@@ -2210,7 +2240,7 @@ export default function AdminPage() {
                 <Database className="w-4 h-4 text-brand-ink" />
                 <h3 className="font-semibold text-brand-ink text-sm">{t('admin:backups.available')}</h3>
                 {backups.length > 0 && (
-                  <span className="ml-auto text-xs text-warm-gray">{backups.length} {backups.length !== 1 ? t('admin:backups.filename') + 's' : t('admin:backups.filename')}</span>
+                  <span className="ml-auto text-xs text-warm-gray">{t('admin:backups.countLabel', { count: backups.length })}</span>
                 )}
               </div>
 

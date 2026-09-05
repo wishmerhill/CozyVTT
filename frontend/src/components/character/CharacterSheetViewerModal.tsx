@@ -3,6 +3,7 @@
  */
 
 import { useState, useEffect } from 'react';
+import { Trans, useTranslation } from 'react-i18next';
 import { X, Shield, User as UserIcon } from 'lucide-react';
 import { useFocusTrap } from '@/hooks/useFocusTrap';
 import { useAuth } from '@/contexts/AuthContext';
@@ -20,6 +21,15 @@ import { FlexibleCharacterSheetView } from '../character-sheets/flexible/Flexibl
 
 // Import editor modal
 import CharacterSheetEditorModal from './CharacterSheetEditorModal';
+
+// Maps the GameSystem enum to the campaign namespace's gameSystemNames keys
+// (already localized there for the campaign info panel).
+const GAME_SYSTEM_NAME_KEYS: Record<string, string> = {
+  DND_5E: 'dnd5e',
+  PATHFINDER_2E: 'pathfinder2e',
+  SHADOWRUN_6E: 'shadowrun6e',
+  CALL_OF_CTHULHU_7E: 'callOfCthulhu7e',
+};
 
 interface CharacterSheetViewerModalProps {
   character: Character;
@@ -39,6 +49,7 @@ export default function CharacterSheetViewerModal({
   membership,
   onClose,
 }: CharacterSheetViewerModalProps) {
+  const { t } = useTranslation(['character', 'campaign', 'common']);
   const { user } = useAuth();
   // Optional: this modal opens both from the campaign roster, where there is a
   // websocket, and from the character gallery, where there is not. Live updates
@@ -57,22 +68,26 @@ export default function CharacterSheetViewerModal({
         setOwnerName(response.user.displayName);
       } catch (error) {
         console.error('Error fetching character owner:', error);
-        setOwnerName('Unknown Player');
+        setOwnerName(t('viewer.unknownPlayer'));
       }
     };
 
     if (character.userId !== user?.id) {
       fetchOwnerName();
     } else {
-      setOwnerName('You');
+      setOwnerName(t('viewer.you'));
     }
-  }, [character.userId, user?.id]);
+  }, [character.userId, user?.id, t]);
 
   // Listen for character updates via WebSocket
   useEffect(() => {
     if (!socket) return;
 
-    const handleCharacterUpdate = (data: { characterId: string; character: Character }) => {
+    const handleCharacterUpdate = (data: { characterId: string; character?: Character }) => {
+      // The same event is also sent to campaigns that merely hold a token for
+      // this character, and those carry no sheet — reading it is not something
+      // membership of *that* campaign entitles you to. Nothing to refresh here.
+      if (!data.character) return;
       if (data.characterId === character.id) {
         console.log('Character updated - refreshing viewer');
         setCharacter(data.character);
@@ -115,20 +130,11 @@ export default function CharacterSheetViewerModal({
 
   // Get game system display name
   const getSystemName = (gameSystem: GameSystem | null) => {
-    switch (gameSystem) {
-      case 'DND_5E':
-        return 'D&D 5th Edition';
-      case 'PATHFINDER_2E':
-        return 'Pathfinder 2nd Edition';
-      case 'SHADOWRUN_6E':
-        return 'Shadowrun 6th Edition';
-      case 'CALL_OF_CTHULHU_7E':
-        return 'Call of Cthulhu 7th Edition';
-      case null:
-        return 'Flexible/Custom';
-      default:
-        return gameSystem;
+    if (gameSystem === null) {
+      return t('campaign:gameSystemNames.flexible');
     }
+    const key = GAME_SYSTEM_NAME_KEYS[gameSystem];
+    return key ? t(`campaign:gameSystemNames.${key}`) : gameSystem;
   };
 
   // Handle click-to-roll — emit dice roll via WebSocket
@@ -176,7 +182,7 @@ export default function CharacterSheetViewerModal({
                   {character.name}
                 </h2>
                 <div className="flex items-center gap-3 text-sm text-warm-gray">
-                  <span>Player: {ownerName}</span>
+                  <span>{t('viewer.playerLabel', { name: ownerName })}</span>
                   <span>•</span>
                   <span>{getSystemName(character.gameSystem)}</span>
                 </div>
@@ -188,7 +194,11 @@ export default function CharacterSheetViewerModal({
               <div className="mt-3 flex items-center gap-2 px-3 py-2 bg-moss-green/10 border border-moss-green/30 rounded-lg">
                 <Shield className="w-4 h-4 text-brand-ink" />
                 <p className="text-sm text-brand-ink">
-                  You are viewing <strong>{ownerName}'s</strong> character as DM
+                  <Trans
+                    i18nKey="character:viewer.dmBanner"
+                    values={{ name: ownerName }}
+                    components={{ strong: <strong /> }}
+                  />
                 </p>
               </div>
             )}
@@ -200,7 +210,7 @@ export default function CharacterSheetViewerModal({
           <div className="flex items-center gap-2 ml-4">
             <button
               onClick={onClose}
-              aria-label="Close dialog"
+              aria-label={t('common:closeDialogAria')}
               className="p-2 rounded-lg hover:bg-stone-gray/10 transition-colors"
             >
               <X className="w-5 h-5 text-stone-gray" />
@@ -219,7 +229,7 @@ export default function CharacterSheetViewerModal({
             onClick={onClose}
             className="px-6 py-2 rounded-lg bg-stone-gray/10 text-stone-gray hover:bg-stone-gray/20 transition-colors"
           >
-            Close
+            {t('common:close')}
           </button>
         </div>
       </div>

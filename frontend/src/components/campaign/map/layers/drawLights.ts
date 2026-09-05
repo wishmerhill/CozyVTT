@@ -26,15 +26,16 @@ export interface LightingDrawState {
   enabledLights: readonly LightSource[];
   /** Precomputed via computeVisionState — order must match inputs. */
   tokenVision: readonly VisionSource[];
-  /** Walls-only line of sight (no distance cap) — gates light-source
-   *  visibility independently of tokenVision's capped sight radius. */
-  tokenLOS: readonly VisionSource[];
+  /**
+   * Line of sight per viewer token, unbounded by sight radius. Light is only
+   * allowed to reveal ground inside this — see the clip below.
+   */
+  tokenSight: readonly VisionSource[];
   lightVision: readonly VisionSource[];
-  /** Darkvision polygons for tokens with darkvisionRadius set. */
-  darkvision: readonly VisionSource[];
-  /** Persistent offscreen canvases (fog composite + light coverage). */
+  /** Persistent offscreen canvases (fog composite + light coverage + sight mask). */
   lightingCanvas: CanvasHolder;
   coverageCanvas: CanvasHolder;
+  lightCanvas: CanvasHolder;
 }
 
 function ensureCanvas(holder: CanvasHolder, w: number, h: number): HTMLCanvasElement {
@@ -83,57 +84,28 @@ export function drawDynamicLighting(
   covCtx.globalCompositeOperation = 'lighter';
   covCtx.fillStyle = 'rgba(255, 255, 255, 1)';
 
-  // Token vision → bright (alpha 1.0) within the visibility polygon.
-  for (const { poly } of state.tokenVision) {
-    if (poly.points.length >= 3) {
-      covCtx.beginPath();
-      covCtx.moveTo(poly.points[0].x, poly.points[0].y);
-      for (let i = 1; i < poly.points.length; i++) {
-        covCtx.lineTo(poly.points[i].x, poly.points[i].y);
-      }
-      covCtx.closePath();
-      covCtx.fill();
-    }
-  }
+  /** Trace a visibility polygon as a path on the given context. */
+  const tracePoly = (c: CanvasRenderingContext2D, poly: VisionSource['poly']) => {
+    c.beginPath();
+    c.moveTo(poly.points[0].x, poly.points[0].y);
+    for (let i = 1; i < poly.points.length; i++) c.lineTo(poly.points[i].x, poly.points[i].y);
+    c.closePath();
+  };
 
-  // Raster mask of the token's walls-only line of sight (tokenLOS, no
-  // distance cap) — NOT tokenVision, which is capped to sightRadius. A
-  // light in the same room but beyond that short unaided-sight radius
-  // must still glow on its own as long as no wall blocks it; masking
-  // against the capped dome instead would silently swallow every light
-  // outside it. Built as a raster (not a `clip()` intersected with each
-  // light's own poly) because chaining two `clip()` paths on one context
-  // replaces the clip region with their intersection — if either path
-  // contributes zero subpaths (no owned token yet, or the polygons don't
-  // line up pixel-for-pixel) the region silently collapses to nothing and
-  // every light using it goes dark with no visible error. Multiplying two
-  // separately-rasterized alpha layers via 'destination-in' degrades
-  // gracefully instead: partial overlap yields partial light, not a
-  // blackout.
-  const visionMask = document.createElement('canvas');
-  visionMask.width = mapWidthPx;
-  visionMask.height = mapHeightPx;
-  const losMaskCtx = visionMask.getContext('2d')!;
-  losMaskCtx.fillStyle = 'rgba(255, 255, 255, 1)';
-  for (const { poly } of state.tokenLOS) {
-    if (poly.points.length >= 3) {
-      losMaskCtx.beginPath();
-      losMaskCtx.moveTo(poly.points[0].x, poly.points[0].y);
-      for (let i = 1; i < poly.points.length; i++) {
-        losMaskCtx.lineTo(poly.points[i].x, poly.points[i].y);
-      }
-      losMaskCtx.closePath();
-      losMaskCtx.fill();
-    }
-  }
-
-  // Light sources → own raycasted polygon for wall shadows, then masked
-  // to the player's field of view. Dim circle at α 0.5; bright circle
-  // adds another α 0.5 on top.
-  const lightScratch = document.createElement('canvas');
-  lightScratch.width = mapWidthPx;
-  lightScratch.height = mapHeightPx;
-  const scratchCtx = lightScratch.getContext('2d')!;
+  // ── Light coverage, on its own canvas ───────────────────────────
+  // Built separately so it can be intersected with the viewer's line of sight
+  // before it joins the coverage mask.
+  //
+  // Clipping a light to its OWN polygon gives it wall shadows, which is
+  // necessary but not sufficient: it says where the light falls, not who can
+  // see where it falls. Adding that straight to the coverage mask meant any lit
+  // ground anywhere was subtracted from the fog, so a lamp inside a sealed room
+  // lit that room for a player standing outside it. Light reveals what you
+  // could already have seen; it never sees on your behalf.
+  const lightLayer = ensureCanvas(state.lightCanvas, mapWidthPx, mapHeightPx);
+  const lightCtx = lightLayer.getContext('2d')!;
+  lightCtx.clearRect(0, 0, mapWidthPx, mapHeightPx);
+  lightCtx.globalCompositeOperation = 'lighter';
 
   for (let li = 0; li < state.enabledLights.length; li++) {
     const light = state.enabledLights[li];
@@ -144,41 +116,60 @@ export function drawDynamicLighting(
     const brightRadiusPx = light.brightRadius * viewport.gridSize;
     if (dimRadiusPx <= 0 && brightRadiusPx <= 0) continue;
 
-    scratchCtx.clearRect(0, 0, mapWidthPx, mapHeightPx);
-    scratchCtx.save();
-    // Clip to the light's own raycasted polygon (wall shadows) only —
-    // a single clip, never nested with another source's path.
-    scratchCtx.beginPath();
-    scratchCtx.moveTo(poly.points[0].x, poly.points[0].y);
-    for (let i = 1; i < poly.points.length; i++) {
-      scratchCtx.lineTo(poly.points[i].x, poly.points[i].y);
-    }
-    scratchCtx.closePath();
-    scratchCtx.clip();
+    lightCtx.save();
+    tracePoly(lightCtx, poly);
+    lightCtx.clip();
 
     scratchCtx.fillStyle = 'rgba(255, 255, 255, 0.5)';
     if (dimRadiusPx > 0) {
-      scratchCtx.beginPath();
-      scratchCtx.arc(light.x, light.y, dimRadiusPx, 0, Math.PI * 2);
-      scratchCtx.fill();
+      lightCtx.fillStyle = 'rgba(255, 255, 255, 0.5)';
+      lightCtx.beginPath();
+      lightCtx.arc(light.x, light.y, dimRadiusPx, 0, Math.PI * 2);
+      lightCtx.fill();
     }
     if (brightRadiusPx > 0) {
-      scratchCtx.beginPath();
-      scratchCtx.arc(light.x, light.y, brightRadiusPx, 0, Math.PI * 2);
-      scratchCtx.fill();
+      lightCtx.fillStyle = 'rgba(255, 255, 255, 0.5)';
+      lightCtx.beginPath();
+      lightCtx.arc(light.x, light.y, brightRadiusPx, 0, Math.PI * 2);
+      lightCtx.fill();
     }
-    scratchCtx.restore();
-
-    // Mask to the player's actual field of view — a light behind a wall
-    // the player can't see around must not reveal anything, even where
-    // its own raycast polygon geometrically reaches that area.
-    scratchCtx.globalCompositeOperation = 'destination-in';
-    scratchCtx.drawImage(visionMask, 0, 0);
-    scratchCtx.globalCompositeOperation = 'source-over';
-
-    // Add this light's masked contribution (still under 'lighter').
-    covCtx.drawImage(lightScratch, 0, 0);
+    lightCtx.restore();
   }
+
+  // Keep only the lit ground the viewer actually has line of sight to.
+  //
+  // The union of the sight polygons is built on the coverage canvas first,
+  // borrowed as scratch — it is about to be cleared and rebuilt anyway, and a
+  // fourth full-map canvas would cost real memory on a large map. The union has
+  // to be assembled before the intersection rather than applied polygon by
+  // polygon: a second `destination-in` would erase what the first had kept,
+  // leaving only the overlap of two tokens' views instead of their sum.
+  covCtx.globalCompositeOperation = 'source-over';
+  for (const { poly } of state.tokenSight) {
+    if (poly.points.length >= 3) {
+      tracePoly(covCtx, poly);
+      covCtx.fill();
+    }
+  }
+  lightCtx.globalCompositeOperation = 'destination-in';
+  lightCtx.drawImage(coverage, 0, 0);
+  lightCtx.globalCompositeOperation = 'source-over';
+
+  // ── Coverage mask proper ────────────────────────────────────────
+  covCtx.clearRect(0, 0, mapWidthPx, mapHeightPx);
+  covCtx.globalCompositeOperation = 'lighter';
+
+  // Token vision → bright (alpha 1.0) within the visibility polygon. This is
+  // what a token makes out unaided, so it is not gated on light.
+  for (const { poly } of state.tokenVision) {
+    if (poly.points.length >= 3) {
+      tracePoly(covCtx, poly);
+      covCtx.fill();
+    }
+  }
+
+  // ...then the light the viewer can see, added on top.
+  covCtx.drawImage(lightLayer, 0, 0);
   covCtx.globalCompositeOperation = 'source-over';
 
   // ── Build fog with coverage subtracted ──────────────────────────
@@ -269,11 +260,29 @@ export function drawDynamicLighting(
   }
 
   // Two-zone light glow: bright inner + dim outer. Additive compositing
-  // lets overlapping dim zones read as bright. Same raster-mask approach
-  // as the coverage pass above: each light's bloom is drawn on the shared
-  // scratch canvas, clipped only to its own poly, then masked to the
-  // player's field of view via 'destination-in' before being composited
-  // onto the main canvas — never two chained clip() calls on one context.
+  // lets overlapping dim zones read as bright.
+  //
+  // Clipped to the viewer's line of sight for the same reason the coverage mask
+  // is. Subtracting the lit ground from the fog was only half of it: this pass
+  // paints the warm glow straight onto the canvas, so a lamp sealed in a room
+  // still showed as a bright bloom hanging over the wall — telling a player
+  // there was a light there, and roughly where, which is most of what the wall
+  // was hiding. All the sight polygons go into ONE path so the clip is their
+  // union rather than the last one.
+  ctx.save();
+  ctx.beginPath();
+  let clipped = false;
+  for (const { poly } of state.tokenSight) {
+    if (poly.points.length < 3) continue;
+    ctx.moveTo(poly.points[0].x, poly.points[0].y);
+    for (let i = 1; i < poly.points.length; i++) ctx.lineTo(poly.points[i].x, poly.points[i].y);
+    ctx.closePath();
+    clipped = true;
+  }
+  // No viewer tokens means no line of sight at all, so no light is seen either.
+  if (!clipped) ctx.rect(0, 0, 0, 0);
+  ctx.clip();
+
   ctx.globalCompositeOperation = 'lighter';
 
   for (let li = 0; li < state.enabledLights.length; li++) {
@@ -334,7 +343,8 @@ export function drawDynamicLighting(
     ctx.drawImage(lightScratch, 0, 0);
   }
   ctx.globalCompositeOperation = 'source-over';
-  ctx.restore();
+  ctx.restore(); // the sight clip around the light glows
+  ctx.restore(); // the token torch-glow save
 }
 
 export interface LightIconsDrawState {

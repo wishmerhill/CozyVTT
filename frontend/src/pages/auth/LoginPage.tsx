@@ -11,6 +11,8 @@ import { useAuth } from '@/contexts/AuthContext';
 import { isValidEmail } from '@/utils/validation';
 import { api } from '@/services/api';
 import Button from '@/components/ui/Button';
+import LanguageSelector from '@/components/common/LanguageSelector';
+import { apiErrorStatus, apiErrorText } from '@/utils/errors';
 
 export default function LoginPage() {
   const { t } = useTranslation(['auth', 'common']);
@@ -89,13 +91,14 @@ export default function LoginPage() {
 
       // If MFA is not required, user is logged in and will be redirected by auth check above
       // If MFA is required, mfaPending will be true and user will be redirected to MFA page
-    } catch (err: any) {
+    } catch (err) {
       // Handle specific error messages
-      if (err.response?.data?.error) {
-        setError(err.response.data.error);
-      } else if (err.response?.status === 401) {
+      const serverError = apiErrorText(err);
+      if (serverError) {
+        setError(serverError);
+      } else if (apiErrorStatus(err) === 401) {
         setError(t('auth:login.errorInvalid'));
-      } else if (err.response?.status === 429) {
+      } else if (apiErrorStatus(err) === 429) {
         setError(t('auth:login.errorTooManyAttempts'));
       } else {
         setError(t('auth:login.errorGeneric'));
@@ -106,7 +109,10 @@ export default function LoginPage() {
   };
 
   return (
-    <div className="min-h-screen flex items-center justify-center bg-gradient-to-br from-soft-cream via-parchment to-warm-amber/20 px-4">
+    <div className="relative min-h-screen flex items-center justify-center bg-gradient-to-br from-soft-cream via-parchment to-warm-amber/20 px-4">
+      <div className="absolute top-4 right-4">
+        <LanguageSelector variant="compact" />
+      </div>
       <main id="main-content" className="glass-panel max-w-md w-full p-8 space-y-6">
         {/* Header */}
         <div className="text-center">

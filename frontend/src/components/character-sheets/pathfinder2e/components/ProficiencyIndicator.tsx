@@ -6,51 +6,50 @@
  */
 
 import React from 'react';
+import { useTranslation } from 'react-i18next';
 
 export type ProficiencyRank = 'untrained' | 'trained' | 'expert' | 'master' | 'legendary';
 
 interface ProficiencyIndicatorProps {
-  rank: ProficiencyRank;
+  /**
+   * Optional: a stored sheet need not record one, and older or imported sheets
+   * often do not. Absent or unrecognised renders nothing.
+   */
+  rank?: ProficiencyRank;
   size?: 'sm' | 'md' | 'lg';
 }
 
 const PROFICIENCY_CONFIG: Record<ProficiencyRank, {
-  label: string;
   abbr: string;
   color: string;
   bgColor: string;
   textColor: string;
 }> = {
   untrained: {
-    label: 'Untrained',
     abbr: 'U',
     color: 'stone-400',
     bgColor: 'bg-stone-100',
     textColor: 'text-stone-600',
   },
   trained: {
-    label: 'Trained',
     abbr: 'T',
     color: 'blue-500',
     bgColor: 'bg-blue-100',
     textColor: 'text-blue-700',
   },
   expert: {
-    label: 'Expert',
     abbr: 'E',
     color: 'green-500',
     bgColor: 'bg-green-100',
     textColor: 'text-green-700',
   },
   master: {
-    label: 'Master',
     abbr: 'M',
     color: 'purple-500',
     bgColor: 'bg-purple-100',
     textColor: 'text-purple-700',
   },
   legendary: {
-    label: 'Legendary',
     abbr: 'L',
     color: 'amber-500',
     bgColor: 'bg-amber-100',
@@ -68,13 +67,24 @@ export const ProficiencyIndicator: React.FC<ProficiencyIndicatorProps> = ({
   rank,
   size = 'md',
 }) => {
-  const config = PROFICIENCY_CONFIG[rank];
+  const { t } = useTranslation('character');
+  // `proficiencyRank` is optional on a strike, and a sheet written by an older
+  // version, imported from elsewhere, or converted from an earlier shape may
+  // not carry one at all. Reading the config blind used to throw and take the
+  // whole sheet down with it.
+  //
+  // Nothing is rendered rather than falling back to Untrained: a Fighter's
+  // warhammer is not untrained, and a "U" would assert something about the
+  // character that simply is not known.
+  const config = rank ? PROFICIENCY_CONFIG[rank] : undefined;
+  if (!config) return null;
+
   const sizeClass = SIZE_CLASSES[size];
 
   return (
     <div
       className={`${sizeClass} ${config.bgColor} ${config.textColor} rounded-full flex items-center justify-center font-bold`}
-      title={config.label}
+      title={t(`sheet.pf2e.proficiency.${rank}`)}
     >
       {config.abbr}
     </div>

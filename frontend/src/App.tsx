@@ -48,7 +48,7 @@ function PageLoader() {
     <div
       className="min-h-screen flex items-center justify-center bg-gradient-to-br from-soft-cream via-parchment to-warm-amber/20"
       aria-live="polite"
-      aria-label={i18n.t('common.loading')}
+      aria-label={i18n.t('loading')}
     >
       <Loader2 className="w-8 h-8 text-brand-ink animate-spin" aria-hidden="true" />
     </div>
@@ -76,7 +76,7 @@ function App() {
                        focus:px-4 focus:py-2 focus:bg-moss-green focus:text-white focus:rounded-lg
                        focus:shadow-lg focus:outline-none focus:ring-2 focus:ring-warm-amber"
           >
-            {i18n.t('common.skipToContent')}
+            {i18n.t('skipToContent')}
           </a>
           {/* Global toast notifications */}
           <ToastContainer />
@@ -236,11 +236,11 @@ function WelcomePage() {
         </div>
         <div className="flex flex-col gap-3">
           <Button className="w-full" onClick={() => navigate('/auth/login')}>
-            {t('common.signIn')}
+            {t('signIn')}
           </Button>
           {registrationAllowed && (
             <Button variant="secondary" className="w-full" onClick={() => navigate('/auth/register')}>
-              {t('common.createAccount')}
+              {t('createAccount')}
             </Button>
           )}
         </div>
