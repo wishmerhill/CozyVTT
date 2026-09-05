@@ -32,6 +32,9 @@ export interface LightingDrawState {
    */
   tokenSight: readonly VisionSource[];
   lightVision: readonly VisionSource[];
+  /** Darkvision polygons for tokens that have darkvisionRadius set.
+   *  These reveal the area in grayscale when no light source covers it. */
+  darkvision: readonly VisionSource[];
   /** Persistent offscreen canvases (fog composite + light coverage + sight mask). */
   lightingCanvas: CanvasHolder;
   coverageCanvas: CanvasHolder;
@@ -120,7 +123,6 @@ export function drawDynamicLighting(
     tracePoly(lightCtx, poly);
     lightCtx.clip();
 
-    scratchCtx.fillStyle = 'rgba(255, 255, 255, 0.5)';
     if (dimRadiusPx > 0) {
       lightCtx.fillStyle = 'rgba(255, 255, 255, 0.5)';
       lightCtx.beginPath();
@@ -297,50 +299,39 @@ export function drawDynamicLighting(
     const g = parseInt(light.color.slice(3, 5), 16);
     const b = parseInt(light.color.slice(5, 7), 16);
 
-    scratchCtx.clearRect(0, 0, mapWidthPx, mapHeightPx);
-    scratchCtx.save();
-    // Clip to the light's own raycasted polygon only — wall shadows.
-    scratchCtx.beginPath();
-    scratchCtx.moveTo(lightPoly.points[0].x, lightPoly.points[0].y);
-    for (let i = 1; i < lightPoly.points.length; i++) {
-      scratchCtx.lineTo(lightPoly.points[i].x, lightPoly.points[i].y);
-    }
-    scratchCtx.closePath();
-    scratchCtx.clip();
+    // Nested clip (inside the viewer-sight clip already on `ctx`) to the
+    // light's own raycasted polygon — wall-shadows this light's bloom so
+    // it can't bleed past a wall into an adjacent room the viewer also
+    // happens to see, even though that room is within the outer clip.
+    ctx.save();
+    tracePoly(ctx, lightPoly);
+    ctx.clip();
 
     if (brightPx > 0) {
-      const brightGlow = scratchCtx.createRadialGradient(
+      const brightGlow = ctx.createRadialGradient(
         light.x, light.y, 0, light.x, light.y, brightPx
       );
       brightGlow.addColorStop(0, `rgba(${r}, ${g}, ${b}, 0.12)`);
       brightGlow.addColorStop(0.7, `rgba(${r}, ${g}, ${b}, 0.06)`);
       brightGlow.addColorStop(1, `rgba(${r}, ${g}, ${b}, 0)`);
-      scratchCtx.fillStyle = brightGlow;
-      scratchCtx.beginPath();
-      scratchCtx.arc(light.x, light.y, brightPx, 0, Math.PI * 2);
-      scratchCtx.fill();
+      ctx.fillStyle = brightGlow;
+      ctx.beginPath();
+      ctx.arc(light.x, light.y, brightPx, 0, Math.PI * 2);
+      ctx.fill();
     }
 
     if (dimPx > brightPx) {
-      const dimGlow = scratchCtx.createRadialGradient(
+      const dimGlow = ctx.createRadialGradient(
         light.x, light.y, brightPx * 0.8, light.x, light.y, dimPx
       );
       dimGlow.addColorStop(0, `rgba(${r}, ${g}, ${b}, 0.05)`);
       dimGlow.addColorStop(1, `rgba(${r}, ${g}, ${b}, 0)`);
-      scratchCtx.fillStyle = dimGlow;
-      scratchCtx.beginPath();
-      scratchCtx.arc(light.x, light.y, dimPx, 0, Math.PI * 2);
-      scratchCtx.fill();
+      ctx.fillStyle = dimGlow;
+      ctx.beginPath();
+      ctx.arc(light.x, light.y, dimPx, 0, Math.PI * 2);
+      ctx.fill();
     }
-    scratchCtx.restore();
-
-    // Mask to the player's field of view so the bloom can't bleed through
-    // a wall into an adjacent room the token also happens to see into.
-    scratchCtx.globalCompositeOperation = 'destination-in';
-    scratchCtx.drawImage(visionMask, 0, 0);
-    scratchCtx.globalCompositeOperation = 'source-over';
-
-    ctx.drawImage(lightScratch, 0, 0);
+    ctx.restore();
   }
   ctx.globalCompositeOperation = 'source-over';
   ctx.restore(); // the sight clip around the light glows

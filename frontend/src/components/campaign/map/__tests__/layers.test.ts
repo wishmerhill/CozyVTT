@@ -595,6 +595,7 @@ describe('drawDynamicLighting', () => {
       tokenVision: vision.tokenVision,
       tokenSight: vision.tokenSight,
       lightVision: vision.lightVision,
+      darkvision: vision.darkvision,
       lightingCanvas: holderFor(lighting.ctx, W, H),
       coverageCanvas: holderFor(coverage.ctx, W, H),
       lightCanvas: holderFor(lightOnly.ctx, W, H),
