@@ -93,7 +93,18 @@ export function computeVisionState(
     return { poly, cx: light.x, cy: light.y };
   });
 
-  return { tokenVision, tokenSight, lightVision, all: [...tokenVision, ...lightVision] };
+  // Darkvision polygons — use the darkvision radius from the token, clipped
+  // by walls. Darkvision does not extend beyond sightRadius, so clamp it.
+  const darkvision: VisionSource[] = myTokens
+    .filter((t) => (t.darkvisionRadius ?? 0) > 0)
+    .map((token) => {
+      const { cx, cy, r } = tokenSource(token, viewport);
+      const dvr = Math.min(token.darkvisionRadius! * viewport.gridSize, r > 0 ? r : Infinity);
+      const poly = computeVisibility({ x: cx, y: cy }, wallSegments as WallSegment[], mapWidthPx, mapHeightPx, dvr);
+      return { poly, cx, cy };
+    });
+
+  return { tokenVision, tokenSight, lightVision, darkvision, all: [...tokenVision, ...lightVision] };
 }
 
 /**
@@ -187,7 +198,24 @@ export function createVisionCache(): VisionCache {
       });
       for (const id of lightCache.keys()) if (!seenLights.has(id)) lightCache.delete(id);
 
-      return { tokenVision, tokenSight, lightVision, all: [...tokenVision, ...lightVision] };
+      // Darkvision polygons — cached per token id.
+      const seenDv = new Set<string>();
+      const darkvision: VisionSource[] = myTokens
+        .filter((t) => (t.darkvisionRadius ?? 0) > 0)
+        .map((token) => {
+          const { cx, cy, r } = tokenSource(token, viewport);
+          const dvr = Math.min(token.darkvisionRadius! * viewport.gridSize, r > 0 ? r : Infinity);
+          seenDv.add(token.id);
+          const hit = darkvisionCache.get(token.id);
+          if (hit && hit.x === cx && hit.y === cy && hit.r === dvr) return hit.src;
+          const poly = computeVisibility({ x: cx, y: cy }, wallSegments as WallSegment[], mapWidthPx, mapHeightPx, dvr);
+          const src: VisionSource = { poly, cx, cy };
+          darkvisionCache.set(token.id, { x: cx, y: cy, r: dvr, src });
+          return src;
+        });
+      for (const id of darkvisionCache.keys()) if (!seenDv.has(id)) darkvisionCache.delete(id);
+
+      return { tokenVision, tokenSight, lightVision, darkvision, all: [...tokenVision, ...lightVision] };
     },
   };
 }

@@ -13,8 +13,14 @@
 
 import { describe, it, expect, vi } from 'vitest';
 import { render, screen, fireEvent } from '@testing-library/react';
+import i18n from 'i18next';
 import { DnD5eCharacterEditor } from '../DnD5eCharacterEditor';
 import type { Character } from '../../../../types';
+
+/** Looks the label up through the same i18n instance the editor renders with,
+ *  so the test keeps working whichever language `src/test/setup.ts` runs in. */
+const label = (key: string, options?: Record<string, unknown>) =>
+  i18n.t(key, { ns: 'character', ...options });
 
 vi.mock('@/hooks/queries', () => ({
   useServerConfigQuery: () => ({ data: undefined }),
@@ -67,14 +73,17 @@ function renderFeaturesTab(sheet: Record<string, unknown>) {
       onCancel={vi.fn()}
     />
   );
-  fireEvent.click(screen.getByRole('button', { name: 'Features' }));
+  fireEvent.click(screen.getByRole('button', { name: label('sheet.features') }));
   return result;
 }
+
+/** The static prefix of a "Feature N name" aria-label, number stripped off. */
+const featureNamePrefix = label('sheet.featureNameAria', { number: '' }).trim();
 
 /** Every feature-name box currently on screen, in order. */
 function featureNames(): string[] {
   return screen
-    .getAllByLabelText(/^Feature \d+ name$/)
+    .getAllByLabelText((content) => content.startsWith(featureNamePrefix))
     .map((input) => (input as HTMLInputElement).value);
 }
 
@@ -84,7 +93,7 @@ describe('Add Feature', () => {
 
     expect(featureNames()).toEqual(['NakuDama-Amphibious']);
 
-    fireEvent.click(screen.getByRole('button', { name: '+ Add Feature' }));
+    fireEvent.click(screen.getByRole('button', { name: label('sheet.addFeatureButton') }));
 
     expect(featureNames()).toEqual(['NakuDama-Amphibious', '']);
   });
@@ -92,16 +101,16 @@ describe('Add Feature', () => {
   it('adds a row to a sheet that has no features at all', () => {
     renderFeaturesTab({});
 
-    expect(screen.getByText('No features added yet')).toBeTruthy();
+    expect(screen.getByText(label('sheet.noFeaturesAdded'))).toBeTruthy();
 
-    fireEvent.click(screen.getByRole('button', { name: '+ Add Feature' }));
+    fireEvent.click(screen.getByRole('button', { name: label('sheet.addFeatureButton') }));
 
     expect(featureNames()).toEqual(['']);
   });
 
   it('adds several rows in a row', () => {
     renderFeaturesTab({});
-    const add = screen.getByRole('button', { name: '+ Add Feature' });
+    const add = screen.getByRole('button', { name: label('sheet.addFeatureButton') });
 
     fireEvent.click(add);
     fireEvent.click(add);
@@ -112,9 +121,9 @@ describe('Add Feature', () => {
 
   it('keeps the row while a name is typed into it', () => {
     renderFeaturesTab({});
-    fireEvent.click(screen.getByRole('button', { name: '+ Add Feature' }));
+    fireEvent.click(screen.getByRole('button', { name: label('sheet.addFeatureButton') }));
 
-    const input = screen.getByLabelText('Feature 1 name');
+    const input = screen.getByLabelText(label('sheet.featureNameAria', { number: 1 }));
     fireEvent.change(input, { target: { value: 'NakuDama-Frog Leap' } });
 
     expect(featureNames()).toEqual(['NakuDama-Frog Leap']);
@@ -123,9 +132,9 @@ describe('Add Feature', () => {
   it('lets a description be typed on a row whose name is still blank', () => {
     // The description box is on the same row, so it has to survive too.
     renderFeaturesTab({});
-    fireEvent.click(screen.getByRole('button', { name: '+ Add Feature' }));
+    fireEvent.click(screen.getByRole('button', { name: label('sheet.addFeatureButton') }));
 
-    const description = screen.getByLabelText('Feature 1 description');
+    const description = screen.getByLabelText(label('sheet.featureDescriptionAria', { number: 1 }));
     fireEvent.change(description, { target: { value: 'Typed before the name.' } });
 
     expect((description as HTMLTextAreaElement).value).toBe('Typed before the name.');
@@ -136,7 +145,7 @@ describe('removing a feature', () => {
   it('removes the row that was clicked', () => {
     renderFeaturesTab({ featuresAndTraits: ['First', 'Second', 'Third'] });
 
-    fireEvent.click(screen.getByRole('button', { name: 'Remove Second' }));
+    fireEvent.click(screen.getByRole('button', { name: label('sheet.removeFeatureAria', { name: 'Second' }) }));
 
     expect(featureNames()).toEqual(['First', 'Third']);
   });
@@ -151,7 +160,7 @@ describe('removing a feature', () => {
 
     expect(featureNames()).toEqual(['Mine', 'Second Wind']);
 
-    fireEvent.click(screen.getByRole('button', { name: 'Remove Second Wind' }));
+    fireEvent.click(screen.getByRole('button', { name: label('sheet.removeFeatureAria', { name: 'Second Wind' }) }));
 
     expect(featureNames()).toEqual(['Mine']);
   });
@@ -180,7 +189,7 @@ describe('what the editor starts with', () => {
     });
 
     expect(featureNames()).toEqual(['Second Wind']);
-    expect((screen.getByLabelText('Feature 1 description') as HTMLTextAreaElement).value).toBe(
+    expect((screen.getByLabelText(label('sheet.featureDescriptionAria', { number: 1 })) as HTMLTextAreaElement).value).toBe(
       'Regain 1d10 + fighter level.'
     );
   });

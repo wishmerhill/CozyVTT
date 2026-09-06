@@ -5,6 +5,7 @@
 
 import { memo } from 'react';
 import { useTranslation } from 'react-i18next';
+import type { TFunction } from 'i18next';
 import { Bot, Shield } from 'lucide-react';
 import type { Message, MessageType } from '@/types';
 
@@ -18,7 +19,7 @@ interface ChatMessageProps {
 /**
  * Format timestamp as relative time (e.g., "2 minutes ago")
  */
-function formatRelativeTime(timestamp: string, t: (key: string, options?: any) => string, locale: string): string {
+function formatRelativeTime(timestamp: string, t: TFunction, locale: string): string {
   // Handle undefined, null, or empty timestamps
   if (!timestamp) {
     return t('chat.unknownTime');

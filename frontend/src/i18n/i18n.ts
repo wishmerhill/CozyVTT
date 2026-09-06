@@ -123,9 +123,15 @@ i18n
     },
   });
 
+declare global {
+  interface Window {
+    i18next?: typeof i18n;
+  }
+}
+
 // Expose on window for dev debugging
 if (typeof window !== 'undefined') {
-  (window as any).i18next = i18n;
+  window.i18next = i18n;
 }
 
 export default i18n;

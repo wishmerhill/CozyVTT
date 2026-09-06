@@ -17,9 +17,15 @@
  */
 
 import { describe, it, expect } from 'vitest';
-import { render, screen } from '@testing-library/react';
+import { render, screen, within } from '@testing-library/react';
+import i18n from 'i18next';
 import { Pathfinder2eCharacterView } from '../Pathfinder2eCharacterView';
 import type { Character } from '../../../../types';
+
+/** Looks the label up through the same i18n instance the view renders with,
+ *  so the test keeps working whichever language `src/test/setup.ts` runs in. */
+const label = (key: string, options?: Record<string, unknown>) =>
+  i18n.t(key, { ns: 'character', ...options });
 
 const attribute = { score: 10, modifier: 0 };
 
@@ -67,10 +73,16 @@ function characterWith(overrides: Record<string, unknown>): Character {
   } as unknown as Character;
 }
 
+/** The Initiative panel — the same stealth label also appears in the skills
+ *  list, so callers must look inside this panel rather than the whole page. */
+function initiativePanel(): HTMLElement {
+  const heading = screen.getByText(label('sheet.initiative'));
+  return heading.closest('div')?.parentElement as HTMLElement;
+}
+
 /** The big number in the Initiative panel. */
 function shownInitiative(): string {
-  const heading = screen.getByText('Initiative');
-  const panel = heading.closest('div')?.parentElement as HTMLElement;
+  const panel = initiativePanel();
   const value = [...panel.querySelectorAll('span')]
     .map((el) => el.textContent?.trim() ?? '')
     .find((text) => /^[+-]\d+$/.test(text));
@@ -112,7 +124,7 @@ describe('initiative on the read-only sheet', () => {
         character={characterWith({ initiative: { usedStat: 'stealth', bonus: 0 } })}
       />
     );
-    expect(screen.getByText('stealth')).toBeTruthy();
+    expect(within(initiativePanel()).getByText(label('sheet.skills.stealth'))).toBeTruthy();
   });
 
   it('falls back to Perception for a stat the sheet does not have', () => {
