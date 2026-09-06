@@ -975,7 +975,7 @@ export default function NpcQuickEditor({ token, campaignId, mapId, onClose, onTo
                             onClick={() => updateLightEmit({ brightRadius: p.bright, dimRadius: p.dim })}
                             className={`text-[10px] px-1.5 py-0.5 rounded transition-colors ${
                               isActive
-                                ? 'bg-amber-400/25 text-amber-700 border border-amber-400/40'
+                                ? 'bg-warning/25 text-warning-ink border border-warning/40'
                                 : 'bg-parchment/60 text-stone-gray border border-moss-green/20 hover:bg-parchment'
                             }`}
                           >
