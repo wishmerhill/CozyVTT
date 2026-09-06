@@ -46,6 +46,15 @@ export const TokenConditionsSchema = z
   .max(50)
   .transform((conditions) => conditions.filter((c) => c.length > 0));
 
+/** A light source carried by the token (a lit torch, a lantern). Position is
+ *  not stored here — the renderer derives it from the token's live position. */
+export const TokenLightEmitSchema = z.object({
+  enabled: z.boolean(),
+  brightRadius: z.number().min(0).max(50),
+  dimRadius: z.number().min(0).max(50),
+  color: z.string().regex(/^#[0-9a-fA-F]{6}$/, 'Color must be a hex string like #ffcc66'),
+});
+
 /** Arbitrary per-token data. Bounded, since nothing reads it structurally. */
 export const TokenMetadataSchema = z.record(z.string(), z.unknown()).refine(
   (value) => JSON.stringify(value).length <= 8000,
@@ -69,6 +78,9 @@ export type TokenShapes = {
   conditions?: string[];
   metadata?: Record<string, unknown>;
   statBlock?: unknown;
+  sightRadius?: number | null;
+  darkvisionRadius?: number | null;
+  lightEmit?: z.infer<typeof TokenLightEmitSchema> | null;
 };
 
 export function validateTokenShapes(
@@ -114,6 +126,20 @@ export function validateTokenShapes(
   const statBlock = check('statBlock', NpcStatBlockSchema, true);
   if ('failed' in statBlock) return { ok: false, message: statBlock.failed };
   value.statBlock = statBlock.parsed;
+
+  const radiusSchema = z.number().min(0).max(200);
+
+  const sightRadius = check('sightRadius', radiusSchema, true);
+  if ('failed' in sightRadius) return { ok: false, message: sightRadius.failed };
+  value.sightRadius = sightRadius.parsed;
+
+  const darkvisionRadius = check('darkvisionRadius', radiusSchema, true);
+  if ('failed' in darkvisionRadius) return { ok: false, message: darkvisionRadius.failed };
+  value.darkvisionRadius = darkvisionRadius.parsed;
+
+  const lightEmit = check('lightEmit', TokenLightEmitSchema, true);
+  if ('failed' in lightEmit) return { ok: false, message: lightEmit.failed };
+  value.lightEmit = lightEmit.parsed;
 
   return { ok: true, value };
 }

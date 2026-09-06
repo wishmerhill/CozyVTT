@@ -50,3 +50,16 @@ export interface LightSource {
   color: string;        // hex color e.g. '#ffcc66' (warm amber default)
   enabled: boolean;     // toggle without deleting (extinguished torch)
 }
+
+/**
+ * A light source carried by a token (a lit torch, a lantern) rather than
+ * placed on the map. Has no x/y of its own — the renderer derives its
+ * position from the token's live position every frame, so the light moves
+ * with the token instead of needing to be synced like a standalone LightSource.
+ */
+export interface TokenLightEmit {
+  enabled: boolean;      // toggle without losing the configured radii/color
+  brightRadius: number;  // grid squares
+  dimRadius: number;     // grid squares, >= brightRadius
+  color: string;         // hex color e.g. '#ffcc66'
+}

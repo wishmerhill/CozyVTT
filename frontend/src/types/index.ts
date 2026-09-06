@@ -1,4 +1,5 @@
 import type { CharacterHpInfo } from '@/utils/characterHp';
+import type { TokenLightEmit } from '@/types/walls';
 // ============================================
 // CozyVTT Frontend Type Definitions
 // Mirrors backend API models (Prisma schema)
@@ -671,10 +672,13 @@ export interface Token {
   notes:       string;
   initiative:  number | null;
   /** Sight radius in grid squares (3 = default D&D 5e, 0 = unlimited). Used by dynamic lighting. */
-  sightRadius?: number;
+  sightRadius?: number | null;
   /** Darkvision radius in grid squares (e.g. 12 = 60ft for D&D 5e). Areas revealed only by
    *  darkvision (outside any enabled LightSource range) are rendered in grayscale. */
-  darkvisionRadius?: number;
+  darkvisionRadius?: number | null;
+  /** A light source (lit torch, lantern) carried by this token. Its position
+   *  follows the token — see TokenLightEmit. */
+  lightEmit?: TokenLightEmit | null;
   /** Display mode: pog (circular + border), top-down (circular, no border), full-art (rectangular, alpha). Default: pog */
   displayMode?: TokenDisplayMode;
   /** NPC stat block — populated when placing from creature library or entered manually. */
@@ -1000,6 +1004,9 @@ export interface UpdateTokenRequest {
   showHpBar?: boolean;
   notes?: string;
   initiative?: number | null;
+  sightRadius?: number | null;
+  darkvisionRadius?: number | null;
+  lightEmit?: TokenLightEmit | null;
 }
 
 // ============================================

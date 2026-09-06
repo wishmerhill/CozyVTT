@@ -35,6 +35,8 @@ _Nothing in progress._
 
 - **Wall collision (`wallsBlockMovement`)** — previously implemented and removed due to bugs. If reattempted, start fresh rather than reviving the old code.
 - **Auto-detection of walls from map images** — LLM, contour, and trace approaches all failed previously. Treat any future attempt as new R&D, not a continuation.
+- **Light source toggle for Player tokens.** `Token.lightEmit` (data model, backend validation/persistence, and the `MapCanvas.tsx` rendering that turns it into a live light) is fully wired and works for any token type. The only editor for it is `NpcQuickEditor.tsx`, which `CampaignPage.tsx` opens exclusively for NPC/Object tokens (`effectiveType === NPC || OBJECT`) — a Player token never gets there, so a player has no way to light/extinguish their own torch. Needs a second entry point scoped to Player tokens: either the player's own character sheet, or a small always-available control on their token (map right-click already exists for the DM path; players don't get a token context menu today). Whoever picks this up should also decide whether the DM should be able to toggle a player's torch from the DM side (currently no editor reaches Player tokens at all for any field).
+- **Indoor vs. outdoor map setting.** Add a toggle/field in the map editor (`MapSettingsModal.tsx`) to distinguish open-air daytime areas — where the dim-light radius cap should not darken the outdoors — from indoor/dungeon maps.
 
 ### Polish / tech debt
 

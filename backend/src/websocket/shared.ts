@@ -40,6 +40,8 @@ export interface Token {
   notes?: string;
   initiative?: number | null;
   sightRadius?: number;
+  darkvisionRadius?: number;
+  lightEmit?: { enabled: boolean; brightRadius: number; dimRadius: number; color: string } | null;
   displayMode?: 'pog' | 'top-down' | 'full-art';
   statBlock?: Record<string, unknown> | null;
   creatureTemplateId?: string | null;
