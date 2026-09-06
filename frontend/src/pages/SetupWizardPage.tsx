@@ -18,6 +18,7 @@ import {
   getPasswordStrength,
 } from '@/utils/validation';
 import Button from '@/components/ui/Button';
+import LanguageSelector from '@/components/common/LanguageSelector';
 import { apiErrorMessage, apiErrorStatus, apiErrorText } from '@/utils/errors';
 
 // ============================================
@@ -280,7 +281,10 @@ export default function SetupWizardPage() {
     <div className="min-h-screen flex items-center justify-center bg-gradient-to-br from-soft-cream via-parchment to-warm-amber/20 px-4 py-8">
       <div className="glass-panel max-w-3xl w-full p-8 space-y-6">
         {/* Header */}
-        <div className="text-center">
+        <div className="relative text-center">
+          <div className="flex justify-end mb-2">
+            <LanguageSelector variant="compact" />
+          </div>
           <div className="flex justify-center mb-4">
             <img src={mascotUrl} alt="CozyVTT" className="w-20 h-20 object-contain animate-pulse-soft" />
           </div>

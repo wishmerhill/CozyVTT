@@ -159,7 +159,7 @@ const LOG_LEVEL_COLORS: Record<string, string> = {
   CRITICAL: 'bg-danger/20 text-danger-ink font-bold',
 };
 
-type Tab = 'dashboard' | 'users' | 'settings' | 'appearance' | 'activity' | 'backups' | 'assets';
+type Tab = 'dashboard' | 'users' | 'settings' | 'appearance' | 'language' | 'activity' | 'backups' | 'assets';
 
 // ============================================
 // AdminPage
@@ -859,6 +859,7 @@ export default function AdminPage() {
     { id: 'assets',    label: t('admin:tabs.assets'),    icon: <Layers className="w-4 h-4" /> },
     { id: 'settings',  label: t('admin:tabs.settings'),  icon: <Settings className="w-4 h-4" /> },
     { id: 'appearance', label: t('admin:tabs.appearance'), icon: <Palette className="w-4 h-4" /> },
+    { id: 'language',  label: t('admin:tabs.language'),   icon: <Globe className="w-4 h-4" /> },
     { id: 'backups',   label: t('admin:tabs.backups'),   icon: <HardDrive className="w-4 h-4" /> },
     { id: 'activity',  label: t('admin:tabs.activity'),  icon: <Activity className="w-4 h-4" /> },
   ];
@@ -2135,16 +2136,6 @@ export default function AdminPage() {
                   }}
                 />
 
-                {/* Language */}
-                <section className="glass-panel p-6 space-y-4">
-                  <div className="flex items-center gap-2 pb-2 border-b border-warm-gray/20">
-                    <Globe className="w-4 h-4 text-warm-amber" />
-                    <h3 className="font-semibold text-brand-ink text-sm">{t('admin:appearance.languageTitle')}</h3>
-                  </div>
-                  <p className="text-xs text-warm-gray">{t('admin:appearance.languageDescription')}</p>
-                  <LanguageSelector />
-                </section>
-
                 {/* Save Appearance */}
                 <div className="flex items-center gap-3">
                   {appearanceError && (
@@ -2191,6 +2182,26 @@ export default function AdminPage() {
                 </div>
               </>
             )}
+          </div>
+        )}
+
+        {/* ===== LANGUAGE TAB ===== */}
+        {activeTab === 'language' && (
+          <div role="tabpanel" id="tabpanel-language" aria-labelledby="tab-language" className="max-w-3xl space-y-6">
+            <div>
+              <h2 className="text-xl font-semibold text-brand-ink">{t('admin:appearance.languageTitle')}</h2>
+              <p className="text-sm text-warm-gray mt-1">
+                {t('admin:appearance.languageDescription')}
+              </p>
+            </div>
+
+            <section className="glass-panel p-6 space-y-4">
+              <div className="flex items-center gap-2 pb-2 border-b border-warm-gray/20">
+                <Globe className="w-4 h-4 text-warm-amber" />
+                <h3 className="font-semibold text-brand-ink text-sm">{t('admin:appearance.languageTitle')}</h3>
+              </div>
+              <LanguageSelector />
+            </section>
           </div>
         )}
 

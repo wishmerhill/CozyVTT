@@ -110,12 +110,12 @@ export default function LoginPage() {
 
   return (
     <div className="relative min-h-screen flex items-center justify-center bg-gradient-to-br from-soft-cream via-parchment to-warm-amber/20 px-4">
-      <div className="absolute top-4 right-4">
-        <LanguageSelector variant="compact" />
-      </div>
       <main id="main-content" className="glass-panel max-w-md w-full p-8 space-y-6">
         {/* Header */}
-        <div className="text-center">
+        <div className="relative text-center">
+          <div className="flex justify-end mb-2">
+            <LanguageSelector variant="compact" />
+          </div>
           <h1 className="text-3xl font-bold text-brand-ink font-heading">
             {t('auth:login.title')}
           </h1>
