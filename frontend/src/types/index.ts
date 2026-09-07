@@ -638,7 +638,10 @@ export interface Map {
   width: number;
   height: number;
   gridSize: number;
+  /** @deprecated superseded by distancePerSquare/distanceUnit; kept for backward compatibility */
   feetPerSquare: number;
+  distancePerSquare: number;
+  distanceUnit: 'ft' | 'm';
   diagonalRule: 'flat' | 'alternating';
   tokens: Token[];
   annotations: Annotation[];
@@ -944,6 +947,8 @@ export interface CreateMapRequest {
   height: number;
   gridSize?: number;
   feetPerSquare?: number;
+  distancePerSquare?: number;
+  distanceUnit?: 'ft' | 'm';
   diagonalRule?: 'flat' | 'alternating';
   spiritLayerUrl?: string;
 }
@@ -954,6 +959,8 @@ export interface UpdateMapRequest {
   height?: number;
   gridSize?: number;
   feetPerSquare?: number;
+  distancePerSquare?: number;
+  distanceUnit?: 'ft' | 'm';
   diagonalRule?: 'flat' | 'alternating';
   imageUrl?: string;
   spiritLayerUrl?: string | null;

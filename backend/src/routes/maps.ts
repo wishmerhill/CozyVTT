@@ -60,7 +60,7 @@ const VALID_DISPLAY_MODES = ['pog', 'top-down', 'full-art'];
 router.post('/', campaignDM, async (req: AuthenticatedRequest, res: Response) => {
   try {
     const { campaignId } = req.params;
-    const { name, imageUrl, width, height, gridSize, spiritLayerUrl, feetPerSquare, diagonalRule } = req.body;
+    const { name, imageUrl, width, height, gridSize, spiritLayerUrl, feetPerSquare, distancePerSquare, distanceUnit, diagonalRule } = req.body;
 
     // Validation
     if (!name || typeof name !== 'string' || name.trim().length === 0) {
@@ -94,9 +94,27 @@ router.post('/', campaignDM, async (req: AuthenticatedRequest, res: Response) =>
     // gridSize is optional, defaults to 50 in schema
     const mapGridSize = gridSize && typeof gridSize === 'number' && gridSize > 0 ? gridSize : 50;
 
-    // feetPerSquare: positive integer, defaults to 5
+    // feetPerSquare: positive integer, defaults to 5 (legacy — kept for backward compatibility)
     const mapFeetPerSquare = feetPerSquare && Number.isInteger(feetPerSquare) && feetPerSquare > 0 && feetPerSquare <= 100
       ? feetPerSquare : 5;
+
+    // distanceUnit: must be "ft" or "m", defaults to "ft"
+    if (distanceUnit !== undefined && distanceUnit !== 'ft' && distanceUnit !== 'm') {
+      return res.status(400).json({
+        error: 'Validation Error',
+        message: 'distanceUnit must be "ft" or "m"',
+      });
+    }
+    const mapDistanceUnit = distanceUnit === 'm' ? 'm' : 'ft';
+
+    // distancePerSquare: positive finite number, defaults to feetPerSquare (or its default)
+    if (distancePerSquare !== undefined && (typeof distancePerSquare !== 'number' || !Number.isFinite(distancePerSquare) || distancePerSquare <= 0 || distancePerSquare > 100)) {
+      return res.status(400).json({
+        error: 'Validation Error',
+        message: 'distancePerSquare must be a positive number no greater than 100',
+      });
+    }
+    const mapDistancePerSquare = distancePerSquare !== undefined ? distancePerSquare : mapFeetPerSquare;
 
     // diagonalRule: must be "flat" or "alternating", defaults to "flat"
     const mapDiagonalRule = diagonalRule === 'flat' || diagonalRule === 'alternating' ? diagonalRule : 'flat';
@@ -147,6 +165,8 @@ router.post('/', campaignDM, async (req: AuthenticatedRequest, res: Response) =>
         height,
         gridSize: mapGridSize,
         feetPerSquare: mapFeetPerSquare,
+        distancePerSquare: mapDistancePerSquare,
+        distanceUnit: mapDistanceUnit,
         diagonalRule: mapDiagonalRule,
         spiritLayerUrl: normalizedSpiritLayerUrl,
         tokens: [], // Initialize empty tokens array
@@ -183,6 +203,8 @@ router.get('/', campaignMember, async (req: AuthenticatedRequest, res: Response)
         height: true,
         gridSize: true,
         feetPerSquare: true,
+        distancePerSquare: true,
+        distanceUnit: true,
         diagonalRule: true,
         lightingEnabled: true,
         createdAt: true,
@@ -465,7 +487,7 @@ router.get('/:id', campaignMember, async (req: AuthenticatedRequest, res: Respon
 router.put('/:id', campaignDM, async (req: AuthenticatedRequest, res: Response) => {
   try {
     const { campaignId, id } = req.params;
-    const { name, width, height, gridSize, imageUrl, spiritLayerUrl, feetPerSquare, diagonalRule, lightingEnabled } = req.body;
+    const { name, width, height, gridSize, imageUrl, spiritLayerUrl, feetPerSquare, distancePerSquare, distanceUnit, diagonalRule, lightingEnabled } = req.body;
 
     // Fetch the map to verify it exists and belongs to campaign
     const existingMap = await prisma.map.findUnique({
@@ -541,6 +563,26 @@ router.put('/:id', campaignDM, async (req: AuthenticatedRequest, res: Response) 
         });
       }
       updateData.feetPerSquare = feetPerSquare;
+    }
+
+    if (distanceUnit !== undefined) {
+      if (distanceUnit !== 'ft' && distanceUnit !== 'm') {
+        return res.status(400).json({
+          error: 'Validation Error',
+          message: 'distanceUnit must be "ft" or "m"',
+        });
+      }
+      updateData.distanceUnit = distanceUnit;
+    }
+
+    if (distancePerSquare !== undefined) {
+      if (typeof distancePerSquare !== 'number' || !Number.isFinite(distancePerSquare) || distancePerSquare <= 0 || distancePerSquare > 100) {
+        return res.status(400).json({
+          error: 'Validation Error',
+          message: 'distancePerSquare must be a positive number no greater than 100',
+        });
+      }
+      updateData.distancePerSquare = distancePerSquare;
     }
 
     if (diagonalRule !== undefined) {

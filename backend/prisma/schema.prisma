@@ -402,7 +402,9 @@ model Map {
   width    Int // In grid units
   height   Int // In grid units
   gridSize      Int    @default(50) // Pixels per grid square
-  feetPerSquare Int    @default(5)  // Feet represented by one grid square
+  feetPerSquare Int    @default(5)  // Feet represented by one grid square (legacy — superseded by distancePerSquare/distanceUnit, kept for backward compatibility)
+  distancePerSquare Float  @default(5)    // Distance represented by one grid square, in distanceUnit
+  distanceUnit      String @default("ft") // "ft" or "m"
   diagonalRule  String @default("flat") // "flat" (D&D 5e) or "alternating" (PF2e 5/10)
 
   // Layers
@@ -663,6 +665,9 @@ model SystemSettings {
 
   // Campaign Export/Import
   campaignExportSizeLimit Int @default(524288000) // 500 MB in bytes
+
+  // Measurement System — instance-wide default unit for new maps (per-map override in Map.distanceUnit)
+  distanceUnit String @default("ft") // "ft" or "m"
 
   // Metadata
   createdAt DateTime @default(now())

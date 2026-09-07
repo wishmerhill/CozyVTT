@@ -140,6 +140,8 @@ export const MapDataSchema = z.object({
   height: z.number().int().min(1).max(500),
   gridSize: z.number().int().min(10).max(200),
   feetPerSquare: z.number().int().min(1).max(100),
+  distancePerSquare: z.number().min(0.01).max(100).optional(),
+  distanceUnit: z.enum(['ft', 'm']).optional(),
   diagonalRule: z.enum(['flat', 'alternating']).optional(),
   tokens: z.array(TokenSchema).max(IMPORT_LIMITS.MAX_TOKENS_PER_MAP),
   annotations: z.array(z.record(z.string(), z.unknown())).max(500).optional(),
