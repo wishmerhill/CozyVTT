@@ -258,7 +258,7 @@ export function filterTokensByLighting(
 
   const wallSegs = (Array.isArray(walls) ? walls : []) as unknown as WallSegment[];
   const lightSources = (Array.isArray(lights) ? lights : []) as unknown as LightSource[];
-  const enabledLights = lightSources.filter((l) => l.enabled);
+  const dmLights = lightSources.filter((l) => l.enabled);
 
   // Find all tokens controlled by this player
   const myTokens = tokens.filter((t) => t.controlledBy === playerUserId);
@@ -297,6 +297,26 @@ export function filterTokensByLighting(
       radiusPx: (t.sightRadius ?? 0) * gridSize,
     };
   });
+
+  // Tokens carrying their own active light (e.g. a lit torch) count as light
+  // sources too, mirroring the client's per-frame synthesis of token lights
+  // (MapCanvas.tsx) so a lit NPC beyond a PC's sight radius but within LOS is
+  // still sent. A hidden token's light doesn't reveal anything — same as the
+  // client, which only folds in `t.visible` tokens.
+  const tokenLights = tokens
+    .filter((t) => t.visible && t.lightEmit?.enabled)
+    .map((t) => {
+      const cx = (t.position.x + (t.size?.width ?? 1) / 2) * gridSize;
+      const cy = (mapHeight - 1 - t.position.y + (t.size?.height ?? 1) / 2) * gridSize;
+      return {
+        x: cx,
+        y: cy,
+        brightRadius: t.lightEmit!.brightRadius,
+        dimRadius: t.lightEmit!.dimRadius,
+      };
+    });
+
+  const enabledLights = [...dmLights, ...tokenLights];
 
   // What each light reaches, bounded by its own walls. Light positions are
   // already in map-space pixels (Y=0 at top), so no flip is needed.

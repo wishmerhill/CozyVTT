@@ -15,7 +15,8 @@ function makeToken(
   x: number,
   y: number,
   controlledBy: string | null = null,
-  sightRadius = 0
+  sightRadius = 0,
+  lightEmit: { enabled: boolean; brightRadius: number; dimRadius: number; color: string } | null = null
 ) {
   return {
     id,
@@ -30,6 +31,7 @@ function makeToken(
     conditions: [],
     metadata: {},
     sightRadius,
+    lightEmit,
   };
 }
 
@@ -242,6 +244,67 @@ describe('filterTokensByLighting', () => {
       const out = filterMapData(litMap([player, behindWall]) as never, 'DM', true, 'dm-user');
 
       expect(out.tokens.some((t: { id: string }) => t.id === 'behind')).toBe(true);
+    });
+  });
+
+  /**
+   * A token's own active light (e.g. a lit torch) should light it up for
+   * anyone with line of sight, the same as a DM-placed LightSource — mirrors
+   * the client, which synthesizes a LightSource per lit token every frame
+   * (MapCanvas.tsx).
+   */
+  describe('token-emitted light', () => {
+    it('reveals a torch-bearing token beyond the player\'s sight radius', () => {
+      const player = makeToken('player', 1, 5, 'user1', 1);
+      const torchBearer = makeToken('torch', 8, 5, null, 0, {
+        enabled: true, brightRadius: 2, dimRadius: 4, color: '#fff',
+      });
+
+      const result = filterTokensByLighting(
+        [player, torchBearer], 'user1', NO_WALLS, MAP_WIDTH, MAP_HEIGHT, GRID_SIZE, true
+      );
+
+      expect(result.some((t) => t.id === 'torch')).toBe(true);
+    });
+
+    it('does not reveal a distant, unlit token beyond the player\'s sight radius', () => {
+      const player = makeToken('player', 1, 5, 'user1', 1);
+      const dark = makeToken('dark', 8, 5);
+
+      const result = filterTokensByLighting(
+        [player, dark], 'user1', NO_WALLS, MAP_WIDTH, MAP_HEIGHT, GRID_SIZE, true
+      );
+
+      expect(result.some((t) => t.id === 'dark')).toBe(false);
+    });
+
+    it('does not let a token\'s own light grant sight through a wall', () => {
+      const wall = makeWall('wall1', 500, 0, 500, 1000);
+      const player = makeToken('player', 2, 5, 'user1', 0);
+      const torchBearer = makeToken('torch', 7, 5, null, 0, {
+        enabled: true, brightRadius: 3, dimRadius: 6, color: '#fff',
+      });
+
+      const result = filterTokensByLighting(
+        [player, torchBearer], 'user1', [wall], MAP_WIDTH, MAP_HEIGHT, GRID_SIZE, true
+      );
+
+      expect(result.some((t) => t.id === 'torch')).toBe(false);
+    });
+
+    it('does not let a hidden token\'s torch reveal a third token', () => {
+      const player = makeToken('player', 1, 5, 'user1', 1);
+      const hiddenTorch = {
+        ...makeToken('hiddenTorch', 5, 5, null, 0, { enabled: true, brightRadius: 3, dimRadius: 6, color: '#fff' }),
+        visible: false,
+      };
+      const other = makeToken('other', 8, 5);
+
+      const result = filterTokensByLighting(
+        [player, hiddenTorch, other], 'user1', NO_WALLS, MAP_WIDTH, MAP_HEIGHT, GRID_SIZE, true
+      );
+
+      expect(result.some((t) => t.id === 'other')).toBe(false);
     });
   });
 
