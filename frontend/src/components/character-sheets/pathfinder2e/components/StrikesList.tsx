@@ -9,6 +9,7 @@ import React from 'react';
 import { Sword, Target, Zap, Dices } from 'lucide-react';
 import { useTranslation } from 'react-i18next';
 import ProficiencyIndicator, { ProficiencyRank } from './ProficiencyIndicator';
+import { formatRawDistance, type DistanceUnit } from '@/utils/measurement';
 
 /**
  * A strike, as the schema actually declares it.
@@ -38,6 +39,8 @@ export interface Strike {
 
 interface StrikesListProps {
   strikes: Strike[];
+  /** Instance/map default unit — appends a metric hint to reach when it's 'm'. */
+  activeDistanceUnit?: DistanceUnit;
   onRoll?: (expression: string, purpose: string) => void;
   onRollContext?: (e: React.MouseEvent, expression: string, purpose: string) => void;
 }
@@ -58,7 +61,7 @@ const getStrikeIcon = (type: string | undefined, savingThrow?: string) => {
   return type === 'melee' ? Sword : Target;
 };
 
-export const StrikesList: React.FC<StrikesListProps> = ({ strikes, onRoll, onRollContext }) => {
+export const StrikesList: React.FC<StrikesListProps> = ({ strikes, activeDistanceUnit = 'ft', onRoll, onRollContext }) => {
   const { t } = useTranslation('character');
 
   if (!strikes || strikes.length === 0) {
@@ -106,7 +109,7 @@ export const StrikesList: React.FC<StrikesListProps> = ({ strikes, onRoll, onRol
                       "(undefined ft.)". The field is optional on the schema, so
                       a sheet written by an older version, or converted from one,
                       simply has no reach recorded. */}
-                  {typeof strike.range === 'number' && ` (${strike.range} ft.)`}
+                  {typeof strike.range === 'number' && ` (${formatRawDistance(strike.range, activeDistanceUnit)})`}
                 </div>
               </div>
             </div>

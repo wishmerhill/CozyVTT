@@ -44,6 +44,8 @@ import {
 import { dnd5eInitiativeModifier } from '../../../utils/rules/initiative';
 import { collectSheetFeatures } from '../../../utils/featureEntries';
 import { readProficiencyGroups } from '../../../utils/proficiencies';
+import { formatRawDistance } from '../../../utils/measurement';
+import { useActiveDistanceUnit } from '../../../hooks/useActiveDistanceUnit';
 
 interface DnD5eCharacterViewProps {
   character: Character;
@@ -110,6 +112,7 @@ export const DnD5eCharacterView: React.FC<DnD5eCharacterViewProps> = ({ characte
   const { t } = useTranslation(['character', 'game-systems']);
   const [activeTab, setActiveTab] = useState<TabId>('stats');
   const data = character.data as DnD5eCharacterData & SheetChrome;
+  const activeDistanceUnit = useActiveDistanceUnit();
   const [themeColor, setThemeColor] = useState(COLOR_PRESETS[0]);
   const [isCustomColor, setIsCustomColor] = useState(false);
   const [customColorHex, setCustomColorHex] = useState('');
@@ -403,7 +406,7 @@ export const DnD5eCharacterView: React.FC<DnD5eCharacterViewProps> = ({ characte
           <div className="bg-stone-50 border-2 border-stone-300 rounded-lg p-4 text-center">
             <Footprints className="w-6 h-6 mx-auto mb-2 text-blue-600" />
             <div className="text-xs text-stone-500 mb-1">{t('sheet.speed')}</div>
-            <div className="text-2xl font-bold text-stone-800">{data.speed} ft</div>
+            <div className="text-2xl font-bold text-stone-800">{formatRawDistance(data.speed, activeDistanceUnit)}</div>
           </div>
         )}
         {data.hp && (
@@ -523,6 +526,7 @@ export const DnD5eCharacterView: React.FC<DnD5eCharacterViewProps> = ({ characte
           <h3 className="text-lg font-semibold text-stone-800 mb-3">{t('sheet.attacksAndWeapons')}</h3>
           <AttacksList
             attacks={data.attacks}
+            activeDistanceUnit={activeDistanceUnit}
             onRoll={onRoll ? (expr, purpose) => handleRoll(expr, purpose) : undefined}
             onRollContext={onRoll ? (e, expr, purpose) => showRollPopup(e, expr, purpose) : undefined}
           />

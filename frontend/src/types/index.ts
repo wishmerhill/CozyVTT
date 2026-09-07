@@ -323,6 +323,8 @@ export interface AdminSystemSettings {
   customLogoUrl: string | null;
   customFaviconUrl: string | null;
   customMascotUrl: string | null;
+  /** Instance-wide default for new maps — per-map override lives on Map.distanceUnit. */
+  distanceUnit: 'ft' | 'm';
 }
 
 export interface AppearanceSettings {
@@ -389,6 +391,11 @@ export interface ServerConfig {
    * offering something that would silently do nothing.
    */
   smtp?: { configured: boolean };
+  /**
+   * Instance-wide default distance unit, set in the Setup Wizard. A map can
+   * still override it in Create/Edit Map Modal; this is only the pre-fill.
+   */
+  distanceUnit?: 'ft' | 'm';
 }
 
 // ============================================

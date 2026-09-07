@@ -189,6 +189,7 @@ router.put('/settings', async (req, res) => {
       instanceName, timezone, allowRegistration, requireAdminApproval,
       themeId, customThemeColors, fontId,
       customLogoUrl, customFaviconUrl, customMascotUrl,
+      distanceUnit,
     } = req.body;
 
     const updateData: Parameters<typeof updateSystemSettings>[0] = {};
@@ -201,6 +202,9 @@ router.put('/settings', async (req, res) => {
     }
     if (typeof allowRegistration === 'boolean') {
       updateData.allowRegistration = allowRegistration;
+    }
+    if (distanceUnit === 'ft' || distanceUnit === 'm') {
+      updateData.distanceUnit = distanceUnit;
     }
     if (typeof requireAdminApproval === 'boolean') {
       updateData.requireAdminApproval = requireAdminApproval;

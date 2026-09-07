@@ -219,6 +219,7 @@ class ApiClient {
     instanceName?: string;
     timezone?: string;
     allowRegistration?: boolean;
+    distanceUnit?: 'ft' | 'm';
   }): Promise<{ message: string; user: User }> {
     const response = await this.client.post('/api/setup/init', data);
     return response.data;

@@ -87,6 +87,8 @@ export async function updateSystemSettings(data: {
   customLogoUrl?: string | null;
   customFaviconUrl?: string | null;
   customMascotUrl?: string | null;
+  /** Instance-wide default for new maps — per-map override lives on Map.distanceUnit. */
+  distanceUnit?: 'ft' | 'm';
 }) {
   const settings = await getSystemSettings();
 

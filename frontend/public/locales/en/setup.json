@@ -39,6 +39,10 @@
     "timezoneHint": "Used for scheduling and timestamps",
     "detected": "(Detected)",
     "commonTimezones": "Common Timezones",
+    "distanceUnit": "Distance Unit",
+    "distanceUnitImperial": "Imperial (ft)",
+    "distanceUnitMetric": "Metric (m)",
+    "distanceUnitHint": "Default grid scale for new maps. Each map can still override this individually.",
     "enableRegistration": "Enable Public Registration",
     "enableRegistrationDesc": "Allow anyone to create an account on this instance. You can change this later in the system settings.",
     "registrationWarning": "⚠️ Recommended: keep this disabled for private instances"
@@ -54,6 +58,7 @@
     "passwordMasked": "••••••••••••",
     "instanceName": "Instance Name:",
     "timezone": "Timezone:",
+    "distanceUnit": "Distance Unit:",
     "publicRegistration": "Public Registration:",
     "enabled": "Enabled",
     "disabled": "Disabled",

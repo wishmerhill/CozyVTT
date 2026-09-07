@@ -36,6 +36,7 @@ interface SystemConfigData {
   instanceName: string;
   timezone: string;
   enableRegistration: boolean;
+  distanceUnit: 'ft' | 'm';
 }
 
 // ============================================
@@ -64,6 +65,7 @@ export default function SetupWizardPage() {
     instanceName: 'CozyVTT',
     timezone: Intl.DateTimeFormat().resolvedOptions().timeZone,
     enableRegistration: false,
+    distanceUnit: 'ft',
   });
 
   // UI state
@@ -202,6 +204,7 @@ export default function SetupWizardPage() {
         instanceName: systemConfig.instanceName,
         timezone: systemConfig.timezone,
         allowRegistration: systemConfig.enableRegistration,
+        distanceUnit: systemConfig.distanceUnit,
       });
 
       // Take up the session the server just created. `refreshUser()` cannot do
@@ -692,6 +695,32 @@ function Step3SystemConfig({ data, setData, fieldErrors }: Step3Props) {
           </p>
         </div>
 
+        {/* Distance Unit */}
+        <div>
+          <label className="block text-sm font-medium text-brand-ink mb-1">
+            {t('systemConfig.distanceUnit')}
+          </label>
+          <div className="flex gap-2">
+            {(['ft', 'm'] as const).map((unit) => (
+              <button
+                key={unit}
+                type="button"
+                onClick={() => setData({ ...data, distanceUnit: unit })}
+                className={`flex-1 px-3 py-2 rounded-lg text-sm transition-colors border ${
+                  data.distanceUnit === unit
+                    ? 'bg-warm-amber text-white border-warm-amber'
+                    : 'bg-paper-white text-stone-gray border-warm-gray/30 hover:border-warm-amber/60'
+                }`}
+              >
+                {unit === 'ft' ? t('systemConfig.distanceUnitImperial') : t('systemConfig.distanceUnitMetric')}
+              </button>
+            ))}
+          </div>
+          <p className="mt-1 text-xs text-warm-gray">
+            {t('systemConfig.distanceUnitHint')}
+          </p>
+        </div>
+
         {/* Enable Registration */}
         <div className="glass-panel p-4 bg-warm-amber/5">
           <div className="flex items-start gap-3">
@@ -785,6 +814,14 @@ function Step4Review({ adminData, systemConfig }: Step4Props) {
             <div className="flex justify-between">
               <dt className="text-warm-gray">{t('review.timezone')}</dt>
               <dd className="text-brand-ink font-medium">{systemConfig.timezone}</dd>
+            </div>
+            <div className="flex justify-between">
+              <dt className="text-warm-gray">{t('review.distanceUnit')}</dt>
+              <dd className="text-brand-ink font-medium">
+                {systemConfig.distanceUnit === 'ft'
+                  ? t('systemConfig.distanceUnitImperial')
+                  : t('systemConfig.distanceUnitMetric')}
+              </dd>
             </div>
             <div className="flex justify-between">
               <dt className="text-warm-gray">{t('review.publicRegistration')}</dt>

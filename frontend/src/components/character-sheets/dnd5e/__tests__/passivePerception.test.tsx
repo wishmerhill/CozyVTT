@@ -13,10 +13,17 @@
  * must show the derived value, not the stored one.
  */
 
-import { describe, it, expect } from 'vitest';
+import { describe, it, expect, vi } from 'vitest';
 import { render, screen } from '@testing-library/react';
 import { DnD5eCharacterView } from '../DnD5eCharacterView';
 import type { Character } from '../../../../types';
+
+// DnD5eCharacterView reads the instance-wide default distance unit through
+// this hook. There's no QueryClientProvider in this render tree, so it must
+// be mocked rather than left to hit the real react-query hook.
+vi.mock('@/hooks/queries', () => ({
+  useServerConfigQuery: () => ({ data: undefined }),
+}));
 
 /** The 18 skills, all unproficient, so a test can override just the ones it cares about. */
 function blankSkills(): Record<string, { proficient: boolean; expertise: boolean; bonus: number }> {

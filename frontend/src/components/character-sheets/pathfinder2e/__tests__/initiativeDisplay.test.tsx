@@ -16,11 +16,18 @@
  * is what `usedStat` records.
  */
 
-import { describe, it, expect } from 'vitest';
+import { describe, it, expect, vi } from 'vitest';
 import { render, screen, within } from '@testing-library/react';
 import i18n from 'i18next';
 import { Pathfinder2eCharacterView } from '../Pathfinder2eCharacterView';
 import type { Character } from '../../../../types';
+
+// Pathfinder2eCharacterView reads the instance-wide default distance unit
+// through this hook. There's no QueryClientProvider in this render tree, so
+// it must be mocked rather than left to hit the real react-query hook.
+vi.mock('@/hooks/queries', () => ({
+  useServerConfigQuery: () => ({ data: undefined }),
+}));
 
 /** Looks the label up through the same i18n instance the view renders with,
  *  so the test keeps working whichever language `src/test/setup.ts` runs in. */

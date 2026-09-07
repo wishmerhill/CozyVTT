@@ -13,6 +13,8 @@ import { AssetType } from '@/types';
 import AssetPicker from '@/components/assets/AssetPicker';
 import { detectMapGrid, type GridDetectionResult } from '@/utils/detectMapGrid';
 import { Button, Modal } from '@/components/ui';
+import { formatDistance, getScalePresets, type DistanceUnit } from '@/utils/measurement';
+import { useServerConfigQuery } from '@/hooks/queries';
 
 interface CreateMapModalProps {
   isOpen: boolean;
@@ -191,6 +193,8 @@ export default function CreateMapModal({
   onCreated,
 }: CreateMapModalProps) {
   const { t } = useTranslation(['campaign', 'common']);
+  const { data: serverConfig } = useServerConfigQuery();
+
   // Asset selection
   const [mapAssetId, setMapAssetId] = useState<string | null>(null);
   const [spiritAssetId, setSpiritAssetId] = useState<string | null>(null);
@@ -200,8 +204,9 @@ export default function CreateMapModal({
   const [width, setWidth] = useState(20);
   const [height, setHeight] = useState(20);
   const [gridSize, setGridSize] = useState(50);
-  const [feetPreset, setFeetPreset] = useState<'5' | '10' | 'custom'>('5');
-  const [feetCustom, setFeetCustom] = useState(5);
+  const [distanceUnit, setDistanceUnit] = useState<DistanceUnit>('ft');
+  const [scalePreset, setScalePreset] = useState<number | 'custom'>(5);
+  const [customScale, setCustomScale] = useState(5);
   const [diagonalRule, setDiagonalRule] = useState<'flat' | 'alternating'>('flat');
 
   // Preview zoom (1 = fit-to-preview, higher zooms in)
@@ -211,30 +216,42 @@ export default function CreateMapModal({
   const [detectedGrid, setDetectedGrid] = useState<GridDetectionResult | null>(null);
   const [isDetecting, setIsDetecting] = useState(false);
 
-  const feetPerSquare = feetPreset === 'custom' ? feetCustom : parseInt(feetPreset);
+  const distancePerSquare = scalePreset === 'custom' ? customScale : scalePreset;
+
+  /** Switching unit invalidates the previous preset — it's a value from the other scale. */
+  const handleUnitChange = (unit: DistanceUnit) => {
+    setDistanceUnit(unit);
+    const [firstPreset] = getScalePresets(unit);
+    setScalePreset(firstPreset);
+    setCustomScale(firstPreset);
+  };
 
   // Submit state
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
-  // Reset all state when the modal closes
+  // Reset all state when the modal closes — including the unit/scale, which
+  // fall back to the instance-wide default the next time the modal opens.
   useEffect(() => {
     if (!isOpen) {
+      const unit = serverConfig?.distanceUnit ?? 'ft';
+      const [firstPreset] = getScalePresets(unit);
       setMapAssetId(null);
       setSpiritAssetId(null);
       setName('');
       setWidth(20);
       setHeight(20);
       setGridSize(50);
-      setFeetPreset('5');
-      setFeetCustom(5);
+      setDistanceUnit(unit);
+      setScalePreset(firstPreset);
+      setCustomScale(firstPreset);
       setDiagonalRule('flat');
       setPreviewZoom(1);
       setDetectedGrid(null);
       setIsDetecting(false);
       setError(null);
     }
-  }, [isOpen]);
+  }, [isOpen, serverConfig]);
 
   // When the map image changes, attempt to auto-detect the grid
   useEffect(() => {
@@ -287,7 +304,8 @@ export default function CreateMapModal({
         width,
         height,
         gridSize,
-        feetPerSquare,
+        distancePerSquare,
+        distanceUnit,
         diagonalRule,
         ...(spiritAssetId ? { spiritLayerUrl: spiritAssetId } : {}),
       };
@@ -401,44 +419,66 @@ export default function CreateMapModal({
                   <div className="border border-moss-green/20 rounded-lg p-4 space-y-4 bg-moss-green/5">
                     <h3 className="text-sm font-medium text-brand-ink">{t('map.modal.gridSettingsTitle')}</h3>
 
-                    {/* Grid Scale */}
+                    {/* Distance Unit */}
                     <div>
-                      <label className="block text-xs font-medium text-stone-gray mb-2">{t('map.modal.gridScaleLabel')}</label>
-                      <div className="flex gap-2 flex-wrap">
-                        {(['5', '10'] as const).map((v) => (
+                      <label className="block text-xs font-medium text-stone-gray mb-2">{t('map.modal.unitLabel')}</label>
+                      <div className="flex gap-2">
+                        {(['ft', 'm'] as const).map((unit) => (
                           <button
-                            key={v}
+                            key={unit}
                             type="button"
-                            onClick={() => setFeetPreset(v)}
-                            className={`px-3 py-1.5 rounded-lg text-sm transition-colors border ${
-                              feetPreset === v
+                            onClick={() => handleUnitChange(unit)}
+                            className={`flex-1 px-3 py-1.5 rounded-lg text-sm transition-colors border ${
+                              distanceUnit === unit
                                 ? 'bg-moss-green text-paper-white border-moss-green'
                                 : 'bg-paper-white text-stone-gray border-moss-green/30 hover:border-moss-green/60'
                             }`}
                           >
-                            {v} ft
+                            {unit === 'ft' ? t('map.modal.unitImperial') : t('map.modal.unitMetric')}
+                          </button>
+                        ))}
+                      </div>
+                    </div>
+
+                    {/* Grid Scale */}
+                    <div>
+                      <label className="block text-xs font-medium text-stone-gray mb-2">{t('map.modal.gridScaleLabel')}</label>
+                      <div className="flex gap-2 flex-wrap">
+                        {getScalePresets(distanceUnit).map((v) => (
+                          <button
+                            key={v}
+                            type="button"
+                            onClick={() => setScalePreset(v)}
+                            className={`px-3 py-1.5 rounded-lg text-sm transition-colors border ${
+                              scalePreset === v
+                                ? 'bg-moss-green text-paper-white border-moss-green'
+                                : 'bg-paper-white text-stone-gray border-moss-green/30 hover:border-moss-green/60'
+                            }`}
+                          >
+                            {formatDistance(v, distanceUnit)}
                           </button>
                         ))}
                         <button
                           type="button"
-                          onClick={() => setFeetPreset('custom')}
+                          onClick={() => setScalePreset('custom')}
                           className={`px-3 py-1.5 rounded-lg text-sm transition-colors border ${
-                            feetPreset === 'custom'
+                            scalePreset === 'custom'
                               ? 'bg-moss-green text-paper-white border-moss-green'
                               : 'bg-paper-white text-stone-gray border-moss-green/30 hover:border-moss-green/60'
                           }`}
                         >
                           {t('map.modal.customLabel')}
                         </button>
-                        {feetPreset === 'custom' && (
+                        {scalePreset === 'custom' && (
                           <input
                             type="number"
-                            value={feetCustom}
-                            onChange={(e) => setFeetCustom(Math.max(1, Math.min(100, parseInt(e.target.value) || 1)))}
-                            min={1}
+                            value={customScale}
+                            onChange={(e) => setCustomScale(Math.max(0.1, Math.min(100, parseFloat(e.target.value) || 0.1)))}
+                            min={0.1}
                             max={100}
+                            step={distanceUnit === 'm' ? 0.5 : 1}
                             className="input-cozy w-20"
-                            placeholder="ft"
+                            placeholder={distanceUnit}
                           />
                         )}
                       </div>

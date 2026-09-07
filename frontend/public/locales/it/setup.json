@@ -39,6 +39,10 @@
     "timezoneHint": "Utilizzato per pianificazione e timestamp",
     "detected": "(Rilevato)",
     "commonTimezones": "Fusi Orari Comuni",
+    "distanceUnit": "Unità di Misura",
+    "distanceUnitImperial": "Imperiale (ft)",
+    "distanceUnitMetric": "Metrico (m)",
+    "distanceUnitHint": "Scala della griglia predefinita per le nuove mappe. Ogni mappa può comunque sovrascriverla singolarmente.",
     "enableRegistration": "Abilita Registrazione Pubblica",
     "enableRegistrationDesc": "Permetti a chiunque di creare un account su questa istanza. Puoi modificarlo in seguito nelle impostazioni di sistema.",
     "registrationWarning": "⚠️ Consigliato: Mantieni disabilitato per istanze private"
@@ -54,6 +58,7 @@
     "passwordMasked": "••••••••••••",
     "instanceName": "Nome Istanza:",
     "timezone": "Fuso Orario:",
+    "distanceUnit": "Unità di Misura:",
     "publicRegistration": "Registrazione Pubblica:",
     "enabled": "Attivata",
     "disabled": "Disattivata",

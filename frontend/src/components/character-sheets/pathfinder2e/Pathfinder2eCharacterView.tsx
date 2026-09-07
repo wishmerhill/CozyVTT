@@ -33,6 +33,8 @@ import { withAdvantage, withDisadvantage } from '../../../utils/characterRolls';
 import { readFeatureEntries } from '../../../utils/featureEntries';
 import { pf2eInitiativeBonus } from '../../../utils/rules/initiative';
 import { pf2eArmorClass, pf2eClassDC } from '../../../utils/rules/pathfinder2e';
+import { formatRawDistance } from '../../../utils/measurement';
+import { useActiveDistanceUnit } from '../../../hooks/useActiveDistanceUnit';
 import type { Character } from '../../../types';
 import type {
   PF2eCharacterData,
@@ -135,6 +137,7 @@ export const Pathfinder2eCharacterView: React.FC<Pathfinder2eCharacterViewProps>
 }) => {
   const { t } = useTranslation(['character', 'common', 'game-systems']);
   const data = character.data as PF2eCharacterData & SheetChrome;
+  const activeDistanceUnit = useActiveDistanceUnit();
   const [selectedColor, setSelectedColor] = useState(COLOR_PRESETS[0]);
   const [isCustomColor, setIsCustomColor] = useState(false);
   const [customColorHex, setCustomColorHex] = useState('');
@@ -476,7 +479,7 @@ export const Pathfinder2eCharacterView: React.FC<Pathfinder2eCharacterViewProps>
       <div className="bg-gradient-to-br from-green-50 to-green-100 border-2 border-green-300 rounded-lg p-4">
         <h3 className="text-sm font-bold text-green-800 mb-2">{t('sheet.speed')}</h3>
         <div className="text-3xl font-bold text-green-800">
-          {data.speed?.land || 30} ft.
+          {formatRawDistance(data.speed?.land || 30, activeDistanceUnit)}
         </div>
         {data.speed?.other && data.speed.other.length > 0 && (
           <div className="text-xs text-green-700 mt-2">
@@ -638,6 +641,7 @@ export const Pathfinder2eCharacterView: React.FC<Pathfinder2eCharacterViewProps>
       <h3 className="text-lg font-bold text-stone-800 mb-3">{t('sheet.pf2e.strikesAndAttacksHeading')}</h3>
       <StrikesList
         strikes={data.strikes || []}
+        activeDistanceUnit={activeDistanceUnit}
         onRoll={onRoll ? (expr, purpose) => handleRoll(expr, purpose) : undefined}
         onRollContext={onRoll ? (e, expr, purpose) => showRollPopup(e, expr, purpose) : undefined}
       />

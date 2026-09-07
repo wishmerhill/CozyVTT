@@ -32,6 +32,7 @@ export interface InitializeSetupRequest {
   instanceName?: string;
   timezone?: string;
   allowRegistration?: boolean;
+  distanceUnit?: 'ft' | 'm';
 }
 
 export interface InitializeSetupResponse {

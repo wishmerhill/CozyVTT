@@ -22,6 +22,7 @@ export interface SetupSystemConfig {
   instanceName?: string;
   timezone?: string;
   allowRegistration?: boolean;
+  distanceUnit?: 'ft' | 'm';
 }
 
 /** Field caps, matching PUT /api/admin/settings so the two cannot disagree. */
@@ -40,7 +41,7 @@ export function systemConfigFromSetupBody(body: unknown): SetupSystemConfig {
   const config: SetupSystemConfig = {};
   if (typeof body !== 'object' || body === null) return config;
 
-  const { instanceName, timezone, allowRegistration } = body as Record<string, unknown>;
+  const { instanceName, timezone, allowRegistration, distanceUnit } = body as Record<string, unknown>;
 
   if (typeof instanceName === 'string' && instanceName.trim()) {
     config.instanceName = sanitizeInput(instanceName).slice(0, MAX_INSTANCE_NAME);
@@ -53,6 +54,9 @@ export function systemConfigFromSetupBody(body: unknown): SetupSystemConfig {
   // off" and "never asked" is the whole point of this step.
   if (typeof allowRegistration === 'boolean') {
     config.allowRegistration = allowRegistration;
+  }
+  if (distanceUnit === 'ft' || distanceUnit === 'm') {
+    config.distanceUnit = distanceUnit;
   }
 
   return config;

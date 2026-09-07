@@ -212,7 +212,6 @@
       "damage": "Danni",
       "type": "Tipo",
       "range": "Gittata",
-      "rangeValue": "{{range}} m",
       "cantrip": "trucchetto",
       "spell": "incantesimo",
       "attackPurpose": "{{name}} Attacco",

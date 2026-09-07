@@ -212,7 +212,6 @@
       "damage": "Damage",
       "type": "Type",
       "range": "Range",
-      "rangeValue": "{{range}} ft",
       "cantrip": "cantrip",
       "spell": "spell",
       "attackPurpose": "{{name}} Attack",

@@ -8,6 +8,7 @@ import React from 'react';
 import { useTranslation } from 'react-i18next';
 import { Sword, Zap, Dices } from 'lucide-react';
 import type { DnD5eAttack } from '@/types/game-systems/dnd5e';
+import { formatRawDistance, type DistanceUnit } from '@/utils/measurement';
 
 /**
  * The attack shape was declared again here, a copy of `DnD5eAttack` that had to
@@ -18,6 +19,8 @@ type Attack = DnD5eAttack;
 
 interface AttacksListProps {
   attacks: Attack[];
+  /** Instance/map default unit — appends a metric hint to range when it's 'm'. */
+  activeDistanceUnit?: DistanceUnit;
   /** Left-click attack row to roll attack. Omit outside campaign context. */
   onRoll?: (expression: string, purpose: string) => void;
   /** Right-click for Advantage / Disadvantage popup. */
@@ -29,9 +32,10 @@ interface AttacksListProps {
  */
 const AttackRow: React.FC<{
   attack: Attack;
+  activeDistanceUnit: DistanceUnit;
   onRoll?: (expression: string, purpose: string) => void;
   onRollContext?: (e: React.MouseEvent, expression: string, purpose: string) => void;
-}> = ({ attack, onRoll, onRollContext }) => {
+}> = ({ attack, activeDistanceUnit, onRoll, onRollContext }) => {
   const { t } = useTranslation('character');
   const formatBonus = (bonus: number): string => {
     return bonus >= 0 ? `+${bonus}` : `${bonus}`;
@@ -116,7 +120,7 @@ const AttackRow: React.FC<{
         <div>
           <span className="text-xs text-stone-500">{t('sheet.attackRow.range')}</span>
           <div className="font-semibold text-stone-700">
-            {t('sheet.attackRow.rangeValue', { range: attack.range })}
+            {formatRawDistance(attack.range, activeDistanceUnit)}
           </div>
         </div>
       </div>
@@ -187,7 +191,7 @@ const AttackRow: React.FC<{
 /**
  * AttacksList - Displays all attacks
  */
-export const AttacksList: React.FC<AttacksListProps> = ({ attacks, onRoll, onRollContext }) => {
+export const AttacksList: React.FC<AttacksListProps> = ({ attacks, activeDistanceUnit = 'ft', onRoll, onRollContext }) => {
   const { t } = useTranslation('character');
   if (!attacks || attacks.length === 0) {
     return (
@@ -200,7 +204,7 @@ export const AttacksList: React.FC<AttacksListProps> = ({ attacks, onRoll, onRol
   return (
     <div className="space-y-3">
       {attacks.map((attack, index) => (
-        <AttackRow key={index} attack={attack} onRoll={onRoll} onRollContext={onRollContext} />
+        <AttackRow key={index} attack={attack} activeDistanceUnit={activeDistanceUnit} onRoll={onRoll} onRollContext={onRollContext} />
       ))}
     </div>
   );
