@@ -770,7 +770,16 @@
     "hideFromPlayers": "Nascondi ai Giocatori",
     "showToPlayers": "Mostra ai Giocatori",
     "revealToPlayers": "Rivela ai Giocatori",
-    "removing": "Rimozione in corso…"
+    "removing": "Rimozione in corso…",
+    "vision": {
+      "title": "Visione",
+      "sightRadius": "Raggio visivo (caselle)",
+      "darkvisionRadius": "Scurovisione (caselle)",
+      "hint": "Il raggio visivo vuoto usa il valore predefinito di 3 caselle. La scurovisione rivela il terreno in scala di grigi fuori da qualsiasi luce."
+    },
+    "light": {
+      "title": "Sorgente di Luce"
+    }
   },
   "spiritLayer": {
     "title": "Livello Spirituale",

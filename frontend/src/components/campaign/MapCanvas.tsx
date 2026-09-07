@@ -28,6 +28,7 @@ import type {
 import { TokenLayer, TokenType } from '@/types';
 import type { WallSegment, FogState, WallType, LightSource } from '@/types/walls';
 import { douglasPeucker, edgeSnapPoints } from '@/utils/geometry';
+import { gridYToCentrePx } from './map/coords';
 import {
   drawMapImage,
   drawSpiritLayer,
@@ -1545,10 +1546,34 @@ export default function MapCanvas({ onEditToken }: MapCanvasProps) {
       const renderAsPlayer = !renderIsDM || dmPreviewPlayerView;
       if (renderAsPlayer) {
         const myTokens = tokens.filter((t) => {
-          if (renderIsDM && dmPreviewPlayerView) return true; // DM preview: use all tokens
+          if (renderIsDM && dmPreviewPlayerView) {
+            // Preview simulates what the party of PCs would see. Only PC
+            // tokens are viewers — an NPC is not a party member, so its own
+            // torch must not light up the room "for itself" in the preview.
+            const effectiveType = t.type ?? (t.characterId ? TokenType.PLAYER : TokenType.NPC);
+            return effectiveType === TokenType.PLAYER;
+          }
           return isOwnToken(t);
         });
-        const enabledLights = lightSources.filter((l) => l.enabled);
+        // Token-carried lights (lit torches, lanterns) are synthesized here rather
+        // than stored as LightSource objects: deriving x/y from the token's live
+        // position each frame means the light just follows the token, with no
+        // separate position to keep in sync as it moves. A hidden token's torch
+        // does not reveal anything to players. Kept out of `lightSources` itself
+        // so DmLightControls' select/edit tool (which PUTs a LightSource by id)
+        // never has to know about a torch that isn't a real LightSource.
+        const tokenLights: LightSource[] = tokens
+          .filter((t) => t.visible && t.lightEmit?.enabled)
+          .map((t) => ({
+            id: `token:${t.id}`,
+            x: (t.position.x + t.size.width / 2) * viewport.gridSize,
+            y: gridYToCentrePx(t.position.y, t.size.height, viewport.mapHeight, viewport.gridSize),
+            brightRadius: t.lightEmit!.brightRadius,
+            dimRadius: t.lightEmit!.dimRadius,
+            color: t.lightEmit!.color,
+            enabled: true,
+          }));
+        const enabledLights = [...lightSources.filter((l) => l.enabled), ...tokenLights];
         // Memoized: only sources whose position/radius changed —
         // or all sources when a wall was edited — actually recompute.
         const vision = visionCacheRef.current.compute(myTokens, enabledLights, wallSegments, viewport);

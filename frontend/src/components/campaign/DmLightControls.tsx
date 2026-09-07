@@ -29,7 +29,7 @@ const DEFAULT_PLACEMENT: LightPlacementDefaults = {
 };
 
 /** Named presets matching common TTRPG light sources (radii in grid squares). */
-const LIGHT_PRESETS: Array<{ labelKey: string; bright: number; dim: number }> = [
+export const LIGHT_PRESETS: Array<{ labelKey: string; bright: number; dim: number }> = [
   { labelKey: 'lighting.candle',    bright: 1,  dim: 2 },
   { labelKey: 'lighting.torch',     bright: 4,  dim: 8 },
   { labelKey: 'lighting.lamp',      bright: 3,  dim: 6 },
@@ -38,7 +38,7 @@ const LIGHT_PRESETS: Array<{ labelKey: string; bright: number; dim: number }> = 
 ];
 
 /** Preset glow colors for the palette. */
-const LIGHT_COLOR_PRESETS = [
+export const LIGHT_COLOR_PRESETS = [
   { labelKey: 'lighting.warmAmber', value: '#ffcc66' },
   { labelKey: 'lighting.candlelight', value: '#ff9933' },
   { labelKey: 'lighting.daylight', value: '#ffffee' },

@@ -770,7 +770,16 @@
     "hideFromPlayers": "Hide from Players",
     "showToPlayers": "Show to Players",
     "revealToPlayers": "Reveal to Players",
-    "removing": "Removing…"
+    "removing": "Removing…",
+    "vision": {
+      "title": "Vision",
+      "sightRadius": "Sight radius (sq)",
+      "darkvisionRadius": "Darkvision (sq)",
+      "hint": "Blank sight radius defaults to 3 squares. Darkvision reveals ground in grayscale outside any light."
+    },
+    "light": {
+      "title": "Light Source"
+    }
   },
   "spiritLayer": {
     "title": "Spirit Layer",

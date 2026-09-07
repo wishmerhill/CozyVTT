@@ -920,6 +920,9 @@ router.post('/:id/tokens', campaignDM, async (req: AuthenticatedRequest, res: Re
       displayMode: displayMode,
       statBlock: shapes.value.statBlock ?? null,
       creatureTemplateId: tokenData.creatureTemplateId || null,
+      sightRadius: shapes.value.sightRadius ?? undefined,
+      darkvisionRadius: shapes.value.darkvisionRadius ?? undefined,
+      lightEmit: shapes.value.lightEmit ?? null,
     };
 
     // Get existing tokens array
@@ -1078,7 +1081,7 @@ router.put('/:id/tokens/:tokenId', campaignMember, async (req: AuthenticatedRequ
       // write-only channel into the map's JSON that served no purpose. The
       // create route, which is the only place the app sends metadata at all, is
       // DM-only already.
-      const restrictedFields = ['hp', 'notes', 'showHpBar', 'type', 'disposition', 'initiative', 'visible', 'name', 'imageUrl', 'layer', 'controlledBy', 'displayMode', 'statBlock', 'creatureTemplateId', 'metadata'];
+      const restrictedFields = ['hp', 'notes', 'showHpBar', 'type', 'disposition', 'initiative', 'visible', 'name', 'imageUrl', 'layer', 'controlledBy', 'displayMode', 'statBlock', 'creatureTemplateId', 'metadata', 'sightRadius', 'darkvisionRadius', 'lightEmit'];
       for (const field of restrictedFields) {
         if (updates[field] !== undefined) {
           return res.status(403).json({ error: 'Forbidden', message: `Only DM can update token field: ${field}` });
@@ -1137,6 +1140,9 @@ router.put('/:id/tokens/:tokenId', campaignMember, async (req: AuthenticatedRequ
       // route above has always stored the parsed value.
       ...(updates.statBlock !== undefined && { statBlock: shapes.value.statBlock ?? null }),
       ...(updates.creatureTemplateId !== undefined && { creatureTemplateId: updates.creatureTemplateId }),
+      ...(updates.sightRadius !== undefined && { sightRadius: shapes.value.sightRadius ?? undefined }),
+      ...(updates.darkvisionRadius !== undefined && { darkvisionRadius: shapes.value.darkvisionRadius ?? undefined }),
+      ...(updates.lightEmit !== undefined && { lightEmit: shapes.value.lightEmit ?? null }),
     };
 
     // Update the tokens array
