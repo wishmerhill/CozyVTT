@@ -15,6 +15,8 @@ import { detectMapGrid, type GridDetectionResult } from '@/utils/detectMapGrid';
 import { Button, Modal } from '@/components/ui';
 import { formatDistance, getScalePresets, type DistanceUnit } from '@/utils/measurement';
 import { useServerConfigQuery } from '@/hooks/queries';
+import EnvironmentAmbientFields from '@/components/campaign/EnvironmentAmbientFields';
+import { AMBIENT_PRESET_DEFAULTS, type EnvironmentType, type AmbientLightPreset } from '@/types/ambientLighting';
 
 interface CreateMapModalProps {
   isOpen: boolean;
@@ -208,6 +210,10 @@ export default function CreateMapModal({
   const [scalePreset, setScalePreset] = useState<number | 'custom'>(5);
   const [customScale, setCustomScale] = useState(5);
   const [diagonalRule, setDiagonalRule] = useState<'flat' | 'alternating'>('flat');
+  const [environmentType, setEnvironmentType] = useState<EnvironmentType>('indoor');
+  const [ambientLightPreset, setAmbientLightPreset] = useState<AmbientLightPreset>('pitch_black');
+  const [ambientColor, setAmbientColor] = useState(AMBIENT_PRESET_DEFAULTS.pitch_black.color);
+  const [ambientOpacity, setAmbientOpacity] = useState(AMBIENT_PRESET_DEFAULTS.pitch_black.opacity);
 
   // Preview zoom (1 = fit-to-preview, higher zooms in)
   const [previewZoom, setPreviewZoom] = useState(1);
@@ -246,6 +252,10 @@ export default function CreateMapModal({
       setScalePreset(firstPreset);
       setCustomScale(firstPreset);
       setDiagonalRule('flat');
+      setEnvironmentType('indoor');
+      setAmbientLightPreset('pitch_black');
+      setAmbientColor(AMBIENT_PRESET_DEFAULTS.pitch_black.color);
+      setAmbientOpacity(AMBIENT_PRESET_DEFAULTS.pitch_black.opacity);
       setPreviewZoom(1);
       setDetectedGrid(null);
       setIsDetecting(false);
@@ -307,7 +317,11 @@ export default function CreateMapModal({
         distancePerSquare,
         distanceUnit,
         diagonalRule,
+        environmentType,
+        ambientLightPreset,
+        ambientOpacity,
         ...(spiritAssetId ? { spiritLayerUrl: spiritAssetId } : {}),
+        ...(ambientColor ? { ambientColor } : {}),
       };
       const map = await mapService.createMap(campaignId, data);
       onCreated(map);
@@ -524,6 +538,20 @@ export default function CreateMapModal({
                       </div>
                     </div>
                   </div>
+
+                  {/* Environment & Ambient Light */}
+                  <EnvironmentAmbientFields
+                    environmentType={environmentType}
+                    onEnvironmentTypeChange={setEnvironmentType}
+                    ambientLightPreset={ambientLightPreset}
+                    ambientColor={ambientColor}
+                    ambientOpacity={ambientOpacity}
+                    onAmbientChange={(preset, color, opacity) => {
+                      setAmbientLightPreset(preset);
+                      setAmbientColor(color);
+                      setAmbientOpacity(opacity);
+                    }}
+                  />
                 </div>
 
                 {/* ── Right: Grid Preview + Zoom ── */}

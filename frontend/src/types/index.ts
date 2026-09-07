@@ -651,6 +651,10 @@ export interface Map {
   distancePerSquare: number;
   distanceUnit: 'ft' | 'm';
   diagonalRule: 'flat' | 'alternating';
+  environmentType: import('./ambientLighting').EnvironmentType;
+  ambientLightPreset: import('./ambientLighting').AmbientLightPreset;
+  ambientColor: string | null;
+  ambientOpacity: number;
   tokens: Token[];
   annotations: Annotation[];
   wallSegments?: import('./walls').WallSegment[];
@@ -962,6 +966,10 @@ export interface CreateMapRequest {
   distanceUnit?: 'ft' | 'm';
   diagonalRule?: 'flat' | 'alternating';
   spiritLayerUrl?: string;
+  environmentType?: import('./ambientLighting').EnvironmentType;
+  ambientLightPreset?: import('./ambientLighting').AmbientLightPreset;
+  ambientColor?: string | null;
+  ambientOpacity?: number;
 }
 
 export interface UpdateMapRequest {
@@ -976,6 +984,10 @@ export interface UpdateMapRequest {
   imageUrl?: string;
   spiritLayerUrl?: string | null;
   lightingEnabled?: boolean;
+  environmentType?: import('./ambientLighting').EnvironmentType;
+  ambientLightPreset?: import('./ambientLighting').AmbientLightPreset;
+  ambientColor?: string | null;
+  ambientOpacity?: number;
 }
 
 // Token

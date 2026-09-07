@@ -44,6 +44,9 @@ const router = Router({ mergeParams: true }); // Important: Merge params from pa
 const VALID_TOKEN_TYPES = ['player', 'npc', 'object'];
 const VALID_TOKEN_DISPOSITIONS = ['friendly', 'neutral', 'hostile'];
 const VALID_DISPLAY_MODES = ['pog', 'top-down', 'full-art'];
+const VALID_ENVIRONMENT_TYPES = ['indoor', 'outdoor'];
+const VALID_AMBIENT_PRESETS = ['day', 'dusk', 'night', 'pitch_black', 'custom'];
+const HEX_COLOR_RE = /^#[0-9a-fA-F]{6}$/;
 
 /**
  * Map CRUD Routes
@@ -60,7 +63,7 @@ const VALID_DISPLAY_MODES = ['pog', 'top-down', 'full-art'];
 router.post('/', campaignDM, async (req: AuthenticatedRequest, res: Response) => {
   try {
     const { campaignId } = req.params;
-    const { name, imageUrl, width, height, gridSize, spiritLayerUrl, feetPerSquare, distancePerSquare, distanceUnit, diagonalRule } = req.body;
+    const { name, imageUrl, width, height, gridSize, spiritLayerUrl, feetPerSquare, distancePerSquare, distanceUnit, diagonalRule, environmentType, ambientLightPreset, ambientColor, ambientOpacity } = req.body;
 
     // Validation
     if (!name || typeof name !== 'string' || name.trim().length === 0) {
@@ -119,6 +122,42 @@ router.post('/', campaignDM, async (req: AuthenticatedRequest, res: Response) =>
     // diagonalRule: must be "flat" or "alternating", defaults to "flat"
     const mapDiagonalRule = diagonalRule === 'flat' || diagonalRule === 'alternating' ? diagonalRule : 'flat';
 
+    // environmentType: must be "indoor" or "outdoor", defaults to "indoor"
+    if (environmentType !== undefined && !VALID_ENVIRONMENT_TYPES.includes(environmentType)) {
+      return res.status(400).json({
+        error: 'Validation Error',
+        message: `environmentType must be one of: ${VALID_ENVIRONMENT_TYPES.join(', ')}`,
+      });
+    }
+    const mapEnvironmentType = environmentType ?? 'indoor';
+
+    // ambientLightPreset: must be a known preset, defaults to "pitch_black"
+    if (ambientLightPreset !== undefined && !VALID_AMBIENT_PRESETS.includes(ambientLightPreset)) {
+      return res.status(400).json({
+        error: 'Validation Error',
+        message: `ambientLightPreset must be one of: ${VALID_AMBIENT_PRESETS.join(', ')}`,
+      });
+    }
+    const mapAmbientLightPreset = ambientLightPreset ?? 'pitch_black';
+
+    // ambientColor: optional hex color string
+    if (ambientColor !== undefined && ambientColor !== null && (typeof ambientColor !== 'string' || !HEX_COLOR_RE.test(ambientColor))) {
+      return res.status(400).json({
+        error: 'Validation Error',
+        message: 'ambientColor must be a hex color string (e.g. #0b1d3a)',
+      });
+    }
+    const mapAmbientColor = ambientColor ?? null;
+
+    // ambientOpacity: number between 0.0 and 1.0, defaults to 1.0
+    if (ambientOpacity !== undefined && (typeof ambientOpacity !== 'number' || !Number.isFinite(ambientOpacity) || ambientOpacity < 0 || ambientOpacity > 1)) {
+      return res.status(400).json({
+        error: 'Validation Error',
+        message: 'ambientOpacity must be a number between 0.0 and 1.0',
+      });
+    }
+    const mapAmbientOpacity = ambientOpacity !== undefined ? ambientOpacity : 1.0;
+
     // Normalize asset URLs to full paths
     const normalizedImageUrl = normalizeAssetUrl(imageUrl, 'maps');
     const normalizedSpiritLayerUrl = spiritLayerUrl ? normalizeAssetUrl(spiritLayerUrl, 'maps') : null;
@@ -168,6 +207,10 @@ router.post('/', campaignDM, async (req: AuthenticatedRequest, res: Response) =>
         distancePerSquare: mapDistancePerSquare,
         distanceUnit: mapDistanceUnit,
         diagonalRule: mapDiagonalRule,
+        environmentType: mapEnvironmentType,
+        ambientLightPreset: mapAmbientLightPreset,
+        ambientColor: mapAmbientColor,
+        ambientOpacity: mapAmbientOpacity,
         spiritLayerUrl: normalizedSpiritLayerUrl,
         tokens: [], // Initialize empty tokens array
         annotations: [], // Initialize empty annotations array
@@ -206,6 +249,10 @@ router.get('/', campaignMember, async (req: AuthenticatedRequest, res: Response)
         distancePerSquare: true,
         distanceUnit: true,
         diagonalRule: true,
+        environmentType: true,
+        ambientLightPreset: true,
+        ambientColor: true,
+        ambientOpacity: true,
         lightingEnabled: true,
         createdAt: true,
         updatedAt: true,
@@ -487,7 +534,7 @@ router.get('/:id', campaignMember, async (req: AuthenticatedRequest, res: Respon
 router.put('/:id', campaignDM, async (req: AuthenticatedRequest, res: Response) => {
   try {
     const { campaignId, id } = req.params;
-    const { name, width, height, gridSize, imageUrl, spiritLayerUrl, feetPerSquare, distancePerSquare, distanceUnit, diagonalRule, lightingEnabled } = req.body;
+    const { name, width, height, gridSize, imageUrl, spiritLayerUrl, feetPerSquare, distancePerSquare, distanceUnit, diagonalRule, lightingEnabled, environmentType, ambientLightPreset, ambientColor, ambientOpacity } = req.body;
 
     // Fetch the map to verify it exists and belongs to campaign
     const existingMap = await prisma.map.findUnique({
@@ -633,6 +680,47 @@ router.put('/:id', campaignDM, async (req: AuthenticatedRequest, res: Response) 
       updateData.lightingEnabled = lightingEnabled;
     }
 
+    if (environmentType !== undefined) {
+      if (!VALID_ENVIRONMENT_TYPES.includes(environmentType)) {
+        return res.status(400).json({
+          error: 'Validation Error',
+          message: `environmentType must be one of: ${VALID_ENVIRONMENT_TYPES.join(', ')}`,
+        });
+      }
+      updateData.environmentType = environmentType;
+    }
+
+    if (ambientLightPreset !== undefined) {
+      if (!VALID_AMBIENT_PRESETS.includes(ambientLightPreset)) {
+        return res.status(400).json({
+          error: 'Validation Error',
+          message: `ambientLightPreset must be one of: ${VALID_AMBIENT_PRESETS.join(', ')}`,
+        });
+      }
+      updateData.ambientLightPreset = ambientLightPreset;
+    }
+
+    if (ambientColor !== undefined) {
+      // Allow null to clear the custom tint
+      if (ambientColor !== null && (typeof ambientColor !== 'string' || !HEX_COLOR_RE.test(ambientColor))) {
+        return res.status(400).json({
+          error: 'Validation Error',
+          message: 'ambientColor must be a hex color string (e.g. #0b1d3a) or null',
+        });
+      }
+      updateData.ambientColor = ambientColor;
+    }
+
+    if (ambientOpacity !== undefined) {
+      if (typeof ambientOpacity !== 'number' || !Number.isFinite(ambientOpacity) || ambientOpacity < 0 || ambientOpacity > 1) {
+        return res.status(400).json({
+          error: 'Validation Error',
+          message: 'ambientOpacity must be a number between 0.0 and 1.0',
+        });
+      }
+      updateData.ambientOpacity = ambientOpacity;
+    }
+
     // Update the map
     const updatedMap = await prisma.map.update({
       where: { id },
@@ -645,6 +733,25 @@ router.put('/:id', campaignDM, async (req: AuthenticatedRequest, res: Response) 
         broadcastToCampaign(campaignId, 'map:lighting:updated', {
           mapId: id,
           lightingEnabled: updatedMap.lightingEnabled,
+        });
+      } catch { /* non-fatal */ }
+    }
+
+    // Broadcast ambient/environment change — lets the DM flip day/dusk/night
+    // mid-session without every player needing to reload the map.
+    if (
+      updateData.environmentType !== undefined ||
+      updateData.ambientLightPreset !== undefined ||
+      updateData.ambientColor !== undefined ||
+      updateData.ambientOpacity !== undefined
+    ) {
+      try {
+        broadcastToCampaign(campaignId, 'map:ambient:updated', {
+          mapId: id,
+          environmentType: updatedMap.environmentType,
+          ambientLightPreset: updatedMap.ambientLightPreset,
+          ambientColor: updatedMap.ambientColor,
+          ambientOpacity: updatedMap.ambientOpacity,
         });
       } catch { /* non-fatal */ }
     }

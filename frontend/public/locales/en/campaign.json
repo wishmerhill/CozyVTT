@@ -202,7 +202,20 @@
       "zoomVerifyLine2": "with the lines on your map image.",
       "createFailedError": "Failed to create map. Please try again.",
       "updateFailedError": "Failed to update map. Please try again.",
-      "dynamicLightingHint": "Raycasting visibility — players only see what their tokens can see through walls"
+      "dynamicLightingHint": "Raycasting visibility — players only see what their tokens can see through walls",
+      "environmentSectionTitle": "Environment & Ambient Light",
+      "environmentTypeLabel": "Environment Type",
+      "environmentIndoor": "Indoor",
+      "environmentOutdoor": "Outdoor",
+      "ambientPresetLabel": "Ambient Light Preset",
+      "ambientPresetDay": "Day",
+      "ambientPresetDusk": "Dusk",
+      "ambientPresetNight": "Night",
+      "ambientPresetPitchBlack": "Pitch Black",
+      "ambientPresetCustom": "Custom",
+      "ambientColorLabel": "Tint Color",
+      "ambientOpacityLabel": "Darkness",
+      "environmentAmbientHint": "Sets the default mood for this map. The DM can switch it quickly during a session from the map toolbar."
     }
   },
   "token": {
@@ -929,6 +942,7 @@
     "confirmClearAll": "Confirm Clear All",
     "pickCustomColor": "Pick custom color",
     "dynamicLightingOff": "Dynamic lighting is off. Enable it in Map Settings for lights to affect player visibility.",
+    "ambientControlsTitle": "Ambient",
     "candle": "Candle",
     "torch": "Torch",
     "lamp": "Lamp",

@@ -202,7 +202,20 @@
       "zoomVerifyLine2": "con le linee dell'immagine della tua mappa.",
       "createFailedError": "Creazione mappa fallita. Riprova.",
       "updateFailedError": "Aggiornamento mappa fallito. Riprova.",
-      "dynamicLightingHint": "Visibilità a raycasting — i giocatori vedono solo ciò che i loro token possono vedere attraverso i muri"
+      "dynamicLightingHint": "Visibilità a raycasting — i giocatori vedono solo ciò che i loro token possono vedere attraverso i muri",
+      "environmentSectionTitle": "Ambiente & Luce Ambientale",
+      "environmentTypeLabel": "Tipo Ambiente",
+      "environmentIndoor": "Interno",
+      "environmentOutdoor": "Esterno",
+      "ambientPresetLabel": "Preimpostazione Luce Ambientale",
+      "ambientPresetDay": "Giorno",
+      "ambientPresetDusk": "Tramonto",
+      "ambientPresetNight": "Notte",
+      "ambientPresetPitchBlack": "Buio Pesto",
+      "ambientPresetCustom": "Personalizzato",
+      "ambientColorLabel": "Colore Tinta",
+      "ambientOpacityLabel": "Oscurità",
+      "environmentAmbientHint": "Imposta l'atmosfera predefinita di questa mappa. Il DM può cambiarla rapidamente durante la sessione dalla toolbar della mappa."
     }
   },
   "token": {
@@ -929,6 +942,7 @@
     "confirmClearAll": "Conferma Cancellazione Totale",
     "pickCustomColor": "Scegli colore personalizzato",
     "dynamicLightingOff": "L'illuminazione dinamica è disattivata. Attivala nelle Impostazioni Mappa perché le luci influenzino la visibilità dei giocatori.",
+    "ambientControlsTitle": "Ambiente",
     "candle": "Candela",
     "torch": "Torcia",
     "lamp": "Lampada",

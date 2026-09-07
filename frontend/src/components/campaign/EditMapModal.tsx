@@ -15,6 +15,8 @@ import { detectMapGrid, type GridDetectionResult } from '@/utils/detectMapGrid';
 import { Button, Modal } from '@/components/ui';
 import { extractAssetId } from '@/utils/assetUrl';
 import { formatDistance, getScalePresets, type DistanceUnit } from '@/utils/measurement';
+import EnvironmentAmbientFields from '@/components/campaign/EnvironmentAmbientFields';
+import { AMBIENT_PRESET_DEFAULTS, type EnvironmentType, type AmbientLightPreset } from '@/types/ambientLighting';
 
 interface EditMapModalProps {
   isOpen: boolean;
@@ -198,6 +200,10 @@ export default function EditMapModal({
   const [customScale, setCustomScale] = useState(5);
   const [diagonalRule, setDiagonalRule] = useState<'flat' | 'alternating'>('flat');
   const [lightingEnabled, setLightingEnabled] = useState(false);
+  const [environmentType, setEnvironmentType] = useState<EnvironmentType>('indoor');
+  const [ambientLightPreset, setAmbientLightPreset] = useState<AmbientLightPreset>('pitch_black');
+  const [ambientColor, setAmbientColor] = useState(AMBIENT_PRESET_DEFAULTS.pitch_black.color);
+  const [ambientOpacity, setAmbientOpacity] = useState(AMBIENT_PRESET_DEFAULTS.pitch_black.opacity);
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
@@ -234,6 +240,11 @@ export default function EditMapModal({
       else { setScalePreset('custom'); setCustomScale(dps); }
       setDiagonalRule((map.diagonalRule as 'flat' | 'alternating') ?? 'flat');
       setLightingEnabled(map.lightingEnabled ?? false);
+      const preset = map.ambientLightPreset ?? 'pitch_black';
+      setEnvironmentType(map.environmentType ?? 'indoor');
+      setAmbientLightPreset(preset);
+      setAmbientColor(map.ambientColor ?? AMBIENT_PRESET_DEFAULTS[preset].color);
+      setAmbientOpacity(map.ambientOpacity ?? AMBIENT_PRESET_DEFAULTS[preset].opacity);
       setPreviewZoom(1);
       setDetectedGrid(null);
       setIsDetecting(false);
@@ -302,6 +313,10 @@ export default function EditMapModal({
         diagonalRule,
         spiritLayerUrl: spiritAssetId ?? null,
         lightingEnabled,
+        environmentType,
+        ambientLightPreset,
+        ambientColor: ambientColor || null,
+        ambientOpacity,
       };
       const updatedMap = await mapService.updateMap(campaignId, map.id, data);
       onUpdated(updatedMap);
@@ -515,6 +530,20 @@ export default function EditMapModal({
                       </div>
                     </div>
                   </div>
+
+                  {/* Environment & Ambient Light */}
+                  <EnvironmentAmbientFields
+                    environmentType={environmentType}
+                    onEnvironmentTypeChange={setEnvironmentType}
+                    ambientLightPreset={ambientLightPreset}
+                    ambientColor={ambientColor}
+                    ambientOpacity={ambientOpacity}
+                    onAmbientChange={(preset, color, opacity) => {
+                      setAmbientLightPreset(preset);
+                      setAmbientColor(color);
+                      setAmbientOpacity(opacity);
+                    }}
+                  />
                 </div>
 
                 {/* Dynamic Lighting */}

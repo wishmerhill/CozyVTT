@@ -68,7 +68,9 @@ import AtmosphereOverlay from '@/components/campaign/AtmosphereOverlay';
 import DmFogControls, { type FogToolMode } from '@/components/campaign/DmFogControls';
 import DmWallControls, { type WallToolMode } from '@/components/campaign/DmWallControls';
 import DmLightControls, { type LightToolMode, type LightPlacementDefaults } from '@/components/campaign/DmLightControls';
+import DmAmbientControls from '@/components/campaign/DmAmbientControls';
 import DmToolPanelContainer from '@/components/campaign/DmToolPanelContainer';
+import type { EnvironmentType, AmbientLightPreset } from '@/types/ambientLighting';
 import { useWallHistory } from '@/hooks/useWallHistory';
 import Toast, { useToast } from '@/components/Toast';
 import Button from '@/components/ui/Button';
@@ -1121,9 +1123,28 @@ export default function MapCanvas({ onEditToken }: MapCanvasProps) {
       setCurrentMap({ ...currentMap, lightingEnabled: data.lightingEnabled });
     };
 
+    // Ambient light / environment quick-change broadcast from DM
+    const handleAmbientUpdated = (data: {
+      mapId: string;
+      environmentType: EnvironmentType;
+      ambientLightPreset: AmbientLightPreset;
+      ambientColor: string | null;
+      ambientOpacity: number;
+    }) => {
+      if (!currentMap || data.mapId !== currentMap.id) return;
+      setCurrentMap({
+        ...currentMap,
+        environmentType: data.environmentType,
+        ambientLightPreset: data.ambientLightPreset,
+        ambientColor: data.ambientColor,
+        ambientOpacity: data.ambientOpacity,
+      });
+    };
+
     socketInstance.on('token:appeared', handleTokenAppeared);
     socketInstance.on('token:disappeared', handleTokenDisappeared);
     socketInstance.on('map:lighting:updated', handleLightingUpdated);
+    socketInstance.on('map:ambient:updated', handleAmbientUpdated);
 
     // Light source events
     const handleLightAdded = (data: { mapId: string; light: LightSource }) => {
@@ -1163,6 +1184,7 @@ export default function MapCanvas({ onEditToken }: MapCanvasProps) {
       socketInstance.off('token:appeared', handleTokenAppeared);
       socketInstance.off('token:disappeared', handleTokenDisappeared);
       socketInstance.off('map:lighting:updated', handleLightingUpdated);
+      socketInstance.off('map:ambient:updated', handleAmbientUpdated);
       socketInstance.off('wall:added', handleWallAdded);
       socketInstance.off('wall:removed', handleWallRemoved);
       socketInstance.off('wall:updated', handleWallUpdated);
@@ -3299,6 +3321,20 @@ export default function MapCanvas({ onEditToken }: MapCanvasProps) {
             lightingEnabled={currentMap.lightingEnabled ?? false}
             placementDefaults={lightPlacementDefaults}
             onDefaultsChange={setLightPlacementDefaults}
+          />
+          <DmAmbientControls
+            environmentType={currentMap.environmentType ?? 'indoor'}
+            ambientLightPreset={currentMap.ambientLightPreset ?? 'pitch_black'}
+            ambientColor={currentMap.ambientColor ?? '#000000'}
+            ambientOpacity={currentMap.ambientOpacity ?? 1}
+            onChange={(changes) => {
+              if (!campaign) return;
+              const updatedMap = { ...currentMap, ...changes };
+              setCurrentMap(updatedMap); // optimistic — the DM's own view updates immediately
+              api.updateMap(campaign.id, currentMap.id, changes).catch(() => {
+                setCurrentMap(currentMap); // revert on failure
+              });
+            }}
           />
         </DmToolPanelContainer>
       )}

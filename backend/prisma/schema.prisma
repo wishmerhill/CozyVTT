@@ -407,6 +407,12 @@ model Map {
   distanceUnit      String @default("ft") // "ft" or "m"
   diagonalRule  String @default("flat") // "flat" (D&D 5e) or "alternating" (PF2e 5/10)
 
+  // Ambient Lighting & Environment
+  environmentType    String  @default("indoor")      // "indoor" or "outdoor"
+  ambientLightPreset String  @default("pitch_black")  // "day" | "dusk" | "night" | "pitch_black" | "custom"
+  ambientColor       String? // Hex tint color, meaningful for "custom"/"night" presets
+  ambientOpacity     Float   @default(1.0) // 0.0-1.0, opacity of the ambient darkness/tint overlay
+
   // Layers
   baseLayerUrl   String // Main map image
   spiritLayerUrl String? // Optional spirit realm overlay
