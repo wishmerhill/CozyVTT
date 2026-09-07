@@ -70,7 +70,7 @@ import DmWallControls, { type WallToolMode } from '@/components/campaign/DmWallC
 import DmLightControls, { type LightToolMode, type LightPlacementDefaults } from '@/components/campaign/DmLightControls';
 import DmAmbientControls from '@/components/campaign/DmAmbientControls';
 import DmToolPanelContainer from '@/components/campaign/DmToolPanelContainer';
-import type { EnvironmentType, AmbientLightPreset } from '@/types/ambientLighting';
+import { AMBIENT_PRESET_DEFAULTS, type EnvironmentType, type AmbientLightPreset } from '@/types/ambientLighting';
 import { useWallHistory } from '@/hooks/useWallHistory';
 import Toast, { useToast } from '@/components/Toast';
 import Button from '@/components/ui/Button';
@@ -300,6 +300,9 @@ export default function MapCanvas({ onEditToken }: MapCanvasProps) {
   // Light coverage is built here first so it can be intersected with the
   // viewer's line of sight before joining the coverage mask.
   const lightOnlyOffscreenRef = useRef<HTMLCanvasElement | null>(null);
+  // Raster snapshot of the LOS union — the outdoor ambient overlay's
+  // visibility boundary (see drawDynamicLighting's outdoor branch).
+  const sightMaskOffscreenRef = useRef<HTMLCanvasElement | null>(null);
 
   // Raw map-pixel position from last mousemove — ghost line uses this when snap is off.
   // screenToGrid() quantises to integer grid coords, so hoverCoords can't be used for free-draw.
@@ -1028,7 +1031,8 @@ export default function MapCanvas({ onEditToken }: MapCanvasProps) {
     lightingOffscreenRef.current = null;
     lightCoverageOffscreenRef.current = null;
     lightOnlyOffscreenRef.current = null;
-  }, [currentMap?.id]);  
+    sightMaskOffscreenRef.current = null;
+  }, [currentMap?.id]);
 
   // ============================================
   // Wall & Fog WebSocket Listeners
@@ -1600,6 +1604,8 @@ export default function MapCanvas({ onEditToken }: MapCanvasProps) {
         // or all sources when a wall was edited — actually recompute.
         const vision = visionCacheRef.current.compute(myTokens, enabledLights, wallSegments, viewport);
         visPolygons = vision.all;
+        const envType = currentMap.environmentType ?? 'indoor';
+        const preset = currentMap.ambientLightPreset ?? 'pitch_black';
         drawDynamicLighting(ctx, {
           myTokens,
           enabledLights,
@@ -1610,6 +1616,12 @@ export default function MapCanvas({ onEditToken }: MapCanvasProps) {
           lightingCanvas: lightingOffscreenRef,
           coverageCanvas: lightCoverageOffscreenRef,
           lightCanvas: lightOnlyOffscreenRef,
+          sightMaskCanvas: sightMaskOffscreenRef,
+          ambient: {
+            environmentType: envType,
+            color: currentMap.ambientColor ?? AMBIENT_PRESET_DEFAULTS[preset].color,
+            opacity: currentMap.ambientOpacity ?? AMBIENT_PRESET_DEFAULTS[preset].opacity,
+          },
         }, viewport);
       }
       // DM (not in preview) sees everything — skip fog entirely
@@ -1782,7 +1794,7 @@ export default function MapCanvas({ onEditToken }: MapCanvasProps) {
   // Overlay content — walls, lights, DM tools, measurement, pings, fog cursor.
   useEffect(() => {
     markDirty('overlay');
-  }, [markDirty, wallSegments, wallMode, wallInProgress, hoveredWallId, selectedWallId, hoveredDoorId, splitHoverPoint, selectedEndpoint, wallType, snapToGrid, brushSize, lightSources, selectedLightId, lightMode, dmPreviewPlayerView, showRuler, rulerOrigin, rulerColor, effectiveRulerOrigin, showAoE, aoeConfig, aoeAnchor, fogMode, fogDragCurrent, fogState, pings]);
+  }, [markDirty, wallSegments, wallMode, wallInProgress, hoveredWallId, selectedWallId, hoveredDoorId, splitHoverPoint, selectedEndpoint, wallType, snapToGrid, brushSize, lightSources, selectedLightId, lightMode, dmPreviewPlayerView, showRuler, rulerOrigin, rulerColor, effectiveRulerOrigin, showAoE, aoeConfig, aoeAnchor, fogMode, fogDragCurrent, fogState, pings, currentMap?.environmentType, currentMap?.ambientLightPreset, currentMap?.ambientColor, currentMap?.ambientOpacity]);
 
   // ============================================
   // Token Hit Testing
@@ -3327,6 +3339,7 @@ export default function MapCanvas({ onEditToken }: MapCanvasProps) {
             ambientLightPreset={currentMap.ambientLightPreset ?? 'pitch_black'}
             ambientColor={currentMap.ambientColor ?? '#000000'}
             ambientOpacity={currentMap.ambientOpacity ?? 1}
+            lightingEnabled={currentMap.lightingEnabled ?? false}
             onChange={(changes) => {
               if (!campaign) return;
               const updatedMap = { ...currentMap, ...changes };

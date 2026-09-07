@@ -16,7 +16,7 @@ import { drawWalls } from '../layers/drawWalls';
 import { drawFogSelection, type FogSelectionState } from '../layers/drawOverlays';
 import { drawPings, PING_DURATION_MS, type ActivePing, type PingDrawState } from '../layers/drawPings';
 import { drawSpiritLayer } from '../layers/drawBackground';
-import { drawDynamicLighting } from '../layers/drawLights';
+import { drawDynamicLighting, type AmbientDrawConfig } from '../layers/drawLights';
 import { computeVisionState } from '../vision';
 import type { Viewport } from '../layers/types';
 import type { Token } from '@/types';
@@ -618,6 +618,84 @@ describe('drawDynamicLighting', () => {
   it('leaves the light layer alone when there are no lights', () => {
     const { lightOnly } = run({ withLight: false });
     expect(lightOnly.ops.some((c) => c.method === 'arc')).toBe(false);
+  });
+
+  /**
+   * Ambient overlay (Phase B): outdoor visibility is bounded by line of sight
+   * (walls/map edge) rather than the fixed sightRadius a dungeon corridor
+   * would enforce, and — outside "day" — that LOS area is tinted rather than
+   * fully revealed. Indoor must stay byte-for-byte the pre-Phase-B algorithm.
+   */
+  describe('ambient overlay', () => {
+    function runAmbient(ambient?: AmbientDrawConfig) {
+      const main = makeOpRecorder();
+      const lighting = makeOpRecorder();
+      const coverage = makeOpRecorder();
+      const lightOnly = makeOpRecorder();
+      const sightMask = makeOpRecorder();
+
+      const token = makeToken('a', { sightRadius: 1 } as Partial<Token>);
+      const vision = computeVisionState([token], [], [], viewport);
+
+      drawDynamicLighting(main.ctx, {
+        myTokens: [token],
+        enabledLights: [],
+        tokenVision: vision.tokenVision,
+        tokenSight: vision.tokenSight,
+        lightVision: vision.lightVision,
+        darkvision: vision.darkvision,
+        lightingCanvas: holderFor(lighting.ctx, W, H),
+        coverageCanvas: holderFor(coverage.ctx, W, H),
+        lightCanvas: holderFor(lightOnly.ctx, W, H),
+        sightMaskCanvas: holderFor(sightMask.ctx, W, H),
+        ambient,
+      }, viewport);
+
+      return { lighting, lightOnly, sightMask };
+    }
+
+    const destinationOutDrawImages = (rec: { ops: OpCall[] }) =>
+      rec.ops.filter((c) => c.method === 'drawImage' && c.op === 'destination-out').length;
+
+    it('indoors never paints a tint, and only ever clears the fog once (the coverage subtraction)', () => {
+      const { lighting, lightOnly } = runAmbient(undefined); // no ambient config → indoor default
+      expect(lightOnly.ops.some((c) => c.method === 'fillRect')).toBe(false);
+      expect(destinationOutDrawImages(lighting)).toBe(1);
+    });
+
+    it('indoors ignores an outdoor-shaped ambient config too — environmentType alone decides', () => {
+      // Sanity: the branch keys off environmentType, not "ambient present at all".
+      const { lightOnly, lighting } = runAmbient({ environmentType: 'indoor', color: '#0b1d3a', opacity: 0.65 });
+      expect(lightOnly.ops.some((c) => c.method === 'fillRect')).toBe(false);
+      expect(destinationOutDrawImages(lighting)).toBe(1);
+    });
+
+    it('outdoors clears the whole LOS union, then punches the crisp zone — two clears, not one', () => {
+      const { lighting } = runAmbient({ environmentType: 'outdoor', color: '#0b1d3a', opacity: 0.65 });
+      expect(destinationOutDrawImages(lighting)).toBe(2);
+    });
+
+    it('outdoors paints the ambient tint onto the light-layer scratch, masked by the LOS union', () => {
+      const { lightOnly } = runAmbient({ environmentType: 'outdoor', color: '#0b1d3a', opacity: 0.65 });
+      const fillIdx = lightOnly.ops.findIndex((c) => c.method === 'fillRect');
+      expect(fillIdx).toBeGreaterThanOrEqual(0);
+      // The tint fill must be clipped to the LOS union via destination-in before
+      // it reaches the fog canvas — an unclipped tint would leak past LOS.
+      const maskIdx = lightOnly.ops.findIndex(
+        (c, i) => i > fillIdx && c.method === 'drawImage' && c.op === 'destination-in'
+      );
+      expect(maskIdx).toBeGreaterThan(fillIdx);
+    });
+
+    it('the "day" preset (opacity 0) still runs the outdoor LOS-clear path, just paints an invisible tint', () => {
+      // Day has no special case in the implementation — opacity 0 alone makes
+      // the whole LOS region read as fully clear. This pins that no day-only
+      // shortcut skips the tint step (which would silently break dusk/night if
+      // someone "simplified" it away).
+      const { lightOnly, lighting } = runAmbient({ environmentType: 'outdoor', color: '#ffffff', opacity: 0 });
+      expect(lightOnly.ops.some((c) => c.method === 'fillRect')).toBe(true);
+      expect(destinationOutDrawImages(lighting)).toBe(2);
+    });
   });
 });
 

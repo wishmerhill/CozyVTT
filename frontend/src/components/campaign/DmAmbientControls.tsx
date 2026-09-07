@@ -35,6 +35,8 @@ interface DmAmbientControlsProps {
     ambientOpacity?: number;
   }) => void;
   onCollapse?: () => void;
+  /** The overlay only renders under dynamic lighting — same raycasting engine that resolves it. */
+  lightingEnabled?: boolean;
 }
 
 export default function DmAmbientControls({
@@ -44,6 +46,7 @@ export default function DmAmbientControls({
   ambientOpacity,
   onChange,
   onCollapse,
+  lightingEnabled = false,
 }: DmAmbientControlsProps) {
   const { t } = useTranslation('campaign');
   const [collapsed, setCollapsed] = useState(true);
@@ -72,6 +75,12 @@ export default function DmAmbientControls({
 
       {!collapsed && (
         <div className="flex flex-col gap-2 p-2 pt-1">
+          {!lightingEnabled && (
+            <div className="text-[10px] text-amber-400/60 bg-amber-400/5 rounded px-1.5 py-1 border border-amber-400/10">
+              {t('lighting.dynamicLightingOff')}
+            </div>
+          )}
+
           {/* Environment Type */}
           <div className="flex gap-1">
             {(['indoor', 'outdoor'] as const).map((type) => (

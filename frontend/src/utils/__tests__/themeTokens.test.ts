@@ -25,6 +25,7 @@ const EXEMPT = [
   '/src/components/character-sheets/',
   '/src/components/campaign/DmWallControls.tsx',
   '/src/components/campaign/DmLightControls.tsx',
+  '/src/components/campaign/DmAmbientControls.tsx',
   '/src/components/campaign/DmFogControls.tsx',
   '/src/components/campaign/DmToolPanelContainer.tsx',
 ];

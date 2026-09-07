@@ -10,6 +10,7 @@
 
 import type { Token } from '@/types';
 import type { LightSource } from '@/types/walls';
+import type { EnvironmentType } from '@/types/ambientLighting';
 import { gridYToCentrePx } from '../coords';
 import type { LightToolMode } from '@/components/campaign/DmLightControls';
 import { mapSizePx, type Viewport } from './types';
@@ -18,6 +19,30 @@ import type { VisionSource } from '../vision';
 /** Mutable holder for a persistent offscreen canvas (a React ref works). */
 export interface CanvasHolder {
   current: HTMLCanvasElement | null;
+}
+
+/**
+ * Resolved ambient settings for the current map, as MapCanvas derives them
+ * from Map.environmentType/ambientLightPreset/ambientColor/ambientOpacity.
+ * "indoor" ignores color/opacity entirely — see the outdoor branch below for
+ * why only outdoor needs them.
+ */
+export interface AmbientDrawConfig {
+  environmentType: EnvironmentType;
+  /** Tint applied to the outdoor "in line-of-sight but unlit" zone. */
+  color: string;
+  /** 0 (day — no tint) .. 1 (moonless night) opacity of that tint. Indoor ignores this. */
+  opacity: number;
+}
+
+const DEFAULT_AMBIENT: AmbientDrawConfig = { environmentType: 'indoor', color: '#000000', opacity: 1 };
+
+function hexToRgb(hex: string): [number, number, number] {
+  return [
+    parseInt(hex.slice(1, 3), 16) || 0,
+    parseInt(hex.slice(3, 5), 16) || 0,
+    parseInt(hex.slice(5, 7), 16) || 0,
+  ];
 }
 
 export interface LightingDrawState {
@@ -39,6 +64,15 @@ export interface LightingDrawState {
   lightingCanvas: CanvasHolder;
   coverageCanvas: CanvasHolder;
   lightCanvas: CanvasHolder;
+  /**
+   * Persistent raster of the LOS union (tokenSight), reused as the outdoor
+   * visibility boundary. Optional — omitting it (as the older unit tests do)
+   * falls back to a throwaway canvas, which only costs a bit of GC pressure
+   * on a path that no longer matters once the environment is "indoor".
+   */
+  sightMaskCanvas?: CanvasHolder;
+  /** Defaults to indoor/opaque-black when omitted — the pre-Phase-B behavior. */
+  ambient?: AmbientDrawConfig;
 }
 
 function ensureCanvas(holder: CanvasHolder, w: number, h: number): HTMLCanvasElement {
@@ -69,6 +103,9 @@ export function drawDynamicLighting(
     ctx.restore();
     return;
   }
+
+  const ambient = state.ambient ?? DEFAULT_AMBIENT;
+  const isOutdoor = ambient.environmentType === 'outdoor';
 
   const offscreen = ensureCanvas(state.lightingCanvas, mapWidthPx, mapHeightPx);
   const offCtx = offscreen.getContext('2d')!;
@@ -153,6 +190,21 @@ export function drawDynamicLighting(
       covCtx.fill();
     }
   }
+
+  // Snapshot the LOS union now, before `coverage` gets cleared and rebuilt as
+  // the radius-limited mask below. Outdoor ambient tinting (further down)
+  // needs this wider boundary — the open-field visibility extent — not the
+  // narrower "coverage" that follows. Skipped indoors: nothing downstream
+  // reads it, and allocating a canvas nobody uses is pure waste on the common
+  // (indoor) path.
+  let sightMask: HTMLCanvasElement | null = null;
+  if (isOutdoor) {
+    sightMask = ensureCanvas(state.sightMaskCanvas ?? { current: null }, mapWidthPx, mapHeightPx);
+    const sightMaskCtx = sightMask.getContext('2d')!;
+    sightMaskCtx.clearRect(0, 0, mapWidthPx, mapHeightPx);
+    sightMaskCtx.drawImage(coverage, 0, 0);
+  }
+
   lightCtx.globalCompositeOperation = 'destination-in';
   lightCtx.drawImage(coverage, 0, 0);
   lightCtx.globalCompositeOperation = 'source-over';
@@ -177,6 +229,38 @@ export function drawDynamicLighting(
   // ── Build fog with coverage subtracted ──────────────────────────
   offCtx.fillStyle = 'rgba(15, 12, 25, 0.95)';
   offCtx.fillRect(0, 0, mapWidthPx, mapHeightPx);
+
+  if (isOutdoor && sightMask) {
+    // Outdoor: visibility isn't capped at a fixed sight radius the way a
+    // dungeon corridor is — an open field is visible for as far as line of
+    // sight actually reaches (walls or the map edge). Clear the whole LOS
+    // union first...
+    offCtx.globalCompositeOperation = 'destination-out';
+    offCtx.drawImage(sightMask, 0, 0);
+    offCtx.globalCompositeOperation = 'source-over';
+
+    // ...then repaint the ambient tint back over the LOS area only, so it
+    // reads as "visible but dim/moonlit" rather than fully revealed. For the
+    // "day" preset ambient.opacity is 0, so this paints nothing and the LOS
+    // area simply stays fully clear — no day/night special-casing needed.
+    //
+    // Reuses `lightLayer` as scratch: its content was already copied into
+    // `coverage` above and is not read again this frame.
+    const [ar, ag, ab] = hexToRgb(ambient.color);
+    lightCtx.clearRect(0, 0, mapWidthPx, mapHeightPx);
+    lightCtx.fillStyle = `rgba(${ar}, ${ag}, ${ab}, ${ambient.opacity})`;
+    lightCtx.fillRect(0, 0, mapWidthPx, mapHeightPx);
+    lightCtx.globalCompositeOperation = 'destination-in';
+    lightCtx.drawImage(sightMask, 0, 0);
+    lightCtx.globalCompositeOperation = 'source-over';
+    offCtx.drawImage(lightLayer, 0, 0);
+  }
+
+  // Punch the crisp zone: token sight radius + light coverage the viewer can
+  // see. Indoors this is the only subtraction there is (no wider LOS
+  // boundary applies). Outdoors it carves full clarity for the DM's "cerchio
+  // di chiarezza" — sightRadius and lit ground — out of the dimmer tint
+  // painted above.
   offCtx.globalCompositeOperation = 'destination-out';
   offCtx.drawImage(coverage, 0, 0);
   offCtx.globalCompositeOperation = 'source-over';
