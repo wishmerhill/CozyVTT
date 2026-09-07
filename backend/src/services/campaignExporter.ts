@@ -130,6 +130,8 @@ export async function exportCampaign(
       height: map.height,
       gridSize: map.gridSize,
       feetPerSquare: map.feetPerSquare,
+      distancePerSquare: map.distancePerSquare,
+      distanceUnit: map.distanceUnit,
       diagonalRule: map.diagonalRule,
       tokens,
       annotations: map.annotations || [],

@@ -323,6 +323,8 @@ export async function importCampaign(
         height: mapData.height,
         gridSize: mapData.gridSize,
         feetPerSquare: mapData.feetPerSquare,
+        distancePerSquare: mapData.distancePerSquare ?? mapData.feetPerSquare,
+        distanceUnit: mapData.distanceUnit ?? 'ft',
         diagonalRule: mapData.diagonalRule || 'flat',
         tokens: tokens as unknown as Prisma.InputJsonValue,
         annotations: (mapData.annotations || []) as unknown as Prisma.InputJsonValue,

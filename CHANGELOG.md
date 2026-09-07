@@ -6,6 +6,14 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/).
 
 ---
 
+## [Unreleased]
+
+### Added
+
+- **Metric maps, for tables that don't measure in feet.** Every map's grid used to mean exactly 5 feet per square, hardcoded — fine if your table plays in feet, awkward if it doesn't, since 5 ft doesn't translate to a clean metric number. The Setup Wizard now asks new instances to pick a default distance unit, feet or meters, and every map can still override it on its own: a metric GM creates a map at 1.5 m per square, an imperial one at 5 ft, and each just shows its own clean number rather than a converted, rounded one. The ruler, area-of-effect templates and grid labels all read in whichever unit that map uses. **Character sheet stats — speed, reach, spell range — are unaffected**: those are game-rule numbers, not map measurements, and stay stored in feet exactly as the rules print them; on a metric map they now also show a "(~9 m)" conversion alongside, for reading only, without touching what's saved. **Existing maps keep working unchanged** — they're marked as feet automatically, with the same numbers they always had. **Campaign export and import carry the unit with them too**, so a metric map re-imported on another instance stays metric; a campaign exported before this feature imports exactly as it always did, defaulting to feet. **Self-hosters: this adds two columns**, one on maps and one on the instance's system settings, filled in automatically on upgrade — nothing existing is altered.
+
+---
+
 ## [1.3.0] — 2026-09-04
 
 ### Added
