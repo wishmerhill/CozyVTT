@@ -7,6 +7,7 @@
 
 import type { FogState, WallSegment, WallType } from '@/types/walls';
 import { calcGridDistance } from '@/utils/geometry';
+import { formatDistance, type DistanceUnit } from '@/utils/measurement';
 import type { Viewport } from './types';
 import { mapPxToFogCell } from '../coords';
 import { fogRectFromDrag, fogRectToPx, fogRectSize } from '../fogSelection';
@@ -292,7 +293,8 @@ export interface RulerOverlayState {
   /** Grid coords of the cursor. */
   target: Pt;
   color: 'amber' | 'purple' | 'black';
-  feetPerSquare: number;
+  distancePerSquare: number;
+  unit: DistanceUnit;
   diagonalRule: 'flat' | 'alternating';
 }
 
@@ -313,7 +315,7 @@ export function drawRuler(
   const dx = Math.abs(state.target.x - state.origin.x);
   const dy = Math.abs(state.target.y - state.origin.y);
   const squares = Math.max(dx, dy);
-  const feet = calcGridDistance(dx, dy, state.feetPerSquare, state.diagonalRule);
+  const distance = calcGridDistance(dx, dy, state.distancePerSquare, state.diagonalRule);
 
   const rulerLineColor = state.color === 'purple' ? 'rgba(168, 85, 247, 0.9)' : state.color === 'black' ? 'rgba(0, 0, 0, 0.9)' : 'rgba(251, 191, 36, 0.9)';
   const rulerPillColor = state.color === 'black' ? 'rgba(255, 255, 255, 0.88)' : 'rgba(0, 0, 0, 0.65)';
@@ -338,8 +340,8 @@ export function drawRuler(
   ctx.fill();
 
   // Distance label near cursor
-  if (feet > 0) {
-    const label = `${feet} ft  (${squares} sq)`;
+  if (distance > 0) {
+    const label = `${formatDistance(distance, state.unit)}  (${squares} sq)`;
     const fontSize = Math.max(11, 13 / zoom);
     ctx.font = `bold ${fontSize}px sans-serif`;
     ctx.textBaseline = 'bottom';
@@ -412,7 +414,8 @@ export interface AoEOverlayState {
   aimMapPx: Pt | null;
   /** True while Alt is held, so the un-pinned preview matches what a click does. */
   hoverExact: boolean;
-  feetPerSquare: number;
+  distancePerSquare: number;
+  unit: DistanceUnit;
 }
 
 /** AoE template: sphere/cylinder/cone/line/cube with a size label. */
@@ -422,7 +425,7 @@ export function drawAoEOverlay(
   viewport: Viewport
 ): void {
   const { zoom, gridSize: gs } = viewport;
-  const fps = state.feetPerSquare;
+  const fps = state.distancePerSquare;
 
   // The anchor is the pivot the template turns about. Once pinned it is fixed —
   // deriving it from the aim is what used to make a rotating cone's apex jump
@@ -533,8 +536,8 @@ export function drawAoEOverlay(
 
   // Size label
   const label = state.config.shape === 'line'
-    ? `${state.config.sizeFt} ft × ${state.config.widthFt ?? 5} ft`
-    : `${state.config.sizeFt} ft`;
+    ? `${formatDistance(state.config.sizeFt, state.unit)} × ${formatDistance(state.config.widthFt ?? 5, state.unit)}`
+    : formatDistance(state.config.sizeFt, state.unit);
   const fontSize = Math.max(10, 12 / zoom);
   ctx.font = `bold ${fontSize}px sans-serif`;
   ctx.fillStyle = 'rgba(0,0,0,0.65)';

@@ -54,10 +54,10 @@ export function snapSpanCentre(value: number, gridSize: number, squares: number)
     : snapToSquareCentre(value, gridSize);
 }
 
-/** How many grid squares a distance in feet covers. */
-export function squaresFor(feet: number, feetPerSquare: number): number {
-  if (!Number.isFinite(feetPerSquare) || feetPerSquare <= 0) return 0;
-  return feet / feetPerSquare;
+/** How many grid squares a distance covers (same unit as distancePerSquare). */
+export function squaresFor(distance: number, distancePerSquare: number): number {
+  if (!Number.isFinite(distancePerSquare) || distancePerSquare <= 0) return 0;
+  return distance / distancePerSquare;
 }
 
 /**

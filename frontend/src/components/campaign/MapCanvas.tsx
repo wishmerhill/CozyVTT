@@ -1637,7 +1637,8 @@ export default function MapCanvas({ onEditToken }: MapCanvasProps) {
         origin: effectiveRulerOrigin,
         target: hoverCoords,
         color: rulerColor,
-        feetPerSquare: currentMap.feetPerSquare ?? 5,
+        distancePerSquare: currentMap.distancePerSquare ?? currentMap.feetPerSquare ?? 5,
+        unit: currentMap.distanceUnit ?? 'ft',
         diagonalRule: (currentMap.diagonalRule ?? 'flat') as 'flat' | 'alternating',
       }, viewport);
     }
@@ -1654,7 +1655,8 @@ export default function MapCanvas({ onEditToken }: MapCanvasProps) {
         // edge of the map is legitimate.
         aimMapPx: aoeAimRef.current,
         hoverExact: aoeAltHeldRef.current,
-        feetPerSquare: currentMap.feetPerSquare ?? 5,
+        distancePerSquare: currentMap.distancePerSquare ?? currentMap.feetPerSquare ?? 5,
+        unit: currentMap.distanceUnit ?? 'ft',
       }, viewport);
     }
 
