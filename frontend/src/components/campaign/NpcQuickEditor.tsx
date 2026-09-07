@@ -952,7 +952,7 @@ export default function NpcQuickEditor({ token, campaignId, mapId, onClose, onTo
                     type="checkbox"
                     checked={lightEmit?.enabled ?? false}
                     onChange={toggleLightEmit}
-                    className="rounded accent-amber-400"
+                    className="rounded accent-warm-amber"
                   />
                   <span className="text-[11px] text-stone-gray">
                     {lightEmit?.enabled ? t('lighting.enabled') : t('lighting.disabled')}
@@ -975,7 +975,7 @@ export default function NpcQuickEditor({ token, campaignId, mapId, onClose, onTo
                             onClick={() => updateLightEmit({ brightRadius: p.bright, dimRadius: p.dim })}
                             className={`text-[10px] px-1.5 py-0.5 rounded transition-colors ${
                               isActive
-                                ? 'bg-amber-400/25 text-amber-700 border border-amber-400/40'
+                                ? 'bg-accent/25 text-accent-ink border border-accent/40'
                                 : 'bg-parchment/60 text-stone-gray border border-moss-green/20 hover:bg-parchment'
                             }`}
                           >
@@ -1002,7 +1002,7 @@ export default function NpcQuickEditor({ token, campaignId, mapId, onClose, onTo
                         const v = Number(e.target.value);
                         updateLightEmit({ brightRadius: v, dimRadius: Math.max(v, lightEmit.dimRadius) });
                       }}
-                      className="w-full h-1 accent-amber-400"
+                      className="w-full h-1 accent-warm-amber"
                     />
                   </div>
 
@@ -1022,7 +1022,7 @@ export default function NpcQuickEditor({ token, campaignId, mapId, onClose, onTo
                         const v = Number(e.target.value);
                         updateLightEmit({ dimRadius: v, brightRadius: Math.min(v, lightEmit.brightRadius) });
                       }}
-                      className="w-full h-1 accent-amber-400"
+                      className="w-full h-1 accent-warm-amber"
                     />
                   </div>
 
