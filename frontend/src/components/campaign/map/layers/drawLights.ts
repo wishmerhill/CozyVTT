@@ -11,7 +11,7 @@
 import type { Token } from '@/types';
 import type { LightSource } from '@/types/walls';
 import type { EnvironmentType } from '@/types/ambientLighting';
-import { DEFAULT_WINDOW_LIGHT_RADIUS_CELLS } from '@/types/ambientLighting';
+import { DEFAULT_WINDOW_LIGHT_RADIUS_CELLS, OUTDOOR_HAZE_MIN_OPACITY, NIGHT_LIGHT_SPILL_RADIUS_CELLS } from '@/types/ambientLighting';
 import { gridYToCentrePx } from '../coords';
 import type { LightToolMode } from '@/components/campaign/DmLightControls';
 import { mapSizePx, type Viewport } from './types';
@@ -85,6 +85,12 @@ export interface LightingDrawState {
    * throwaway-canvas fallback as `sightMaskCanvas`.
    */
   windowLightMaskCanvas?: CanvasHolder;
+  /**
+   * Persistent raster of the night light-spill kill mask (see the "Night
+   * light spill cap" pass). Optional, same throwaway-canvas fallback as
+   * `sightMaskCanvas`.
+   */
+  nightSpillMaskCanvas?: CanvasHolder;
   /** Defaults to indoor/opaque-black when omitted — the pre-Phase-B behavior. */
   ambient?: AmbientDrawConfig;
 }
@@ -189,6 +195,42 @@ export function drawDynamicLighting(
     lightCtx.restore();
   }
 
+  // ── Night light spill cap ────────────────────────────────────────
+  // An indoor light source shining through a window/open-door gap would
+  // otherwise reach as far outdoors as its own dimRadius allows — at night
+  // that reads as a searchlight beam shooting out of the building rather
+  // than a lit window seen from outside. Reuses `state.windowLight`'s
+  // geometry (it's already exactly "every ambient-light-gap segment on this
+  // outdoor map", computed once for the beam-in pass above) — cap each
+  // gap's OUTWARD side (the negation of the beam-in pass's inward normal)
+  // to NIGHT_LIGHT_SPILL_RADIUS_CELLS by cutting everything farther out
+  // from the light layer before it can reveal any fog or be seen. Day is
+  // unaffected: ambient.opacity is 0, the exterior's already lit, nothing
+  // to cap.
+  if (isOutdoor && ambient.opacity > 0 && state.windowLight && state.windowLight.length > 0) {
+    const spillPx = NIGHT_LIGHT_SPILL_RADIUS_CELLS * viewport.gridSize;
+    const farPx = mapWidthPx + mapHeightPx; // guaranteed past any map edge
+
+    const killMask = ensureCanvas(state.nightSpillMaskCanvas ?? { current: null }, mapWidthPx, mapHeightPx);
+    const killCtx = killMask.getContext('2d')!;
+    killCtx.clearRect(0, 0, mapWidthPx, mapHeightPx);
+    killCtx.fillStyle = 'rgba(255, 255, 255, 1)';
+    for (const { x1, y1, x2, y2, nx, ny } of state.windowLight) {
+      const ox = -nx, oy = -ny; // outward = opposite of the inward normal
+      killCtx.beginPath();
+      killCtx.moveTo(x1 + ox * spillPx, y1 + oy * spillPx);
+      killCtx.lineTo(x2 + ox * spillPx, y2 + oy * spillPx);
+      killCtx.lineTo(x2 + ox * farPx, y2 + oy * farPx);
+      killCtx.lineTo(x1 + ox * farPx, y1 + oy * farPx);
+      killCtx.closePath();
+      killCtx.fill();
+    }
+
+    lightCtx.globalCompositeOperation = 'destination-out';
+    lightCtx.drawImage(killMask, 0, 0);
+    lightCtx.globalCompositeOperation = 'source-over';
+  }
+
   // Keep only the lit ground the viewer actually has line of sight to.
   //
   // The union of the sight polygons is built on the coverage canvas first,
@@ -255,24 +297,29 @@ export function drawDynamicLighting(
     offCtx.globalCompositeOperation = 'source-over';
 
     // ...then repaint the ambient tint back over the LOS area only, so it
-    // reads as "visible but dim/moonlit" rather than fully revealed except on
-    // the "day" preset, whose opacity is 0 — that paints nothing and the LOS
-    // area simply stays fully clear, which is the point: a sunlit field
-    // doesn't need a token standing in the middle of it to "reveal" it one
-    // torch-radius at a time.
+    // reads as a soft haze rather than fully revealed. Uses
+    // OUTDOOR_HAZE_MIN_OPACITY as a floor under the preset's own opacity —
+    // the "day" preset's own opacity is 0, but painting literally nothing
+    // would leave that LOS area fully crisp, including the far side of an
+    // entire room the instant a token has LOS into it, rather than needing
+    // the token to actually approach (within its own light/sight radius,
+    // punched fully clear below) to make it out in detail.
     //
-    // NOTE: this necessarily also fully reveals any wall-enclosed outdoor
-    // pocket (a walled courtyard, a walled garden) the instant a token can
-    // see into it, same as the open field around it — the wall data model
-    // has no way to mark such a pocket as a roofed interior that should stay
-    // dark like a dungeon room instead. Accepted tradeoff, confirmed with
-    // the user 2026-09-08 (see the memory this note replaces).
+    // NOTE: this necessarily also reveals (now hazily, not fully) any
+    // wall-enclosed outdoor pocket (a walled courtyard, a walled garden) the
+    // instant a token can see into it, same as the open field around it —
+    // the wall data model has no way to mark such a pocket as a roofed
+    // interior that should stay pitch dark like a dungeon room instead. See
+    // the memory this note replaces for the full back-and-forth; re-raised
+    // and settled on the haze floor (rather than reverting to indoor-style
+    // radius-only reveal) on 2026-09-08.
     //
     // Reuses `lightLayer` as scratch: its content was already copied into
     // `coverage` above and is not read again this frame.
     const [ar, ag, ab] = hexToRgb(ambient.color);
+    const hazeOpacity = Math.max(ambient.opacity, OUTDOOR_HAZE_MIN_OPACITY);
     lightCtx.clearRect(0, 0, mapWidthPx, mapHeightPx);
-    lightCtx.fillStyle = `rgba(${ar}, ${ag}, ${ab}, ${ambient.opacity})`;
+    lightCtx.fillStyle = `rgba(${ar}, ${ag}, ${ab}, ${hazeOpacity})`;
     lightCtx.fillRect(0, 0, mapWidthPx, mapHeightPx);
     lightCtx.globalCompositeOperation = 'destination-in';
     lightCtx.drawImage(sightMask, 0, 0);

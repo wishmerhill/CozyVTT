@@ -315,6 +315,9 @@ export default function MapCanvas({ onEditToken }: MapCanvasProps) {
   // Raster snapshot of the window/open-door ambient light falloff mask
   // (see drawDynamicLighting's window-light branch).
   const windowLightMaskOffscreenRef = useRef<HTMLCanvasElement | null>(null);
+  // Raster snapshot of the night light-spill kill mask (see
+  // drawDynamicLighting's night-light-spill-cap branch).
+  const nightSpillMaskOffscreenRef = useRef<HTMLCanvasElement | null>(null);
 
   // Raw map-pixel position from last mousemove — ghost line uses this when snap is off.
   // screenToGrid() quantises to integer grid coords, so hoverCoords can't be used for free-draw.
@@ -1045,6 +1048,7 @@ export default function MapCanvas({ onEditToken }: MapCanvasProps) {
     lightOnlyOffscreenRef.current = null;
     sightMaskOffscreenRef.current = null;
     windowLightMaskOffscreenRef.current = null;
+    nightSpillMaskOffscreenRef.current = null;
   }, [currentMap?.id]);
 
   // ============================================
@@ -1636,6 +1640,7 @@ export default function MapCanvas({ onEditToken }: MapCanvasProps) {
           lightCanvas: lightOnlyOffscreenRef,
           sightMaskCanvas: sightMaskOffscreenRef,
           windowLightMaskCanvas: windowLightMaskOffscreenRef,
+          nightSpillMaskCanvas: nightSpillMaskOffscreenRef,
           ambient: {
             environmentType: envType,
             color: currentMap.ambientColor ?? AMBIENT_PRESET_DEFAULTS[preset].color,

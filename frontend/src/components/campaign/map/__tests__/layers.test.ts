@@ -22,6 +22,7 @@ import type { Viewport } from '../layers/types';
 import type { Token } from '@/types';
 import { TokenLayer, TokenType } from '@/types';
 import type { FogState, WallSegment } from '@/types/walls';
+import { OUTDOOR_HAZE_MIN_OPACITY } from '@/types/ambientLighting';
 
 // ── Recording mock 2D context ────────────────────────────────────────────────
 
@@ -647,7 +648,7 @@ describe('computeVisionState', () => {
  * which a refactor could otherwise drop in silence.
  */
 describe('drawDynamicLighting', () => {
-  interface OpCall { method: string; op: string }
+  interface OpCall { method: string; op: string; fillStyle?: string }
 
   /** A context that records the composite operation in force at each call. */
   function makeOpRecorder(): { ctx: CanvasRenderingContext2D; ops: OpCall[] } {
@@ -662,7 +663,11 @@ describe('drawDynamicLighting', () => {
     for (const m of ['save', 'restore', 'beginPath', 'closePath', 'moveTo', 'lineTo',
       'arc', 'fill', 'clip', 'fillRect', 'clearRect', 'drawImage']) {
       (ctx as unknown as Record<string, unknown>)[m] = () =>
-        ops.push({ method: m, op: ctx.globalCompositeOperation });
+        ops.push({
+          method: m,
+          op: ctx.globalCompositeOperation,
+          fillStyle: m === 'fillRect' ? String(ctx.fillStyle) : undefined,
+        });
     }
     return { ctx, ops };
   }
@@ -788,14 +793,25 @@ describe('drawDynamicLighting', () => {
       expect(maskIdx).toBeGreaterThan(fillIdx);
     });
 
-    it('the "day" preset (opacity 0) still runs the outdoor LOS-clear path, just paints an invisible tint', () => {
-      // Day has no special case in the implementation — opacity 0 alone makes
-      // the whole LOS region read as fully clear. This pins that no day-only
-      // shortcut skips the tint step (which would silently break dusk/night if
-      // someone "simplified" it away).
+    it('the "day" preset (opacity 0) still runs the outdoor LOS-clear path, and still paints a tint', () => {
+      // Day has no special case in the implementation — the tint step always
+      // runs. This pins that no day-only shortcut skips it (which would
+      // silently break dusk/night if someone "simplified" it away).
       const { lightOnly, lighting } = runAmbient({ environmentType: 'outdoor', color: '#ffffff', opacity: 0 });
       expect(lightOnly.ops.some((c) => c.method === 'fillRect')).toBe(true);
       expect(destinationOutDrawImages(lighting)).toBe(2);
+    });
+
+    it('floors the day preset\'s zero opacity to a minimum haze, so a room does not read as fully revealed on LOS alone', () => {
+      const { lightOnly } = runAmbient({ environmentType: 'outdoor', color: '#ffffff', opacity: 0 });
+      const fill = lightOnly.ops.find((c) => c.method === 'fillRect');
+      expect(fill?.fillStyle).toContain(String(OUTDOOR_HAZE_MIN_OPACITY));
+    });
+
+    it('leaves a preset whose own opacity already exceeds the haze floor untouched', () => {
+      const { lightOnly } = runAmbient({ environmentType: 'outdoor', color: '#0b1d3a', opacity: 0.65 });
+      const fill = lightOnly.ops.find((c) => c.method === 'fillRect');
+      expect(fill?.fillStyle).toContain('0.65');
     });
   });
 
@@ -821,6 +837,7 @@ describe('drawDynamicLighting', () => {
       const lightOnly = makeOpRecorder();
       const sightMask = makeOpRecorder();
       const windowMask = makeOpRecorder();
+      const nightSpillMask = makeOpRecorder();
 
       const walls = withWindow ? [windowSeg, separatingWall] : [separatingWall];
       const token = makeToken('a', { position: { x: 0, y: 0 }, sightRadius: 1 } as Partial<Token>);
@@ -836,6 +853,7 @@ describe('drawDynamicLighting', () => {
         windowLight: vision.windowLight,
         lightingCanvas: holderFor(lighting.ctx, W, H),
         coverageCanvas: holderFor(coverage.ctx, W, H),
+        nightSpillMaskCanvas: holderFor(nightSpillMask.ctx, W, H),
         lightCanvas: holderFor(lightOnly.ctx, W, H),
         sightMaskCanvas: holderFor(sightMask.ctx, W, H),
         windowLightMaskCanvas: holderFor(windowMask.ctx, W, H),
@@ -888,6 +906,29 @@ describe('drawDynamicLighting', () => {
       // canvas would have to come from the old radial-gradient beam.
       expect(lightOnly.ops.some((c) => c.method === 'arc')).toBe(false);
       expect(lightOnly.ops.some((c) => c.method === 'lineTo')).toBe(true);
+    });
+
+    /**
+     * Night light spill cap: an indoor light source shining through the
+     * same gap the window-light-beam-in pass uses would otherwise reach as
+     * far outdoors as its own radius allows. At night that reach is capped;
+     * during the day it isn't (the exterior's already lit, nothing to cap).
+     */
+    describe('night light spill cap', () => {
+      const destinationOutDrawImages = (rec: { ops: OpCall[] }) =>
+        rec.ops.filter((c) => c.method === 'drawImage' && c.op === 'destination-out').length;
+
+      it('subtracts an extra kill mask from the light layer at night when a gap is present', () => {
+        const night = runWindow({ environmentType: 'outdoor', color: '#0b1d3a', opacity: 0.65 }, true);
+        const nightNoGap = runWindow({ environmentType: 'outdoor', color: '#0b1d3a', opacity: 0.65 }, false);
+        expect(destinationOutDrawImages(night.lightOnly)).toBeGreaterThan(destinationOutDrawImages(nightNoGap.lightOnly));
+      });
+
+      it('does not cap during the day (opacity 0)', () => {
+        const day = runWindow({ environmentType: 'outdoor', color: '#ffffff', opacity: 0 }, true);
+        const dayNoGap = runWindow({ environmentType: 'outdoor', color: '#ffffff', opacity: 0 }, false);
+        expect(destinationOutDrawImages(day.lightOnly)).toBe(destinationOutDrawImages(dayNoGap.lightOnly));
+      });
     });
   });
 });
