@@ -10,6 +10,7 @@
  */
 
 import type { WallSegment } from '../types/walls';
+import { blocksVision } from '../types/walls';
 import { WallGrid } from './spatialIndex';
 
 export interface Point { x: number; y: number; }
@@ -63,7 +64,7 @@ export function computeVisibility(
     ? new WallGrid(walls, 256).query(ox, oy, maxDist)
     : walls;
   for (const w of candidateWalls) {
-    if (w.type === 'wall' || w.type === 'door-closed' || w.type === 'door-locked') {
+    if (blocksVision(w.type)) {
       blockingSegs.push({ ax: w.x1, ay: w.y1, bx: w.x2, by: w.y2 });
     }
   }

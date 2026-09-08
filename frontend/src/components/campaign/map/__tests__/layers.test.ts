@@ -488,6 +488,57 @@ describe('drawWalls', () => {
   });
 });
 
+describe('drawWalls — secret doors', () => {
+  const plainWall: WallSegment = { id: 'w1', x1: 0, y1: 0, x2: 100, y2: 0, type: 'wall' };
+  const secretDoor: WallSegment = { id: 'sd1', x1: 100, y1: 0, x2: 150, y2: 0, type: 'door-secret-closed' };
+
+  function wallsState(overrides: Record<string, unknown> = {}) {
+    return {
+      wallSegments: [plainWall, secretDoor],
+      isDM: false,
+      wallColor: '#ff6600',
+      hoveredWallId: null,
+      selectedWallId: null,
+      hoveredDoorId: null,
+      showEndpoints: false,
+      dragEndpoint: null,
+      selectedEndpoint: null,
+      lightingEnabled: false,
+      visPolygons: [],
+      ...overrides,
+    };
+  }
+
+  it('players with lighting OFF see a secret door blended in as a plain wall — no door indicator', () => {
+    const ctx = makeMockCtx();
+    drawWalls(ctx, wallsState(), viewport3x3);
+    // Both segments drawn as plain lines; no door-style indicator of any kind
+    expect(count(ctx, 'moveTo')).toBe(2);
+    expect(count(ctx, 'arc')).toBe(0);
+  });
+
+  it('players with lighting ON never see a secret door (excluded from the LOS door loop)', () => {
+    const ctx = makeMockCtx();
+    drawWalls(ctx, wallsState({
+      lightingEnabled: true,
+      visPolygons: [{ poly: { points: [{ x: 0, y: -10 }, { x: 200, y: -10 }, { x: 200, y: 10 }, { x: 0, y: 10 }] }, cx: 100, cy: 0 }],
+    }), viewport3x3);
+    // Under lighting, plain walls (and the blended secret door) aren't drawn —
+    // darkness is the indicator — and the door loop already excludes secret doors.
+    expect(count(ctx, 'moveTo')).toBe(0);
+  });
+
+  it('DM sees the secret door with its own diamond marker, distinct from every other door type', () => {
+    const ctx = makeMockCtx();
+    drawWalls(ctx, wallsState({ isDM: true }), viewport3x3);
+    // 2 segment lines, plus the diamond marker's own closed sub-path — and
+    // never the circle/arc used by ordinary closed/locked/open doors.
+    expect(count(ctx, 'moveTo')).toBe(2 + 1);
+    expect(count(ctx, 'arc')).toBe(0);
+    expect(count(ctx, 'closePath')).toBeGreaterThanOrEqual(1);
+  });
+});
+
 describe('drawSpiritLayer', () => {
   const base = {
     spiritLayerImage: fakeImage,

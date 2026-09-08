@@ -92,7 +92,9 @@ export function drawWallDrawOverlay(
             ctx.arc(startHit.point.x, startHit.point.y, 5 / zoom, 0, Math.PI * 2);
             ctx.fill();
             // Replacement preview as a colored line
-            ctx.strokeStyle = state.wallType === 'window' ? 'rgba(96, 165, 250, 0.7)' : 'rgba(167, 139, 250, 0.7)';
+            ctx.strokeStyle = state.wallType === 'window' ? 'rgba(96, 165, 250, 0.7)'
+              : (state.wallType === 'door-secret-closed' || state.wallType === 'door-secret-open') ? 'rgba(217, 70, 239, 0.7)'
+              : 'rgba(167, 139, 250, 0.7)';
             ctx.lineWidth = 3 / zoom;
             ctx.setLineDash([]);
             ctx.beginPath();

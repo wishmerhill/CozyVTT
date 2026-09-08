@@ -871,6 +871,8 @@
     "lockDoorAction": "Blocca Porta",
     "unlockDoorAction": "Sblocca Porta",
     "doorLockedMessage": "Questa porta è bloccata.",
+    "doorSecretClosed": "Porta Segreta (Chiusa)",
+    "doorSecretOpen": "Porta Segreta (Aperta)",
     "window": "Finestra",
     "drawTool": "Disegna",
     "selectTool": "Seleziona",

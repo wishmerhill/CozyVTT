@@ -8,7 +8,50 @@
 
 // ── Wall Segments ─────────────────────────────────────────────────────────────
 
-export type WallType = 'wall' | 'door-closed' | 'door-open' | 'door-locked' | 'window';
+export type WallType =
+  | 'wall'
+  | 'door-closed'
+  | 'door-open'
+  | 'door-locked'
+  | 'door-secret-closed'
+  | 'door-secret-open'
+  | 'window';
+
+/** Every wall type, in the order the DM tools present them. */
+export const ALL_WALL_TYPES: readonly WallType[] = [
+  'wall', 'door-closed', 'door-open', 'door-locked', 'door-secret-closed', 'door-secret-open', 'window',
+];
+
+export function isDoorType(type: WallType): boolean {
+  return type === 'door-closed' || type === 'door-open' || type === 'door-locked'
+      || type === 'door-secret-closed' || type === 'door-secret-open';
+}
+
+/** A secret door renders distinctly for the DM only — players are never shown its true type. */
+export function isSecretDoorType(type: WallType): boolean {
+  return type === 'door-secret-closed' || type === 'door-secret-open';
+}
+
+/**
+ * Wall types that block token movement. There is currently no movement-
+ * collision system in the engine (tokens are placed freely), so nothing
+ * reads this yet — it documents the intended semantics: everything blocks
+ * except an open door (secret or not). A window blocks movement even
+ * though it lets vision and light through — see `blocksVision`.
+ */
+export function blocksMovement(type: WallType): boolean {
+  return type !== 'door-open' && type !== 'door-secret-open';
+}
+
+/**
+ * Wall types that block vision and light raycasting: solid walls and any
+ * CLOSED door (including locked and secret ones — a lock or a hidden latch
+ * doesn't make a door less solid). Windows and OPEN doors let rays pass
+ * through untouched, independent of whether they block movement.
+ */
+export function blocksVision(type: WallType): boolean {
+  return type === 'wall' || type === 'door-closed' || type === 'door-locked' || type === 'door-secret-closed';
+}
 
 export interface WallSegment {
   id: string;   // UUID, assigned on creation

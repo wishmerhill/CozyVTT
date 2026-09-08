@@ -156,8 +156,11 @@ export function buildUVTT(input: UVTTExportInput): Buffer {
   const wallSegs = wallSegments.filter(
     (s) => s.type === 'wall' || s.type === 'window'
   );
+  // Secret doors export as ordinary portals — UVTT has no concept of "secret",
+  // same lossy round-trip that already applies to locked doors below.
   const doorSegs = wallSegments.filter(
     (s) => s.type === 'door-closed' || s.type === 'door-open' || s.type === 'door-locked'
+        || s.type === 'door-secret-closed' || s.type === 'door-secret-open'
   );
 
   // Convert wall segments to grid-square coordinates
@@ -182,7 +185,7 @@ export function buildUVTT(input: UVTTExportInput): Buffer {
         y: round2((p1.y + p2.y) / 2),
       },
       bounds: [p1, p2],
-      closed: s.type !== 'door-open',
+      closed: s.type !== 'door-open' && s.type !== 'door-secret-open',
       freestanding: false,
     };
   });

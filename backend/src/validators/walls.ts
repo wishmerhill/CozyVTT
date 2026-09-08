@@ -6,7 +6,10 @@ export const WallSegmentSchema = z.object({
   y1: z.number(),
   x2: z.number(),
   y2: z.number(),
-  type: z.enum(['wall', 'door-closed', 'door-open', 'door-locked', 'window']),
+  type: z.enum([
+    'wall', 'door-closed', 'door-open', 'door-locked',
+    'door-secret-closed', 'door-secret-open', 'window',
+  ]),
 });
 
 export const WallSegmentsArraySchema = z

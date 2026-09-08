@@ -5,6 +5,7 @@
 // ============================================
 
 import type { WallSegment } from '@/types/walls';
+import { isDoorType, isSecretDoorType } from '@/types/walls';
 import { isPointVisible } from '@/utils/raycasting';
 import type { Viewport } from './types';
 import type { VisionSource } from '../vision';
@@ -50,15 +51,20 @@ export function drawWallSegment(
     ctx.setLineDash([5 / zoom, 5 / zoom]);
   } else {
     ctx.setLineDash([]);
-    // DM-selected color for walls; fixed colors for doors/windows (functional indicators)
+    // DM-selected color for walls; fixed colors for doors/windows (functional indicators).
+    // Secret doors get a fuchsia tone found nowhere else in this switch — callers only ever
+    // pass a secret door's true type here for the DM; players are shown a plain 'wall' instead.
     switch (seg.type) {
-      case 'wall':        ctx.strokeStyle = hexToRgba(wallColor, isHovered ? 1 : 0.9); break;
-      case 'door-closed': ctx.strokeStyle = isHovered ? 'rgba(196, 181, 253, 1)' : 'rgba(167, 139, 250, 0.9)'; break;
-      case 'door-open':   ctx.strokeStyle = isHovered ? 'rgba(187, 247, 208, 1)' : 'rgba(134, 239, 172, 0.9)'; break;
-      case 'door-locked': ctx.strokeStyle = isHovered ? 'rgba(252, 165, 165, 1)' : 'rgba(239, 68, 68, 0.9)'; break;
-      case 'window':      ctx.strokeStyle = 'rgba(147, 197, 253, 0.9)'; break;
+      case 'wall':               ctx.strokeStyle = hexToRgba(wallColor, isHovered ? 1 : 0.9); break;
+      case 'door-closed':        ctx.strokeStyle = isHovered ? 'rgba(196, 181, 253, 1)' : 'rgba(167, 139, 250, 0.9)'; break;
+      case 'door-open':          ctx.strokeStyle = isHovered ? 'rgba(187, 247, 208, 1)' : 'rgba(134, 239, 172, 0.9)'; break;
+      case 'door-locked':        ctx.strokeStyle = isHovered ? 'rgba(252, 165, 165, 1)' : 'rgba(239, 68, 68, 0.9)'; break;
+      case 'door-secret-closed': ctx.strokeStyle = isHovered ? 'rgba(232, 121, 249, 1)' : 'rgba(217, 70, 239, 0.9)'; break;
+      case 'door-secret-open':   ctx.strokeStyle = isHovered ? 'rgba(240, 171, 252, 1)' : 'rgba(232, 121, 249, 0.9)'; break;
+      case 'window':              ctx.strokeStyle = 'rgba(147, 197, 253, 0.9)'; break;
     }
-    if (seg.type === 'door-open')  ctx.setLineDash([6 / zoom, 4 / zoom]);
+    if (seg.type === 'door-open' || seg.type === 'door-secret-open') ctx.setLineDash([6 / zoom, 4 / zoom]);
+    if (seg.type === 'door-secret-closed') ctx.setLineDash([3 / zoom, 2 / zoom]);
     if (seg.type === 'window')     ctx.setLineDash([2 / zoom, 3 / zoom]);
   }
   ctx.beginPath();
@@ -67,8 +73,10 @@ export function drawWallSegment(
   ctx.stroke();
   ctx.setLineDash([]);
 
-  // Door center indicator (filled circle = closed, arc = open, cross = locked)
-  if ((seg.type === 'door-closed' || seg.type === 'door-open' || seg.type === 'door-locked') && !isPending) {
+  // Door center indicator (filled circle = closed, arc = open, cross = locked,
+  // diamond = secret — the diamond is what makes a secret door legible to the
+  // DM at all, since its line style otherwise reads as just another door).
+  if (isDoorType(seg.type) && !isPending) {
     const mx = (seg.x1 + seg.x2) / 2;
     const my = (seg.y1 + seg.y2) / 2;
     if (seg.type === 'door-closed') {
@@ -90,6 +98,22 @@ export function drawWallSegment(
       ctx.moveTo(mx - sz, my - sz); ctx.lineTo(mx + sz, my + sz);
       ctx.moveTo(mx + sz, my - sz); ctx.lineTo(mx - sz, my + sz);
       ctx.stroke();
+    } else if (isSecretDoorType(seg.type)) {
+      // secret: fuchsia diamond outline, filled when closed, hollow when open
+      const sz = 5 / zoom;
+      const color = isHovered ? 'rgba(240, 171, 252, 1)' : 'rgba(217, 70, 239, 0.9)';
+      ctx.beginPath();
+      ctx.moveTo(mx, my - sz); ctx.lineTo(mx + sz, my); ctx.lineTo(mx, my + sz); ctx.lineTo(mx - sz, my);
+      ctx.closePath();
+      if (seg.type === 'door-secret-closed') {
+        ctx.fillStyle = color;
+        ctx.fill();
+      } else {
+        ctx.strokeStyle = color;
+        ctx.lineWidth = 1.5 / zoom;
+        ctx.setLineDash([]);
+        ctx.stroke();
+      }
     } else {
       // open door: small arc showing swing
       ctx.strokeStyle = isHovered ? 'rgba(187, 247, 208, 1)' : 'rgba(134, 239, 172, 0.9)';
@@ -153,8 +177,10 @@ export function drawWalls(
   } else {
     // Players see door segments within line-of-sight only.
     // When dynamic lighting is off, all doors are always visible.
+    // Secret doors are excluded entirely — see the wall/window loop below,
+    // which blends a closed secret door in as a plain wall instead.
     for (const seg of state.wallSegments) {
-      if (seg.type === 'door-closed' || seg.type === 'door-open' || seg.type === 'door-locked') {
+      if (isDoorType(seg.type) && !isSecretDoorType(seg.type)) {
         if (state.lightingEnabled && state.visPolygons.length > 0) {
           const midX = (seg.x1 + seg.x2) / 2;
           const midY = (seg.y1 + seg.y2) / 2;
@@ -182,6 +208,11 @@ export function drawWalls(
       for (const seg of state.wallSegments) {
         if (seg.type === 'wall' || seg.type === 'window') {
           drawWallSegment(ctx, seg, zoom, state.wallColor, false);
+        } else if (seg.type === 'door-secret-closed') {
+          // Blend in as a plain wall — the whole point of a secret door is
+          // that players can't tell it apart from the wall around it. An
+          // open secret door draws nothing, same as any doorway gap.
+          drawWallSegment(ctx, { ...seg, type: 'wall' }, zoom, state.wallColor, false);
         }
       }
     }

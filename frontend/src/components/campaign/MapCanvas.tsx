@@ -27,6 +27,7 @@ import type {
 } from '@/types';
 import { TokenLayer, TokenType } from '@/types';
 import type { WallSegment, FogState, WallType, LightSource } from '@/types/walls';
+import { isDoorType, isSecretDoorType } from '@/types/walls';
 import { douglasPeucker, edgeSnapPoints } from '@/utils/geometry';
 import { gridYToCentrePx } from './map/coords';
 import {
@@ -89,6 +90,14 @@ function getSpiritAccentColor(style: string | null | undefined): string {
   if (style === 'dream') return '#d4a0f0';
   return '#9370DB'; // wispy default = spirit-purple
 }
+
+/** Door open↔closed toggle target for a left-click / context-menu action. Locked doors are handled separately. */
+const DOOR_TOGGLE: Partial<Record<WallType, WallType>> = {
+  'door-closed': 'door-open',
+  'door-open': 'door-closed',
+  'door-secret-closed': 'door-secret-open',
+  'door-secret-open': 'door-secret-closed',
+};
 
 type AoEShape = 'sphere' | 'cylinder' | 'cone' | 'line' | 'cube';
 
@@ -2176,12 +2185,14 @@ export default function MapCanvas({ onEditToken }: MapCanvasProps) {
       }
     }
 
-    // Door interaction: click near a door segment to toggle open/closed (all roles)
+    // Door interaction: click near a door segment to toggle open/closed (all roles).
+    // Secret doors are excluded from the player hit-test entirely — a player
+    // cannot click what they were never shown.
     if (!wallMode && !fogMode && !lightMode) {
       const mapPx = screenToMapPx(screenX, screenY);
       const hitThreshold = 12 / mapControls.zoom;
       const door = wallSegments.find(
-        (s) => (s.type === 'door-closed' || s.type === 'door-open' || s.type === 'door-locked') &&
+        (s) => isDoorType(s.type) && (isDM || !isSecretDoorType(s.type)) &&
                distToSegment(mapPx.x, mapPx.y, s) <= hitThreshold
       );
       if (door) {
@@ -2189,7 +2200,8 @@ export default function MapCanvas({ onEditToken }: MapCanvasProps) {
           showToast(t('walls.doorLockedMessage'), 'info');
           return;
         }
-        const newType = door.type === 'door-closed' ? 'door-open' : 'door-closed';
+        const newType = DOOR_TOGGLE[door.type];
+        if (!newType) return;
         const updated = { ...door, type: newType } as WallSegment;
         replaceWallHistory(wallSegments.map((s) => s.id === door.id ? updated : s));
         wallCacheValidRef.current = false;
@@ -2489,7 +2501,7 @@ export default function MapCanvas({ onEditToken }: MapCanvasProps) {
       const mapPx = screenToMapPx(screenX, screenY);
       const hitThreshold = 12 / mapControls.zoom;
       const door = wallSegments.find(
-        (s) => (s.type === 'door-closed' || s.type === 'door-open' || s.type === 'door-locked') &&
+        (s) => isDoorType(s.type) && (isDM || !isSecretDoorType(s.type)) &&
                distToSegment(mapPx.x, mapPx.y, s) <= hitThreshold
       );
       const newHoveredDoorId = door?.id ?? null;
@@ -2803,7 +2815,7 @@ export default function MapCanvas({ onEditToken }: MapCanvasProps) {
       const mapPx = screenToMapPx(screenX, screenY);
       const hitThreshold = 12 / mapControls.zoom;
       const door = wallSegments.find(
-        (s) => (s.type === 'door-closed' || s.type === 'door-open' || s.type === 'door-locked') &&
+        (s) => isDoorType(s.type) && (isDM || !isSecretDoorType(s.type)) &&
                distToSegment(mapPx.x, mapPx.y, s) <= hitThreshold
       );
       if (door) {
@@ -4032,24 +4044,26 @@ export default function MapCanvas({ onEditToken }: MapCanvasProps) {
           <p className="px-4 py-1.5 text-xs font-semibold text-stone-gray/70 border-b border-moss-green/10 select-none">
             {doorContextMenu.door.type === 'door-closed' ? `🚪 ${t('walls.doorClosed')}` :
              doorContextMenu.door.type === 'door-open'   ? `🚪 ${t('walls.doorOpen')}`   :
-                                                            `🔒 ${t('walls.doorLocked')}`}
+             doorContextMenu.door.type === 'door-locked' ? `🔒 ${t('walls.doorLocked')}` :
+             doorContextMenu.door.type === 'door-secret-closed' ? `🕵️ ${t('walls.doorSecretClosed')}` :
+                                                                   `🕵️ ${t('walls.doorSecretOpen')}`}
           </p>
 
-          {/* Open — available when door is closed */}
-          {doorContextMenu.door.type === 'door-closed' && (
+          {/* Open — available when door is closed (secret or not) */}
+          {(doorContextMenu.door.type === 'door-closed' || doorContextMenu.door.type === 'door-secret-closed') && (
             <button
               className="w-full px-4 py-2 text-left text-sm text-brand-ink hover:bg-moss-green/10 transition-colors"
-              onClick={() => changeDoorType(doorContextMenu.door, 'door-open')}
+              onClick={() => changeDoorType(doorContextMenu.door, DOOR_TOGGLE[doorContextMenu.door.type]!)}
             >
               {t('walls.doorOpen')}
             </button>
           )}
 
-          {/* Close — available when door is open */}
-          {doorContextMenu.door.type === 'door-open' && (
+          {/* Close — available when door is open (secret or not) */}
+          {(doorContextMenu.door.type === 'door-open' || doorContextMenu.door.type === 'door-secret-open') && (
             <button
               className="w-full px-4 py-2 text-left text-sm text-brand-ink hover:bg-moss-green/10 transition-colors"
-              onClick={() => changeDoorType(doorContextMenu.door, 'door-closed')}
+              onClick={() => changeDoorType(doorContextMenu.door, DOOR_TOGGLE[doorContextMenu.door.type]!)}
             >
               {t('walls.closeDoorAction')}
             </button>

@@ -5,11 +5,17 @@
  * blocking wall segments. Based on the classical "2D Visibility / Ray Endpoint"
  * approach by Amit Patel (redblobgames.com).
  *
- * Wall types that BLOCK vision: 'wall', 'door-closed'
- * Wall types that DO NOT block: 'door-open', 'window'
+ * Distinguishes MOVEMENT collision from VISION/LIGHT occlusion — the two are
+ * not the same set of wall types. A window blocks a body but not a ray; an
+ * open door blocks neither. This module only ever computes the latter (what
+ * a viewer or light source can see through) — see `blocksVision` in
+ * ../types/walls for the authoritative type→behavior mapping, and
+ * `blocksMovement` there for the (currently unused — no movement-collision
+ * system exists in this engine) movement counterpart.
  */
 
 import type { WallSegment } from '../types/walls';
+import { blocksVision } from '../types/walls';
 import { WallGrid } from './spatialIndex';
 
 export interface Point { x: number; y: number; }
@@ -113,7 +119,7 @@ export function computeVisibility(
     ? new WallGrid(walls, 256).query(ox, oy, maxDist)
     : walls;
   for (const w of candidateWalls) {
-    if (w.type === 'wall' || w.type === 'door-closed' || w.type === 'door-locked') {
+    if (blocksVision(w.type)) {
       blockingSegs.push({ ax: w.x1, ay: w.y1, bx: w.x2, by: w.y2 });
     }
   }

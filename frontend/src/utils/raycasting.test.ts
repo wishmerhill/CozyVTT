@@ -98,6 +98,38 @@ describe('computeVisibility', () => {
     expect(isPointVisible({ x: 50, y: 300 }, viewer, result)).toBe(false);
   });
 
+  it('a closed secret door blocks vision like a wall', () => {
+    const viewer = { x: 400, y: 300 };
+    const secretDoor: WallSegment = { id: 'door', x1: 200, y1: 0, x2: 200, y2: MAP_H, type: 'door-secret-closed' };
+    const result = computeVisibility(viewer, [secretDoor], MAP_W, MAP_H);
+    expect(isPointVisible({ x: 50, y: 300 }, viewer, result)).toBe(false);
+  });
+
+  it('an open secret door does not block vision', () => {
+    const viewer = { x: 400, y: 300 };
+    const secretDoor: WallSegment = { id: 'door', x1: 200, y1: 0, x2: 200, y2: MAP_H, type: 'door-secret-open' };
+    const result = computeVisibility(viewer, [secretDoor], MAP_W, MAP_H);
+    expect(isPointVisible({ x: 50, y: 300 }, viewer, result)).toBe(true);
+  });
+
+  it('sunlight through a window reaches into an enclosed room, bounded by its interior walls', () => {
+    // Closed 4-wall room; the top wall is a window. An outdoor viewer above
+    // the window should see just inside the room but not past its far wall.
+    const roomWithWindow: WallSegment[] = [
+      { id: 'w', x1: 300, y1: 200, x2: 500, y2: 200, type: 'window' }, // top: window
+      wall(500, 200, 500, 400), // right
+      wall(500, 400, 300, 400), // bottom (far wall, opposite the window)
+      wall(300, 400, 300, 200), // left
+    ];
+    const outdoorViewer = { x: 400, y: 100 };
+    const result = computeVisibility(outdoorViewer, roomWithWindow, MAP_W, MAP_H);
+
+    // Just inside the window: visible
+    expect(isPointVisible({ x: 400, y: 220 }, outdoorViewer, result)).toBe(true);
+    // Beyond the room's solid far wall: not visible
+    expect(isPointVisible({ x: 400, y: 500 }, outdoorViewer, result)).toBe(false);
+  });
+
   it('a closed room clips visibility to the room interior', () => {
     // 4-wall room from (300,200) to (500,400); viewer at its center.
     const viewer = { x: 400, y: 300 };

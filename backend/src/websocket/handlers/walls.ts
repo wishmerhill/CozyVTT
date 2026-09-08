@@ -9,6 +9,7 @@ import { AuthenticatedSocket } from '../auth';
 import { prisma } from '../../config/database';
 import { WallSegmentSchema, WallSegmentsArraySchema } from '../../validators/walls';
 import type { WallSegment } from '../../types/walls';
+import { isSecretDoorType } from '../../types/walls';
 import logger from '../../utils/logger';
 import { mapEditLimiter } from '../shared';
 import { toJson } from '../../utils/prisma-json';
@@ -124,13 +125,20 @@ export function registerWallHandlers(io: Server, socket: AuthenticatedSocket): v
         return;
       }
 
-      // Non-DM users may only toggle unlocked doors (door-closed ↔ door-open)
+      // Non-DM users may only toggle unlocked, non-secret doors (door-closed ↔ door-open)
       if (socket.role !== 'DM') {
         const targetType = parsed.data.type;
         const currentType = existing[idx].type;
         // Locked doors cannot be opened by players
         if (currentType === 'door-locked') {
           socket.emit('error', { message: 'That door is locked' });
+          return;
+        }
+        // Secret doors are DM-only, regardless of open/closed state — a player
+        // client should never even offer this action (it doesn't render secret
+        // doors), but the server is the actual boundary.
+        if (isSecretDoorType(currentType) || isSecretDoorType(targetType)) {
+          socket.emit('error', { message: 'Permission denied' });
           return;
         }
         const isDoorToggle = targetType === 'door-open' || targetType === 'door-closed';

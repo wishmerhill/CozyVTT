@@ -34,6 +34,7 @@ const SPIRIT_TOKEN_ID = randomUUID();
 const WALL_ID = randomUUID();
 const DOOR_CLOSED_ID = randomUUID();
 const DOOR_LOCKED_ID = randomUUID();
+const DOOR_SECRET_CLOSED_ID = randomUUID();
 
 let server: WsTestServer;
 let dmId: string;
@@ -68,6 +69,7 @@ function seedWalls() {
     { id: WALL_ID, x1: 0, y1: 0, x2: 5, y2: 0, type: 'wall' },
     { id: DOOR_CLOSED_ID, x1: 5, y1: 0, x2: 6, y2: 0, type: 'door-closed' },
     { id: DOOR_LOCKED_ID, x1: 6, y1: 0, x2: 7, y2: 0, type: 'door-locked' },
+    { id: DOOR_SECRET_CLOSED_ID, x1: 7, y1: 0, x2: 8, y2: 0, type: 'door-secret-closed' },
   ];
 }
 
@@ -326,6 +328,22 @@ describe('walls & doors', () => {
     player.emit('wall:update', { mapId, segment: { ...seedWalls()[0], type: 'door-open' } });
     expect((await denial).message).toBe('Players may only toggle doors');
     player.disconnect();
+  });
+
+  it('a player cannot open a secret door', async () => {
+    const player = await server.connectAndAuth(player1Cookie, campaignId);
+    const denial = waitForEvent<{ message: string }>(player, 'error');
+    player.emit('wall:update', { mapId, segment: { ...seedWalls()[3], type: 'door-secret-open' } });
+    expect((await denial).message).toBe('Permission denied');
+    player.disconnect();
+  });
+
+  it('the DM can open and close a secret door', async () => {
+    const dm = await server.connectAndAuth(dmCookie, campaignId);
+    const updated = waitForEvent<{ segment: any }>(dm, 'wall:updated');
+    dm.emit('wall:update', { mapId, segment: { ...seedWalls()[3], type: 'door-secret-open' } });
+    expect((await updated).segment.type).toBe('door-secret-open');
+    dm.disconnect();
   });
 });
 

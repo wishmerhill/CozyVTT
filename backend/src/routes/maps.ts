@@ -13,6 +13,7 @@ import { canReadAssetById } from '../services/permissions';
 import { WallSegmentSchema, WallSegmentsArraySchema, FogOperationSchema, LightSourceSchema, LightSourcesArraySchema, LightSourceUpdateSchema } from '../validators/walls';
 import { validateTokenShapes, TokenMetadataSchema } from '../validators/tokens';
 import type { WallSegment, FogState, LightSource } from '../types/walls';
+import { ALL_WALL_TYPES } from '../types/walls';
 import { parseUVTT } from '../services/uvttParser';
 import { buildUVTT } from '../services/uvttExporter';
 import { getFilePath, ensureDirectory } from '../utils/fileUtils';
@@ -1531,9 +1532,8 @@ router.patch('/:id/walls/:sid', campaignDM, async (req: AuthenticatedRequest, re
     const map = await findMapInCampaign(campaignId, id, res);
     if (!map) return;
 
-    const validTypes = ['wall', 'door-closed', 'door-open', 'window'];
-    if (!req.body.type || !validTypes.includes(req.body.type)) {
-      return res.status(400).json({ error: 'Validation Error', message: `type must be one of: ${validTypes.join(', ')}` });
+    if (!req.body.type || !ALL_WALL_TYPES.includes(req.body.type)) {
+      return res.status(400).json({ error: 'Validation Error', message: `type must be one of: ${ALL_WALL_TYPES.join(', ')}` });
     }
 
     const existing = (Array.isArray(map.wallSegments) ? map.wallSegments : []) as unknown as WallSegment[];

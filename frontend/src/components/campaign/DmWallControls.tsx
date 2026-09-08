@@ -8,7 +8,7 @@
 
 import { useState } from 'react';
 import { useTranslation } from 'react-i18next';
-import type { WallType } from '@/types/walls';
+import { ALL_WALL_TYPES, type WallType } from '@/types/walls';
 
 export type WallToolMode = 'wall-draw' | 'wall-select' | 'wall-split' | 'wall-erase' | 'wall-polygon' | 'wall-brush' | null;
 
@@ -49,22 +49,24 @@ interface DmWallControlsProps {
 }
 
 const WALL_TYPE_COLORS: Record<WallType, string> = {
-  'wall':        'bg-orange-500/20 text-orange-400 border-orange-500/50',
-  'door-closed': 'bg-violet-500/20 text-violet-400 border-violet-500/50',
-  'door-open':   'bg-green-500/20 text-green-400 border-green-500/50',
-  'door-locked': 'bg-red-500/20 text-red-400 border-red-500/50',
-  'window':      'bg-blue-400/20 text-blue-300 border-blue-400/50',
+  'wall':                'bg-orange-500/20 text-orange-400 border-orange-500/50',
+  'door-closed':         'bg-violet-500/20 text-violet-400 border-violet-500/50',
+  'door-open':           'bg-green-500/20 text-green-400 border-green-500/50',
+  'door-locked':         'bg-red-500/20 text-red-400 border-red-500/50',
+  'door-secret-closed':  'bg-fuchsia-500/20 text-fuchsia-400 border-fuchsia-500/50',
+  'door-secret-open':    'bg-fuchsia-300/20 text-fuchsia-300 border-fuchsia-300/50',
+  'window':              'bg-blue-400/20 text-blue-300 border-blue-400/50',
 };
-
-const ALL_WALL_TYPES: WallType[] = ['wall', 'door-closed', 'door-open', 'door-locked', 'window'];
 
 /** i18next campaign.json uses camelCase keys under `walls.*`; WallType values are kebab-case. */
 const WALL_TYPE_I18N_KEY: Record<WallType, string> = {
-  'wall':        'wall',
-  'door-closed': 'doorClosed',
-  'door-open':   'doorOpen',
-  'door-locked': 'doorLocked',
-  'window':      'window',
+  'wall':                'wall',
+  'door-closed':         'doorClosed',
+  'door-open':           'doorOpen',
+  'door-locked':         'doorLocked',
+  'door-secret-closed':  'doorSecretClosed',
+  'door-secret-open':    'doorSecretOpen',
+  'window':              'window',
 };
 
 export default function DmWallControls({

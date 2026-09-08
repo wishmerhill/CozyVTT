@@ -871,6 +871,8 @@
     "lockDoorAction": "Lock Door",
     "unlockDoorAction": "Unlock Door",
     "doorLockedMessage": "This door is locked.",
+    "doorSecretClosed": "Secret Door (Closed)",
+    "doorSecretOpen": "Secret Door (Open)",
     "window": "Window",
     "drawTool": "Draw",
     "selectTool": "Select",
