@@ -11,10 +11,11 @@
 import type { Token } from '@/types';
 import type { LightSource } from '@/types/walls';
 import type { EnvironmentType } from '@/types/ambientLighting';
+import { DEFAULT_WINDOW_LIGHT_RADIUS_CELLS } from '@/types/ambientLighting';
 import { gridYToCentrePx } from '../coords';
 import type { LightToolMode } from '@/components/campaign/DmLightControls';
 import { mapSizePx, type Viewport } from './types';
-import type { VisionSource } from '../vision';
+import type { VisionSource, WindowLightSource } from '../vision';
 
 /** Mutable holder for a persistent offscreen canvas (a React ref works). */
 export interface CanvasHolder {
@@ -60,17 +61,30 @@ export interface LightingDrawState {
   /** Darkvision polygons for tokens that have darkvisionRadius set.
    *  These reveal the area in grayscale when no light source covers it. */
   darkvision: readonly VisionSource[];
+  /**
+   * Window/open-door ambient light sources (see VisionState.windowLight).
+   * Only drawn outdoors — empty (or omitted) elsewhere.
+   */
+  windowLight?: readonly WindowLightSource[];
   /** Persistent offscreen canvases (fog composite + light coverage + sight mask). */
   lightingCanvas: CanvasHolder;
   coverageCanvas: CanvasHolder;
   lightCanvas: CanvasHolder;
   /**
-   * Persistent raster of the LOS union (tokenSight), reused as the outdoor
-   * visibility boundary. Optional — omitting it (as the older unit tests do)
+   * Persistent raster of the LOS union (tokenSight), used to gate the
+   * window/open-door beam below to what the viewer can actually see into —
+   * it no longer widens the base fog reveal itself (see the window-light
+   * pass's comment). Optional — omitting it (as the older unit tests do)
    * falls back to a throwaway canvas, which only costs a bit of GC pressure
    * on a path that no longer matters once the environment is "indoor".
    */
   sightMaskCanvas?: CanvasHolder;
+  /**
+   * Persistent raster of the window-light falloff mask, snapshotted before
+   * `lightCanvas` is reused as tint-painting scratch. Optional, same
+   * throwaway-canvas fallback as `sightMaskCanvas`.
+   */
+  windowLightMaskCanvas?: CanvasHolder;
   /** Defaults to indoor/opaque-black when omitted — the pre-Phase-B behavior. */
   ambient?: AmbientDrawConfig;
 }
@@ -192,11 +206,11 @@ export function drawDynamicLighting(
   }
 
   // Snapshot the LOS union now, before `coverage` gets cleared and rebuilt as
-  // the radius-limited mask below. Outdoor ambient tinting (further down)
-  // needs this wider boundary — the open-field visibility extent — not the
-  // narrower "coverage" that follows. Skipped indoors: nothing downstream
-  // reads it, and allocating a canvas nobody uses is pure waste on the common
-  // (indoor) path.
+  // the radius-limited mask below. The window/open-door beam (further down)
+  // needs this wider boundary to gate its own reveal against what the viewer
+  // can actually see into — not the narrower "coverage" that follows. Skipped
+  // indoors: nothing downstream reads it, and allocating a canvas nobody uses
+  // is pure waste on the common (indoor) path.
   let sightMask: HTMLCanvasElement | null = null;
   if (isOutdoor) {
     sightMask = ensureCanvas(state.sightMaskCanvas ?? { current: null }, mapWidthPx, mapHeightPx);
@@ -230,19 +244,29 @@ export function drawDynamicLighting(
   offCtx.fillStyle = 'rgba(15, 12, 25, 0.95)';
   offCtx.fillRect(0, 0, mapWidthPx, mapHeightPx);
 
+  // ── Outdoor ambient reveal ──────────────────────────────────────
+  // Outdoors, visibility isn't capped at a fixed sight radius the way a
+  // dungeon corridor is — the sky itself is the light source, so open ground
+  // is visible for as far as line of sight actually reaches (walls or the
+  // map edge). Clear the whole LOS union first...
   if (isOutdoor && sightMask) {
-    // Outdoor: visibility isn't capped at a fixed sight radius the way a
-    // dungeon corridor is — an open field is visible for as far as line of
-    // sight actually reaches (walls or the map edge). Clear the whole LOS
-    // union first...
     offCtx.globalCompositeOperation = 'destination-out';
     offCtx.drawImage(sightMask, 0, 0);
     offCtx.globalCompositeOperation = 'source-over';
 
     // ...then repaint the ambient tint back over the LOS area only, so it
-    // reads as "visible but dim/moonlit" rather than fully revealed. For the
-    // "day" preset ambient.opacity is 0, so this paints nothing and the LOS
-    // area simply stays fully clear — no day/night special-casing needed.
+    // reads as "visible but dim/moonlit" rather than fully revealed except on
+    // the "day" preset, whose opacity is 0 — that paints nothing and the LOS
+    // area simply stays fully clear, which is the point: a sunlit field
+    // doesn't need a token standing in the middle of it to "reveal" it one
+    // torch-radius at a time.
+    //
+    // NOTE: this necessarily also fully reveals any wall-enclosed outdoor
+    // pocket (a walled courtyard, a walled garden) the instant a token can
+    // see into it, same as the open field around it — the wall data model
+    // has no way to mark such a pocket as a roofed interior that should stay
+    // dark like a dungeon room instead. Accepted tradeoff, confirmed with
+    // the user 2026-09-08 (see the memory this note replaces).
     //
     // Reuses `lightLayer` as scratch: its content was already copied into
     // `coverage` above and is not read again this frame.
@@ -256,11 +280,109 @@ export function drawDynamicLighting(
     offCtx.drawImage(lightLayer, 0, 0);
   }
 
+  // ── Window/open-door ambient light beams ────────────────────────
+  // Outdoor daylight/moonlight spilling through a window or open door into
+  // a room. The beam's own shape/falloff is computed independent of any
+  // token's position (a sunlit room reads as lit even with nobody in it),
+  // but — unlike that computation — the fog reveal it produces is NOT
+  // allowed to bypass the viewer's line of sight: a room across the map
+  // must not pop out of the fog just because it happens to have a window.
+  // The falloff mask is gated against `sightMask` (the same LOS union used
+  // for the outdoor ambient tint above) before it ever touches the fog.
+  // Placed before the token/light clarity punch below so a token standing
+  // in the beam still reads as fully lit rather than re-dimmed by the
+  // beam's own tint.
+  if (isOutdoor && state.windowLight && state.windowLight.length > 0) {
+    const radiusPx = DEFAULT_WINDOW_LIGHT_RADIUS_CELLS * viewport.gridSize;
+
+    // Falloff mask: one soft rectangular beam per window, projected along
+    // the segment's precomputed inward normal (perpendicular to the window,
+    // already oriented toward the building interior by `pickInwardNormal` in
+    // vision.ts) rather than a point-source circle radiating in every
+    // direction — sunlight through a window falls across the floor as a
+    // strip aimed into the room, not a spotlight disc splitting its glow
+    // between the room and the already-lit yard outside. Each beam is
+    // wall-clipped to that window's own raycasted polygon so it can't bleed
+    // through a solid wall into an unrelated room. 'lighter' sums
+    // overlapping beams.
+    lightCtx.clearRect(0, 0, mapWidthPx, mapHeightPx);
+    lightCtx.globalCompositeOperation = 'lighter';
+    for (const { poly, x1, y1, x2, y2, nx, ny } of state.windowLight) {
+      if (poly.points.length < 3) continue;
+
+      lightCtx.save();
+      tracePoly(lightCtx, poly);
+      lightCtx.clip();
+
+      // Rectangle starting at the window's own line and extending radiusPx
+      // inward along the normal — width comes from the segment itself.
+      lightCtx.beginPath();
+      lightCtx.moveTo(x1, y1);
+      lightCtx.lineTo(x2, y2);
+      lightCtx.lineTo(x2 + nx * radiusPx, y2 + ny * radiusPx);
+      lightCtx.lineTo(x1 + nx * radiusPx, y1 + ny * radiusPx);
+      lightCtx.closePath();
+
+      // Linear (not radial) falloff along the normal: brightest right at the
+      // window's own line, fading to nothing radiusPx into the room. Softer
+      // peak alpha than a light source's own glow — this is spill, not a
+      // lamp.
+      const grad = lightCtx.createLinearGradient(
+        x1, y1,
+        x1 + nx * radiusPx, y1 + ny * radiusPx
+      );
+      grad.addColorStop(0, 'rgba(255, 255, 255, 0.45)');
+      grad.addColorStop(1, 'rgba(255, 255, 255, 0)');
+      lightCtx.fillStyle = grad;
+      lightCtx.fill();
+      lightCtx.restore();
+    }
+    lightCtx.globalCompositeOperation = 'source-over';
+
+    // Snapshot the falloff mask before `lightCtx` is cleared and reused
+    // below for tint painting (same reason `sightMask` is snapshotted above).
+    const windowMask = ensureCanvas(state.windowLightMaskCanvas ?? { current: null }, mapWidthPx, mapHeightPx);
+    const windowMaskCtx = windowMask.getContext('2d')!;
+    windowMaskCtx.clearRect(0, 0, mapWidthPx, mapHeightPx);
+    windowMaskCtx.drawImage(lightLayer, 0, 0);
+
+    // Gate the reveal to the viewer's line of sight. `sightMask` is always
+    // set here — it's built above under the same `isOutdoor` condition this
+    // whole block is nested in — but the null check keeps the type honest.
+    if (sightMask) {
+      windowMaskCtx.globalCompositeOperation = 'destination-in';
+      windowMaskCtx.drawImage(sightMask, 0, 0);
+      windowMaskCtx.globalCompositeOperation = 'source-over';
+    }
+
+    // Reveal the fog proportionally to the (now LOS-gated) falloff — full
+    // clarity right at the window, fading back to darkness by the edge of
+    // the radius, and never past what the viewer could already see.
+    offCtx.globalCompositeOperation = 'destination-out';
+    offCtx.drawImage(windowMask, 0, 0);
+    offCtx.globalCompositeOperation = 'source-over';
+
+    // Tint the revealed beam with the resolved ambient color/opacity so it
+    // reads as sunlight/moonlight rather than a colorless hole in the fog.
+    // Day's opacity is 0, so this paints nothing and the beam simply stays
+    // fully clear.
+    if (ambient.opacity > 0) {
+      const [ar, ag, ab] = hexToRgb(ambient.color);
+      lightCtx.clearRect(0, 0, mapWidthPx, mapHeightPx);
+      lightCtx.fillStyle = `rgba(${ar}, ${ag}, ${ab}, ${ambient.opacity})`;
+      lightCtx.fillRect(0, 0, mapWidthPx, mapHeightPx);
+      lightCtx.globalCompositeOperation = 'destination-in';
+      lightCtx.drawImage(windowMask, 0, 0);
+      lightCtx.globalCompositeOperation = 'source-over';
+      offCtx.drawImage(lightLayer, 0, 0);
+    }
+  }
+
   // Punch the crisp zone: token sight radius + light coverage the viewer can
-  // see. Indoors this is the only subtraction there is (no wider LOS
-  // boundary applies). Outdoors it carves full clarity for the DM's "cerchio
-  // di chiarezza" — sightRadius and lit ground — out of the dimmer tint
-  // painted above.
+  // see. This is the only fog subtraction there is, indoors or outdoors —
+  // sightRadius/darkvisionRadius/lightEmit is the sole bound on what a token
+  // reveals (the window/open-door beam above is the one exception, and it
+  // carries its own fixed radius).
   offCtx.globalCompositeOperation = 'destination-out';
   offCtx.drawImage(coverage, 0, 0);
   offCtx.globalCompositeOperation = 'source-over';
@@ -327,9 +449,13 @@ export function drawDynamicLighting(
   ctx.filter = 'none';
   ctx.restore();
 
-  // Cozy torch-glow: warm radial gradient around each controlled token
+  // Cozy torch-glow: warm radial gradient around each controlled token.
+  // Skipped outdoors on the "day" preset (opacity 0) — the sun already lights
+  // the whole field, so a warm torch-like halo around every token would read
+  // as a light source that isn't there.
+  const skipTorchGlow = isOutdoor && ambient.opacity <= 0;
   ctx.save();
-  for (const token of state.myTokens) {
+  if (!skipTorchGlow) for (const token of state.myTokens) {
     const cx = (token.position.x + token.size.width / 2) * viewport.gridSize;
     const cy = gridYToCentrePx(token.position.y, token.size.height, viewport.mapHeight, viewport.gridSize);
     const glowR = Math.max(

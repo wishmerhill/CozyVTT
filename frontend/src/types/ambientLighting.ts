@@ -24,3 +24,12 @@ export const AMBIENT_PRESET_DEFAULTS: Record<AmbientLightPreset, { color: string
   pitch_black: { color: '#000000', opacity: 1 },
   custom: { color: '#0b1d3a', opacity: 0.5 },
 };
+
+/**
+ * How far (in grid squares) outdoor ambient light penetrates an indoor room
+ * through a window or open door, fading out toward the edge. The beam shape
+ * itself (see `drawDynamicLighting`'s window-light pass) is independent of
+ * any token's position, but the fog reveal it produces is still masked by
+ * the viewer's line of sight — see `isAmbientLightGap` in `types/walls.ts`.
+ */
+export const DEFAULT_WINDOW_LIGHT_RADIUS_CELLS = 2;

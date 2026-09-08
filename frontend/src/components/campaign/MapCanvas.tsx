@@ -71,7 +71,7 @@ import DmWallControls, { type WallToolMode } from '@/components/campaign/DmWallC
 import DmLightControls, { type LightToolMode, type LightPlacementDefaults } from '@/components/campaign/DmLightControls';
 import DmAmbientControls from '@/components/campaign/DmAmbientControls';
 import DmToolPanelContainer from '@/components/campaign/DmToolPanelContainer';
-import { AMBIENT_PRESET_DEFAULTS, type EnvironmentType, type AmbientLightPreset } from '@/types/ambientLighting';
+import { AMBIENT_PRESET_DEFAULTS, DEFAULT_WINDOW_LIGHT_RADIUS_CELLS, type EnvironmentType, type AmbientLightPreset } from '@/types/ambientLighting';
 import { useWallHistory } from '@/hooks/useWallHistory';
 import Toast, { useToast } from '@/components/Toast';
 import Button from '@/components/ui/Button';
@@ -312,6 +312,9 @@ export default function MapCanvas({ onEditToken }: MapCanvasProps) {
   // Raster snapshot of the LOS union — the outdoor ambient overlay's
   // visibility boundary (see drawDynamicLighting's outdoor branch).
   const sightMaskOffscreenRef = useRef<HTMLCanvasElement | null>(null);
+  // Raster snapshot of the window/open-door ambient light falloff mask
+  // (see drawDynamicLighting's window-light branch).
+  const windowLightMaskOffscreenRef = useRef<HTMLCanvasElement | null>(null);
 
   // Raw map-pixel position from last mousemove — ghost line uses this when snap is off.
   // screenToGrid() quantises to integer grid coords, so hoverCoords can't be used for free-draw.
@@ -1041,6 +1044,7 @@ export default function MapCanvas({ onEditToken }: MapCanvasProps) {
     lightCoverageOffscreenRef.current = null;
     lightOnlyOffscreenRef.current = null;
     sightMaskOffscreenRef.current = null;
+    windowLightMaskOffscreenRef.current = null;
   }, [currentMap?.id]);
 
   // ============================================
@@ -1609,12 +1613,16 @@ export default function MapCanvas({ onEditToken }: MapCanvasProps) {
             enabled: true,
           }));
         const enabledLights = [...lightSources.filter((l) => l.enabled), ...tokenLights];
-        // Memoized: only sources whose position/radius changed —
-        // or all sources when a wall was edited — actually recompute.
-        const vision = visionCacheRef.current.compute(myTokens, enabledLights, wallSegments, viewport);
-        visPolygons = vision.all;
         const envType = currentMap.environmentType ?? 'indoor';
         const preset = currentMap.ambientLightPreset ?? 'pitch_black';
+        // Memoized: only sources whose position/radius changed —
+        // or all sources when a wall was edited — actually recompute.
+        // Window-light raycasts only run outdoors (see computeVisionState's jsdoc).
+        const vision = visionCacheRef.current.compute(
+          myTokens, enabledLights, wallSegments, viewport,
+          envType === 'outdoor' ? DEFAULT_WINDOW_LIGHT_RADIUS_CELLS : 0
+        );
+        visPolygons = vision.all;
         drawDynamicLighting(ctx, {
           myTokens,
           enabledLights,
@@ -1622,10 +1630,12 @@ export default function MapCanvas({ onEditToken }: MapCanvasProps) {
           tokenSight: vision.tokenSight,
           lightVision: vision.lightVision,
           darkvision: vision.darkvision,
+          windowLight: vision.windowLight,
           lightingCanvas: lightingOffscreenRef,
           coverageCanvas: lightCoverageOffscreenRef,
           lightCanvas: lightOnlyOffscreenRef,
           sightMaskCanvas: sightMaskOffscreenRef,
+          windowLightMaskCanvas: windowLightMaskOffscreenRef,
           ambient: {
             environmentType: envType,
             color: currentMap.ambientColor ?? AMBIENT_PRESET_DEFAULTS[preset].color,

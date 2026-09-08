@@ -91,3 +91,47 @@ describe('createVisionCache', () => {
     expect(readd.tokenVision).toHaveLength(2);
   });
 });
+
+describe('createVisionCache — windowLight', () => {
+  const windowSeg: WallSegment = { id: 'win1', x1: 200, y1: 100, x2: 200, y2: 200, type: 'window' };
+
+  it('is empty when windowLightRadiusCells is omitted (defaults to 0 — indoor)', () => {
+    const cache = createVisionCache();
+    const result = cache.compute([], [], [windowSeg], viewport);
+    expect(result.windowLight).toEqual([]);
+  });
+
+  it('matches the uncached computeVisionState output when a radius is given', () => {
+    const cache = createVisionCache();
+    const a = computeVisionState([], [], [windowSeg], viewport, 3);
+    const b = cache.compute([], [], [windowSeg], viewport, 3);
+    expect(b.windowLight).toHaveLength(1);
+    expect(b.windowLight[0].poly.points).toEqual(a.windowLight[0].poly.points);
+    // Origin is the segment midpoint.
+    expect(b.windowLight[0].cx).toBe(200);
+    expect(b.windowLight[0].cy).toBe(150);
+  });
+
+  it('reuses the polygon on a cache hit and drops it once radius goes back to 0', () => {
+    const cache = createVisionCache();
+    const walls = [windowSeg]; // same reference across calls — no wall mutation
+    const first = cache.compute([], [], walls, viewport, 3);
+    const second = cache.compute([], [], walls, viewport, 3);
+    expect(second.windowLight[0]).toBe(first.windowLight[0]);
+
+    const indoor = cache.compute([], [], walls, viewport, 0);
+    expect(indoor.windowLight).toEqual([]);
+  });
+
+  it('only raycasts from window/open-door segments, not solid walls or closed doors', () => {
+    const cache = createVisionCache();
+    const mixed: WallSegment[] = [
+      wall,
+      { id: 'd1', x1: 0, y1: 0, x2: 50, y2: 0, type: 'door-closed' },
+      { id: 'd2', x1: 0, y1: 50, x2: 50, y2: 50, type: 'door-open' },
+      windowSeg,
+    ];
+    const result = cache.compute([], [], mixed, viewport, 3);
+    expect(result.windowLight.map((s) => `${s.cx},${s.cy}`).sort()).toEqual(['200,150', '25,50'].sort());
+  });
+});

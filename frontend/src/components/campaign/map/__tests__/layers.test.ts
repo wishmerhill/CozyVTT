@@ -587,6 +587,50 @@ describe('computeVisionState', () => {
     expect(vision.all[0]).toBe(vision.tokenVision[0]);
     expect(vision.all[1]).toBe(vision.lightVision[0]);
   });
+
+  describe('windowLight', () => {
+    const windowSeg: WallSegment = { id: 'win1', x1: 100, y1: 0, x2: 100, y2: 50, type: 'window' };
+    const wallSeg: WallSegment = { id: 'w1', x1: 50, y1: 0, x2: 50, y2: 150, type: 'wall' };
+
+    it('is empty by default — the radius parameter defaults to 0', () => {
+      const vision = computeVisionState([], [], [windowSeg], viewport3x3);
+      expect(vision.windowLight).toEqual([]);
+    });
+
+    it('raycasts one polygon per window, centered on its midpoint, when a radius is given', () => {
+      const vision = computeVisionState([], [], [windowSeg, wallSeg], viewport3x3, 3);
+      expect(vision.windowLight).toHaveLength(1);
+      expect(vision.windowLight[0].cx).toBe(100);
+      expect(vision.windowLight[0].cy).toBe(25);
+      // Stopped by the normal wall a bit further in — not an unbounded polygon.
+      expect(vision.windowLight[0].poly.points.length).toBeGreaterThan(2);
+    });
+
+    it('ignores solid walls and closed doors as light sources', () => {
+      const closedDoor: WallSegment = { id: 'd1', x1: 0, y1: 0, x2: 0, y2: 50, type: 'door-closed' };
+      const vision = computeVisionState([], [], [wallSeg, closedDoor], viewport3x3, 3);
+      expect(vision.windowLight).toEqual([]);
+    });
+
+    it('orients the beam normal toward the enclosed room, not the open side', () => {
+      // Window at x=100 (vertical, y 0..50). A room wall sits close by at
+      // x=120 (the +x side) — nothing bounds the -x side within probe range,
+      // so that reads as the open exterior. The beam must point +x, into
+      // the room, not -x into the open field.
+      const roomWall: WallSegment = { id: 'room', x1: 120, y1: -50, x2: 120, y2: 100, type: 'wall' };
+      const vision = computeVisionState([], [], [windowSeg, roomWall], viewport3x3, 3);
+      expect(vision.windowLight).toHaveLength(1);
+      expect(vision.windowLight[0].nx).toBeCloseTo(1);
+      expect(vision.windowLight[0].ny).toBeCloseTo(0);
+    });
+
+    it('flips the beam normal when the room is on the other side', () => {
+      const roomWall: WallSegment = { id: 'room', x1: 80, y1: -50, x2: 80, y2: 100, type: 'wall' };
+      const vision = computeVisionState([], [], [windowSeg, roomWall], viewport3x3, 3);
+      expect(vision.windowLight[0].nx).toBeCloseTo(-1);
+      expect(vision.windowLight[0].ny).toBeCloseTo(0);
+    });
+  });
 });
 
 /**
@@ -613,6 +657,7 @@ describe('drawDynamicLighting', () => {
       globalCompositeOperation: 'source-over',
       fillStyle: '', filter: 'none', globalAlpha: 1,
       createRadialGradient: () => gradient,
+      createLinearGradient: () => gradient,
     } as unknown as CanvasRenderingContext2D & { globalCompositeOperation: string };
     for (const m of ['save', 'restore', 'beginPath', 'closePath', 'moveTo', 'lineTo',
       'arc', 'fill', 'clip', 'fillRect', 'clearRect', 'drawImage']) {
@@ -672,10 +717,15 @@ describe('drawDynamicLighting', () => {
   });
 
   /**
-   * Ambient overlay (Phase B): outdoor visibility is bounded by line of sight
-   * (walls/map edge) rather than the fixed sightRadius a dungeon corridor
-   * would enforce, and — outside "day" — that LOS area is tinted rather than
-   * fully revealed. Indoor must stay byte-for-byte the pre-Phase-B algorithm.
+   * Ambient overlay: outdoors, visibility isn't capped at a fixed sight
+   * radius the way a dungeon corridor is — the sky is the light source, so
+   * the fog clears for the whole LOS union (walls/map edge), tinted by the
+   * ambient preset (day's opacity 0 leaves it fully clear). This does mean a
+   * wall-enclosed outdoor pocket (a walled courtyard) also pops fully into
+   * view the moment a token can see into it, same as the open field around
+   * it — accepted tradeoff, confirmed with the user 2026-09-08, since the
+   * wall data model has no way to mark such a pocket as a roofed interior
+   * that should stay dark like a dungeon room instead.
    */
   describe('ambient overlay', () => {
     function runAmbient(ambient?: AmbientDrawConfig) {
@@ -746,6 +796,98 @@ describe('drawDynamicLighting', () => {
       const { lightOnly, lighting } = runAmbient({ environmentType: 'outdoor', color: '#ffffff', opacity: 0 });
       expect(lightOnly.ops.some((c) => c.method === 'fillRect')).toBe(true);
       expect(destinationOutDrawImages(lighting)).toBe(2);
+    });
+  });
+
+  /**
+   * Window/open-door ambient beams: outdoor daylight/moonlight spilling into a
+   * room through a window. The beam's own shape/falloff is computed
+   * independent of any token's position — a closed room with a window shows
+   * a fading light strip even with nobody standing in it — but the fog
+   * reveal it produces is still gated by the viewer's line of sight (see the
+   * `destination-in` against `sightMask` below), so a lit room the viewer
+   * cannot see into must stay hidden.
+   */
+  describe('window-light beams', () => {
+    const windowSeg: WallSegment = { id: 'win1', x1: 100, y1: 0, x2: 100, y2: 50, type: 'window' };
+    // Token far from the window, with a wall between them, so its own
+    // tokenSight cannot be what reveals the window's room.
+    const separatingWall: WallSegment = { id: 'sep', x1: 60, y1: 0, x2: 60, y2: 150, type: 'wall' };
+
+    function runWindow(ambient: AmbientDrawConfig | undefined, withWindow: boolean) {
+      const main = makeOpRecorder();
+      const lighting = makeOpRecorder();
+      const coverage = makeOpRecorder();
+      const lightOnly = makeOpRecorder();
+      const sightMask = makeOpRecorder();
+      const windowMask = makeOpRecorder();
+
+      const walls = withWindow ? [windowSeg, separatingWall] : [separatingWall];
+      const token = makeToken('a', { position: { x: 0, y: 0 }, sightRadius: 1 } as Partial<Token>);
+      const vision = computeVisionState([token], [], walls, viewport, withWindow ? 3 : 0);
+
+      drawDynamicLighting(main.ctx, {
+        myTokens: [token],
+        enabledLights: [],
+        tokenVision: vision.tokenVision,
+        tokenSight: vision.tokenSight,
+        lightVision: vision.lightVision,
+        darkvision: vision.darkvision,
+        windowLight: vision.windowLight,
+        lightingCanvas: holderFor(lighting.ctx, W, H),
+        coverageCanvas: holderFor(coverage.ctx, W, H),
+        lightCanvas: holderFor(lightOnly.ctx, W, H),
+        sightMaskCanvas: holderFor(sightMask.ctx, W, H),
+        windowLightMaskCanvas: holderFor(windowMask.ctx, W, H),
+        ambient,
+      }, viewport);
+
+      return { lighting, lightOnly, windowMask };
+    }
+
+    const destinationOutDrawImages = (rec: { ops: OpCall[] }) =>
+      rec.ops.filter((c) => c.method === 'drawImage' && c.op === 'destination-out').length;
+
+    it('does nothing indoors even when a window is present', () => {
+      const { windowMask } = runWindow({ environmentType: 'indoor', color: '#0b1d3a', opacity: 0.65 }, true);
+      expect(windowMask.ops.some((c) => c.method === 'drawImage')).toBe(false);
+    });
+
+    it('does nothing outdoors when there is no window/open-door segment', () => {
+      const { windowMask } = runWindow({ environmentType: 'outdoor', color: '#0b1d3a', opacity: 0.65 }, false);
+      expect(windowMask.ops.some((c) => c.method === 'drawImage')).toBe(false);
+    });
+
+    it('outdoors with a window, reveals the fog an extra time beyond the token/light punch', () => {
+      const withWindow = runWindow({ environmentType: 'outdoor', color: '#0b1d3a', opacity: 0.65 }, true);
+      const withoutWindow = runWindow({ environmentType: 'outdoor', color: '#0b1d3a', opacity: 0.65 }, false);
+      expect(destinationOutDrawImages(withWindow.lighting)).toBeGreaterThan(destinationOutDrawImages(withoutWindow.lighting));
+    });
+
+    it('snapshots the beam falloff mask before tinting it with the ambient color', () => {
+      const { windowMask } = runWindow({ environmentType: 'outdoor', color: '#0b1d3a', opacity: 0.65 }, true);
+      expect(windowMask.ops.some((c) => c.method === 'drawImage')).toBe(true);
+    });
+
+    it("day's opacity-0 tint still reveals the beam (no color paint needed to see it)", () => {
+      const withWindow = runWindow({ environmentType: 'outdoor', color: '#ffffff', opacity: 0 }, true);
+      const withoutWindow = runWindow({ environmentType: 'outdoor', color: '#ffffff', opacity: 0 }, false);
+      expect(destinationOutDrawImages(withWindow.lighting)).toBeGreaterThan(destinationOutDrawImages(withoutWindow.lighting));
+    });
+
+    it('gates the beam falloff mask against the viewer line-of-sight union before it reaches the fog', () => {
+      // This is the fog-of-war fix: a window must not reveal its room to a
+      // player whose token has no line of sight into it.
+      const { windowMask } = runWindow({ environmentType: 'outdoor', color: '#0b1d3a', opacity: 0.65 }, true);
+      expect(windowMask.ops.some((c) => c.method === 'drawImage' && c.op === 'destination-in')).toBe(true);
+    });
+
+    it('draws the beam as a normal-aligned rectangle, not a point-source circle', () => {
+      const { lightOnly } = runWindow({ environmentType: 'outdoor', color: '#0b1d3a', opacity: 0.65 }, true);
+      // No enabled lights in this scenario, so any arc on the light-only
+      // canvas would have to come from the old radial-gradient beam.
+      expect(lightOnly.ops.some((c) => c.method === 'arc')).toBe(false);
+      expect(lightOnly.ops.some((c) => c.method === 'lineTo')).toBe(true);
     });
   });
 });

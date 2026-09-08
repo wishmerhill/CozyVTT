@@ -174,6 +174,29 @@ export function computeVisibility(
 }
 
 /**
+ * Distance from (ox, oy) to the nearest vision-blocking wall along `angle`,
+ * capped at `maxDist`. Used to probe which side of a window/gap segment is
+ * the (bounded, nearby) room interior versus the (open, distant-or-unbounded)
+ * exterior — see `pickInwardNormal` in `vision.ts`.
+ */
+export function probeWallDistance(
+  ox: number, oy: number,
+  angle: number,
+  walls: readonly WallSegment[],
+  maxDist: number
+): number {
+  const dx = Math.cos(angle);
+  const dy = Math.sin(angle);
+  let minT = maxDist;
+  for (const w of walls) {
+    if (!blocksVision(w.type)) continue;
+    const hit = raySegmentIntersect(ox, oy, dx, dy, w.x1, w.y1, w.x2, w.y2);
+    if (hit && hit.t < minT) minT = hit.t;
+  }
+  return minT;
+}
+
+/**
  * Point-in-polygon test using the ray casting method.
  * Returns true if `point` is inside `visibilityPolygon`.
  */

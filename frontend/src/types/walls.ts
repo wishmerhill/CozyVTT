@@ -53,6 +53,17 @@ export function blocksVision(type: WallType): boolean {
   return type === 'wall' || type === 'door-closed' || type === 'door-locked' || type === 'door-secret-closed';
 }
 
+/**
+ * Wall types that act as a directional ambient-light gap — an outdoor
+ * environment's daylight/moonlight beams through these into an indoor
+ * room. Deliberately excludes secret doors even when open: a shaft of
+ * light pouring out of an apparently blank wall would announce the secret
+ * door's existence to players, defeating the point of it being secret.
+ */
+export function isAmbientLightGap(type: WallType): boolean {
+  return type === 'window' || type === 'door-open';
+}
+
 export interface WallSegment {
   id: string;   // UUID, assigned on creation
   x1: number;   // map-space pixels, origin top-left
