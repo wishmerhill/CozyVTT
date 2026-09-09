@@ -44,6 +44,7 @@ import TokenManager from '@/components/campaign/TokenManager';
 import SpiritLayerControls from '@/components/campaign/SpiritLayerControls';
 import AtmospherePanel from '@/components/campaign/AtmospherePanel';
 import AtmospherePlayer from '@/components/campaign/AtmospherePlayer';
+import SceneLightingPanel from '@/components/campaign/SceneLightingPanel';
 import NpcQuickEditor from '@/components/campaign/NpcQuickEditor';
 import CreatureLibrary from '@/components/campaign/CreatureLibrary';
 import TokenTemplateLibrary from '@/components/campaign/TokenTemplateLibrary';
@@ -111,6 +112,7 @@ function CampaignPageContent() {
   const [isTokenManagerOpen, setIsTokenManagerOpen] = useState(false);
   const [isSpiritLayerOpen, setIsSpiritLayerOpen] = useState(false);
   const [isAtmospherePanelOpen, setIsAtmospherePanelOpen] = useState(false);
+  const [isSceneLightingPanelOpen, setIsSceneLightingPanelOpen] = useState(false);
   const [isSettingsOpen, setIsSettingsOpen] = useState(false);
   const [isCreatureLibraryOpen, setIsCreatureLibraryOpen] = useState(false);
   const [isTokenTemplateLibraryOpen, setIsTokenTemplateLibraryOpen] = useState(false);
@@ -154,6 +156,7 @@ function CampaignPageContent() {
     templates: () => setIsTokenTemplateLibraryOpen(true),
     spirit: () => setIsSpiritLayerOpen(true),
     atmosphere: () => setIsAtmospherePanelOpen(true),
+    sceneLighting: () => setIsSceneLightingPanelOpen(true),
     settings: () => setIsSettingsOpen(true),
   };
 
@@ -311,6 +314,7 @@ function CampaignPageContent() {
                   templates: isTokenTemplateLibraryOpen,
                   spirit: isSpiritLayerOpen,
                   atmosphere: isAtmospherePanelOpen,
+                  sceneLighting: isSceneLightingPanelOpen,
                   settings: isSettingsOpen,
                 }}
                 onOpen={(key) => sessionPanelOpeners[key]()}
@@ -459,6 +463,14 @@ function CampaignPageContent() {
         <AtmospherePanel
           isOpen={isAtmospherePanelOpen}
           onClose={() => setIsAtmospherePanelOpen(false)}
+        />
+      )}
+
+      {/* Scene Lighting Panel slide-over (DM only) */}
+      {userRole === 'DM' && (
+        <SceneLightingPanel
+          isOpen={isSceneLightingPanelOpen}
+          onClose={() => setIsSceneLightingPanelOpen(false)}
         />
       )}
 

@@ -37,6 +37,13 @@ interface DmAmbientControlsProps {
   onCollapse?: () => void;
   /** The overlay only renders under dynamic lighting — same raycasting engine that resolves it. */
   lightingEnabled?: boolean;
+  /**
+   * Skip the collapsible header chrome and always render the content
+   * expanded — used when this is embedded in a host that already provides
+   * its own header/collapse affordance (e.g. a standalone slide-over panel),
+   * as opposed to the default floating-widget-on-the-map presentation.
+   */
+  embedded?: boolean;
 }
 
 export default function DmAmbientControls({
@@ -47,6 +54,7 @@ export default function DmAmbientControls({
   onChange,
   onCollapse,
   lightingEnabled = false,
+  embedded = false,
 }: DmAmbientControlsProps) {
   const { t } = useTranslation('campaign');
   const [collapsed, setCollapsed] = useState(true);
@@ -57,24 +65,8 @@ export default function DmAmbientControls({
     onChange({ ambientLightPreset: preset, ambientColor: defaults.color, ambientOpacity: defaults.opacity });
   };
 
-  return (
-    <div className="flex flex-col gap-0 bg-stone-800/90 rounded-lg border border-amber-400/20 min-w-[200px] overflow-hidden">
-      <div
-        className="flex items-center justify-between px-2 py-1.5 cursor-pointer hover:bg-stone-700/50 select-none"
-        onClick={() => {
-          const next = !collapsed;
-          setCollapsed(next);
-          if (next) onCollapse?.();
-        }}
-      >
-        <span className="text-xs text-amber-400/70 font-medium uppercase tracking-wide">
-          {t('lighting.ambientControlsTitle')}
-        </span>
-        <span className="text-stone-400 text-xs">{collapsed ? '▶' : '▼'}</span>
-      </div>
-
-      {!collapsed && (
-        <div className="flex flex-col gap-2 p-2 pt-1">
+  const content = (
+    <div className="flex flex-col gap-2 p-2 pt-1">
           {!lightingEnabled && (
             <div className="text-[10px] text-amber-400/60 bg-amber-400/5 rounded px-1.5 py-1 border border-amber-400/10">
               {t('lighting.dynamicLightingOff')}
@@ -146,8 +138,34 @@ export default function DmAmbientControls({
               </div>
             </div>
           )}
-        </div>
-      )}
+    </div>
+  );
+
+  if (embedded) {
+    return (
+      <div className="bg-stone-800/90 rounded-lg border border-amber-400/20 overflow-hidden">
+        {content}
+      </div>
+    );
+  }
+
+  return (
+    <div className="flex flex-col gap-0 bg-stone-800/90 rounded-lg border border-amber-400/20 min-w-[200px] overflow-hidden">
+      <div
+        className="flex items-center justify-between px-2 py-1.5 cursor-pointer hover:bg-stone-700/50 select-none"
+        onClick={() => {
+          const next = !collapsed;
+          setCollapsed(next);
+          if (next) onCollapse?.();
+        }}
+      >
+        <span className="text-xs text-amber-400/70 font-medium uppercase tracking-wide">
+          {t('lighting.ambientControlsTitle')}
+        </span>
+        <span className="text-stone-400 text-xs">{collapsed ? '▶' : '▼'}</span>
+      </div>
+
+      {!collapsed && content}
     </div>
   );
 }

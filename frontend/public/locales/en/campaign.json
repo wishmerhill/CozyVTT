@@ -958,7 +958,10 @@
     "arcanePurple": "Arcane Purple",
     "firelight": "Firelight",
     "moonlight": "Moonlight",
-    "squaresUnit": "sq"
+    "squaresUnit": "sq",
+    "sceneLightingTitle": "Scene Lighting",
+    "sceneLightingSubtitle": "Environment type and ambient light for the current map",
+    "sceneLightingNoMap": "Load a map to configure its scene lighting."
   },
   "tools": {
     "dmTools": "DM Tools",
@@ -968,6 +971,7 @@
     "tokenTemplates": "Token Templates",
     "spiritLayer": "Spirit Layer",
     "atmosphere": "Vibe",
+    "sceneLighting": "Scene Lighting",
     "campaignSettings": "Campaign Settings",
     "dragToRepositionTitle": "Drag to reposition panels"
   },

@@ -958,7 +958,10 @@
     "arcanePurple": "Viola Arcano",
     "firelight": "Fuoco",
     "moonlight": "Chiaro di Luna",
-    "squaresUnit": "caselle"
+    "squaresUnit": "caselle",
+    "sceneLightingTitle": "Illuminazione Scena",
+    "sceneLightingSubtitle": "Tipo di ambiente e luce ambientale della mappa corrente",
+    "sceneLightingNoMap": "Carica una mappa per configurarne l'illuminazione di scena."
   },
   "tools": {
     "dmTools": "Strumenti DM",
@@ -968,6 +971,7 @@
     "tokenTemplates": "Modelli Token",
     "spiritLayer": "Livello Spirituale",
     "atmosphere": "Atmosfera",
+    "sceneLighting": "Illuminazione Scena",
     "campaignSettings": "Impostazioni Campagna",
     "dragToRepositionTitle": "Trascina per riposizionare i pannelli"
   },

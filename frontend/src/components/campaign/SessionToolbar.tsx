@@ -14,6 +14,7 @@ import {
   Package,
   Ghost,
   Cloud,
+  SunMoon,
   Settings,
   type LucideIcon,
 } from 'lucide-react';
@@ -28,6 +29,7 @@ export type SessionToolKey =
   | 'templates'
   | 'spirit'
   | 'atmosphere'
+  | 'sceneLighting'
   | 'settings';
 
 interface ToolDef {
@@ -47,6 +49,7 @@ const TOOL_GROUPS: ToolDef[][] = [
   [
     { key: 'spirit', labelKey: 'tools.spiritLayer', icon: Ghost },
     { key: 'atmosphere', labelKey: 'tools.atmosphere', icon: Cloud },
+    { key: 'sceneLighting', labelKey: 'tools.sceneLighting', icon: SunMoon },
   ],
   [{ key: 'settings', labelKey: 'tools.campaignSettings', icon: Settings }],
 ];
