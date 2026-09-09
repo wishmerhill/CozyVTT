@@ -2,7 +2,7 @@
 // TokenRoster
 // DM-only compact list of tokens on the current map
 // Grouped by type (Player / NPC / Object)
-// Actions: Edit (NPC/Object), Duplicate, Remove
+// Actions: Edit, Duplicate, Remove
 // ============================================
 
 import { useState, useCallback } from 'react';
@@ -65,9 +65,6 @@ function TokenRow({ token, campaignId, mapId, onEditToken }: TokenRowProps) {
   const { socket } = useWebSocket();
   const [isDeleting, setIsDeleting] = useState(false);
   const [isDuplicating, setIsDuplicating] = useState(false);
-
-  const tokenType = getEffectiveType(token);
-  const canEdit = tokenType === TokenType.NPC || tokenType === TokenType.OBJECT;
 
   const handleDuplicate = useCallback(async () => {
     if (!currentMap) return;
@@ -157,8 +154,8 @@ function TokenRow({ token, campaignId, mapId, onEditToken }: TokenRowProps) {
 
       {/* Actions — shown on hover */}
       <div className="flex items-center gap-0.5 opacity-0 group-hover:opacity-100 transition-opacity flex-shrink-0">
-        {/* Edit (NPC/Object only) */}
-        {canEdit && onEditToken && (
+        {/* Edit — NPC/Object opens NpcQuickEditor, PC opens PcTokenEditor */}
+        {onEditToken && (
           <button
             onClick={() => onEditToken(token)}
             title={t('token.edit')}

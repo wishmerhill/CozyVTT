@@ -46,6 +46,7 @@ import AtmospherePanel from '@/components/campaign/AtmospherePanel';
 import AtmospherePlayer from '@/components/campaign/AtmospherePlayer';
 import SceneLightingPanel from '@/components/campaign/SceneLightingPanel';
 import NpcQuickEditor from '@/components/campaign/NpcQuickEditor';
+import PcTokenEditor from '@/components/campaign/PcTokenEditor';
 import CreatureLibrary from '@/components/campaign/CreatureLibrary';
 import TokenTemplateLibrary from '@/components/campaign/TokenTemplateLibrary';
 import TokenRoster from '@/components/campaign/TokenRoster';
@@ -117,6 +118,20 @@ function CampaignPageContent() {
   const [isCreatureLibraryOpen, setIsCreatureLibraryOpen] = useState(false);
   const [isTokenTemplateLibraryOpen, setIsTokenTemplateLibraryOpen] = useState(false);
   const [quickEditToken, setQuickEditToken] = useState<Token | null>(null);
+  const [quickEditPcToken, setQuickEditPcToken] = useState<Token | null>(null);
+
+  // Edit Token entry point shared by TokenRoster and MapCanvas: NPC/Object
+  // tokens open the DM-only NpcQuickEditor, PC tokens open PcTokenEditor
+  // (whose availability to the current user is gated at the call site —
+  // DM always, the controlling player for their own token).
+  const handleEditToken = (token: Token) => {
+    const effectiveType = token.type ?? (token.characterId ? TokenType.PLAYER : TokenType.NPC);
+    if (effectiveType === TokenType.PLAYER) {
+      setQuickEditPcToken(token);
+    } else if (effectiveType === TokenType.NPC || effectiveType === TokenType.OBJECT) {
+      setQuickEditToken(token);
+    }
+  };
 
   // Resizable panel layout — persisted to localStorage so each user's
   // column sizes survive reloads.
@@ -382,12 +397,7 @@ function CampaignPageContent() {
               {/* Token Roster — DM only */}
               {userRole === 'DM' && (
                 <TokenRoster
-                  onEditToken={(token) => {
-                    const effectiveType = token.type ?? (token.characterId ? TokenType.PLAYER : TokenType.NPC);
-                    if (effectiveType === TokenType.NPC || effectiveType === TokenType.OBJECT) {
-                      setQuickEditToken(token);
-                    }
-                  }}
+                  onEditToken={handleEditToken}
                 />
               )}
             </aside>
@@ -406,12 +416,7 @@ function CampaignPageContent() {
                 }
               >
                 <MapCanvas
-                  onEditToken={(token) => {
-                    const effectiveType = token.type ?? (token.characterId ? TokenType.PLAYER : TokenType.NPC);
-                    if (effectiveType === TokenType.NPC || effectiveType === TokenType.OBJECT) {
-                      setQuickEditToken(token);
-                    }
-                  }}
+                  onEditToken={handleEditToken}
                 />
               </Suspense>
             </section>
@@ -499,6 +504,23 @@ function CampaignPageContent() {
           onClose={() => setQuickEditToken(null)}
           onTokenUpdate={(updated) => {
             setQuickEditToken(updated);
+            useGameStore.getState().replaceToken(updated);
+          }}
+        />
+      )}
+
+      {/* PC Token Editor — DM or the player who controls this token
+          (access is gated at the trigger: TokenRoster is DM-only already;
+          MapCanvas's context menu only offers Edit Token for a PC token to
+          the DM or its controller) */}
+      {quickEditPcToken && campaign && currentMap && (
+        <PcTokenEditor
+          token={quickEditPcToken}
+          campaignId={campaign.id}
+          mapId={currentMap.id}
+          onClose={() => setQuickEditPcToken(null)}
+          onTokenUpdate={(updated) => {
+            setQuickEditPcToken(updated);
             useGameStore.getState().replaceToken(updated);
           }}
         />

@@ -95,12 +95,6 @@ export default function NpcQuickEditor({ token, campaignId, mapId, onClose, onTo
   const [newHpMax, setNewHpMax] = useState('');
   const [statBlock, setStatBlock] = useState<NpcStatBlock | null>((token.statBlock as NpcStatBlock) ?? null);
   const [lightEmit, setLightEmit] = useState<TokenLightEmit | null>(token.lightEmit ?? null);
-  const [sightRadius, setSightRadius] = useState<string>(
-    token.sightRadius !== undefined && token.sightRadius !== null ? String(token.sightRadius) : ''
-  );
-  const [darkvisionRadius, setDarkvisionRadius] = useState<string>(
-    token.darkvisionRadius !== undefined && token.darkvisionRadius !== null ? String(token.darkvisionRadius) : ''
-  );
   const lightSaveTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
   useEffect(() => {
     return () => { if (lightSaveTimer.current) clearTimeout(lightSaveTimer.current); };
@@ -349,23 +343,6 @@ export default function NpcQuickEditor({ token, campaignId, mapId, onClose, onTo
     });
   }, [saveUpdate]);
 
-  // ── Vision (sight radius / darkvision) ──
-  const handleSightRadiusBlur = useCallback(async () => {
-    const parsed = sightRadius !== '' ? Number(sightRadius) : null;
-    const current = token.sightRadius ?? null;
-    if (parsed !== current && (parsed === null || !Number.isNaN(parsed))) {
-      await saveUpdate({ sightRadius: parsed } as Partial<Token>);
-    }
-  }, [sightRadius, token.sightRadius, saveUpdate]);
-
-  const handleDarkvisionRadiusBlur = useCallback(async () => {
-    const parsed = darkvisionRadius !== '' ? Number(darkvisionRadius) : null;
-    const current = token.darkvisionRadius ?? null;
-    if (parsed !== current && (parsed === null || !Number.isNaN(parsed))) {
-      await saveUpdate({ darkvisionRadius: parsed } as Partial<Token>);
-    }
-  }, [darkvisionRadius, token.darkvisionRadius, saveUpdate]);
-
   // ── Conditions ──
   const toggleCondition = useCallback(async (condition: string) => {
     const newConditions = conditions.includes(condition)
@@ -443,8 +420,6 @@ export default function NpcQuickEditor({ token, campaignId, mapId, onClose, onTo
     setControlledBy(token.controlledBy ?? null);
     setStatBlock((token.statBlock as NpcStatBlock) ?? null);
     setLightEmit(token.lightEmit ?? null);
-    setSightRadius(token.sightRadius !== undefined && token.sightRadius !== null ? String(token.sightRadius) : '');
-    setDarkvisionRadius(token.darkvisionRadius !== undefined && token.darkvisionRadius !== null ? String(token.darkvisionRadius) : '');
     setEditingStatBlock(false);
     setShowCreateStatBlock(false);
     setShowImagePicker(false);
@@ -892,52 +867,6 @@ export default function NpcQuickEditor({ token, campaignId, mapId, onClose, onTo
                     </button>
                   ))}
                 </div>
-              </section>
-            )}
-
-            {/* ── Vision (NPC only — an Object token doesn't see) ── */}
-            {isNpc && (
-              <section>
-                <h3 className="text-xs font-semibold text-stone-gray uppercase tracking-wide mb-2">
-                  {t('npcEditor.vision.title')}
-                </h3>
-                <div className="grid grid-cols-2 gap-2">
-                  <div>
-                    <label className="text-[10px] text-stone-gray block mb-0.5">
-                      {t('npcEditor.vision.sightRadius')}
-                    </label>
-                    <input
-                      type="number"
-                      min={0}
-                      max={200}
-                      step={1}
-                      value={sightRadius}
-                      onChange={(e) => setSightRadius(e.target.value)}
-                      onBlur={handleSightRadiusBlur}
-                      placeholder="3"
-                      className="input-cozy input-cozy-number w-full text-sm"
-                    />
-                  </div>
-                  <div>
-                    <label className="text-[10px] text-stone-gray block mb-0.5">
-                      {t('npcEditor.vision.darkvisionRadius')}
-                    </label>
-                    <input
-                      type="number"
-                      min={0}
-                      max={200}
-                      step={1}
-                      value={darkvisionRadius}
-                      onChange={(e) => setDarkvisionRadius(e.target.value)}
-                      onBlur={handleDarkvisionRadiusBlur}
-                      placeholder={t('common:none')}
-                      className="input-cozy input-cozy-number w-full text-sm"
-                    />
-                  </div>
-                </div>
-                <p className="text-[10px] text-stone-gray/60 mt-1">
-                  {t('npcEditor.vision.hint')}
-                </p>
               </section>
             )}
 

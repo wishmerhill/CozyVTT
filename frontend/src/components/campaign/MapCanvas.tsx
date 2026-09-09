@@ -3715,6 +3715,27 @@ export default function MapCanvas({ onEditToken }: MapCanvasProps) {
             </>
           )}
 
+          {/* Edit Token (vision/light) — PC tokens only, offered to the DM or
+              to the player who controls this token. NPC/Object edit lives in
+              the DM-only block below. */}
+          {(() => {
+            const cmToken = contextMenu.token;
+            const cmType = cmToken.type ?? (cmToken.characterId ? TokenType.PLAYER : TokenType.NPC);
+            if (cmType !== TokenType.PLAYER) return null;
+            if (!isDM && !isOwnToken(cmToken)) return null;
+            return (
+              <button
+                className="w-full px-4 py-2 text-left text-sm text-brand-ink font-medium hover:bg-moss-green/10 transition-colors"
+                onClick={() => {
+                  setContextMenu(null);
+                  onEditToken?.(cmToken);
+                }}
+              >
+                {t('token.edit')}
+              </button>
+            );
+          })()}
+
           {userRole === 'DM' && (() => {
             const cmToken = contextMenu.token;
             const cmType = cmToken.type ?? (cmToken.characterId ? TokenType.PLAYER : TokenType.NPC);

@@ -1181,15 +1181,20 @@ router.put('/:id/tokens/:tokenId', campaignMember, async (req: AuthenticatedRequ
       return res.status(400).json({ error: 'Validation Error', message: 'Invalid display mode' });
     }
 
-    // Players may only update position, rotation, and conditions on tokens they control
-    // All stat fields (hp, notes, showHpBar, type, disposition, initiative) require DM role
+    // Players may only update position, rotation, conditions, and their PC's
+    // vision/light (sightRadius, darkvisionRadius, lightEmit) on tokens they
+    // control. All other stat fields (hp, notes, showHpBar, type, disposition,
+    // initiative, ...) require DM role.
     if (!isDM) {
       // `metadata` is here because nothing reads it structurally and nothing
       // player-facing writes it: leaving it open gave every campaign member a
       // write-only channel into the map's JSON that served no purpose. The
       // create route, which is the only place the app sends metadata at all, is
       // DM-only already.
-      const restrictedFields = ['hp', 'notes', 'showHpBar', 'type', 'disposition', 'initiative', 'visible', 'name', 'imageUrl', 'layer', 'controlledBy', 'displayMode', 'statBlock', 'creatureTemplateId', 'metadata', 'sightRadius', 'darkvisionRadius', 'lightEmit'];
+      // sightRadius/darkvisionRadius/lightEmit are deliberately absent: a player
+      // controlling a token (already gated by `controlsToken` above) may tune
+      // their own PC's vision and carried light source.
+      const restrictedFields = ['hp', 'notes', 'showHpBar', 'type', 'disposition', 'initiative', 'visible', 'name', 'imageUrl', 'layer', 'controlledBy', 'displayMode', 'statBlock', 'creatureTemplateId', 'metadata'];
       for (const field of restrictedFields) {
         if (updates[field] !== undefined) {
           return res.status(403).json({ error: 'Forbidden', message: `Only DM can update token field: ${field}` });
