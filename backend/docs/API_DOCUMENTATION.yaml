@@ -1939,9 +1939,10 @@ paths:
         - Documents
       summary: List documents shared with a campaign
       description: >-
-        Every member can list. A document appears here only after the DM has
-        shared it, and appearing here is what grants members the right to read
-        it through `GET /api/assets/documents/{id}`.
+        Every member can list. Two kinds appear: documents shared into the
+        campaign by the DM, and the campaign's own, created or uploaded at
+        CAMPAIGN scope. Either way, appearing here means members may read it
+        through `GET /api/assets/documents/{id}`.
       operationId: listCampaignDocuments
       security:
         - cookieAuth: []
@@ -3417,6 +3418,116 @@ paths:
                 format: binary
         '403':
           $ref: '#/components/responses/Forbidden'
+        '404':
+          $ref: '#/components/responses/NotFound'
+
+  /api/assets/documents:
+    post:
+      tags:
+        - Documents
+      summary: Create a text or Markdown document from typed content
+      description: >-
+        The same rules as uploading decide who may place it at each scope:
+        anyone into their own library, the DM into their campaign, an admin or
+        global asset manager instance-wide. The content is checked to be text,
+        bounded at 900 KB (typed content arrives as JSON; anything larger is a
+        file to upload), written to disk exactly as sent, and never interpreted.
+        A PDF cannot be typed.
+      operationId: createDocument
+      security:
+        - cookieAuth: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required:
+                - name
+                - format
+                - content
+              properties:
+                name:
+                  type: string
+                  maxLength: 200
+                description:
+                  type: string
+                  maxLength: 1000
+                format:
+                  type: string
+                  enum: [txt, md]
+                content:
+                  type: string
+                scope:
+                  type: string
+                  enum: [USER, CAMPAIGN, GLOBAL]
+                  default: USER
+                campaignId:
+                  type: string
+                  format: uuid
+                  description: Required when scope is CAMPAIGN
+      responses:
+        '201':
+          description: Created
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  asset:
+                    $ref: '#/components/schemas/Asset'
+        '400':
+          $ref: '#/components/responses/BadRequest'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+
+  /api/assets/documents/{id}/content:
+    put:
+      tags:
+        - Documents
+      summary: Replace the text of a text or Markdown document
+      description: >-
+        The uploader or an admin. A document the caller may not edit answers
+        404, so the reply does not confirm a private id exists. A PDF answers
+        400: it is a file, and is replaced by uploading a new one. The recorded
+        size is updated.
+      operationId: updateDocumentContent
+      security:
+        - cookieAuth: []
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: string
+            format: uuid
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required:
+                - content
+              properties:
+                content:
+                  type: string
+      responses:
+        '200':
+          description: Saved
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  asset:
+                    $ref: '#/components/schemas/Asset'
+        '400':
+          $ref: '#/components/responses/BadRequest'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
         '404':
           $ref: '#/components/responses/NotFound'
 
@@ -6785,6 +6896,12 @@ components:
               format: uuid
             displayName:
               type: string
+        shared:
+          type: boolean
+          description: >-
+            True when the document was shared into the campaign by link and the
+            DM can stop sharing it. False when it is the campaign's own, created
+            or uploaded at CAMPAIGN scope, where there is no link to remove.
 
     DiceMacro:
       type: object

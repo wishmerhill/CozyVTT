@@ -329,6 +329,122 @@ describe('campaign documents', () => {
     });
   });
 
+  describe('creating a document from typed text', () => {
+    const create = (agent: ReturnType<typeof request.agent>, body: Record<string, unknown>) =>
+      agent.post('/api/assets/documents').send(body);
+
+    it('creates a personal Markdown document and serves it back as text', async () => {
+      const res = await create(owner, { name: 'Typed Rules', format: 'md', content: '# Typed\n\nHello' });
+      expect(res.status).toBe(201);
+      assetIds.push(res.body.asset.id);
+      expect(res.body.asset.type).toBe('DOCUMENT');
+      expect(res.body.asset.scope).toBe('USER');
+      expect(res.body.asset.originalName).toBe('Typed Rules.md');
+      expect(res.body.asset.fileSize).toBe(Buffer.byteLength('# Typed\n\nHello'));
+
+      const served = await serve(owner, res.body.asset.id);
+      expect(served.status).toBe(200);
+      expect(served.headers['content-type']).toMatch(/^text\/plain/);
+      expect(served.text).toBe('# Typed\n\nHello');
+    });
+
+    it('a DM can create a campaign document that members read at once', async () => {
+      const res = await create(owner, {
+        name: 'Table Notes', format: 'txt', content: 'Session 1', scope: 'CAMPAIGN', campaignId: campaignA,
+      });
+      expect(res.status).toBe(201);
+      assetIds.push(res.body.asset.id);
+      expect(res.body.asset.campaignId).toBe(campaignA);
+
+      // No share step: it is the campaign's own.
+      expect((await serve(player, res.body.asset.id)).status).toBe(200);
+      const list = await player.get(`/api/campaigns/${campaignA}/documents`);
+      const entry = list.body.documents.find((d: { id: string }) => d.id === res.body.asset.id);
+      expect(entry).toBeDefined();
+      expect(entry.shared).toBe(false);
+    });
+
+    it('a player cannot create a campaign document', async () => {
+      const res = await create(player, {
+        name: 'Nope', format: 'txt', content: 'x', scope: 'CAMPAIGN', campaignId: campaignA,
+      });
+      expect(res.status).toBe(403);
+    });
+
+    it('an ordinary user cannot create a global document', async () => {
+      const res = await create(owner, { name: 'Nope', format: 'txt', content: 'x', scope: 'GLOBAL' });
+      expect(res.status).toBe(403);
+    });
+
+    it('stores hostile text exactly, and the serving route neutralises it', async () => {
+      const hostile = '<script>document.title="pwned"</script>\n[x](javascript:alert(1))';
+      const res = await create(owner, { name: 'Hostile', format: 'md', content: hostile });
+      expect(res.status).toBe(201);
+      assetIds.push(res.body.asset.id);
+
+      const served = await serve(owner, res.body.asset.id);
+      expect(served.headers['content-type']).toMatch(/^text\/plain/);
+      expect(served.headers['x-content-type-options']).toBe('nosniff');
+      expect(served.text).toBe(hostile);
+    });
+
+    it('refuses a NUL byte in the content', async () => {
+      const res = await create(owner, { name: 'Bad', format: 'txt', content: 'a\u0000b' });
+      expect(res.status).toBe(400);
+    });
+
+    it('refuses a format that cannot be typed', async () => {
+      expect((await create(owner, { name: 'Bad', format: 'pdf', content: '%PDF-' })).status).toBe(400);
+    });
+
+    it('refuses an unauthenticated caller', async () => {
+      expect((await request(app).post('/api/assets/documents').send({ name: 'x', format: 'txt', content: 'x' })).status).toBe(401);
+    });
+  });
+
+  describe('editing a document', () => {
+    const edit = (agent: ReturnType<typeof request.agent>, id: string, content: string) =>
+      agent.put(`/api/assets/documents/${id}/content`).send({ content });
+
+    it('the uploader can replace the text, and the size follows', async () => {
+      const res = await edit(owner, txtId, 'Rewritten.');
+      expect(res.status).toBe(200);
+      expect(res.body.asset.fileSize).toBe(Buffer.byteLength('Rewritten.'));
+      expect((await serve(owner, txtId)).text).toBe('Rewritten.');
+      // put it back for the other tests
+      await edit(owner, txtId, TEXT.toString());
+    });
+
+    it('a member of a campaign it is shared with cannot edit it', async () => {
+      await link(owner, campaignA, txtId);
+      expect((await serve(player, txtId)).status).toBe(200);
+      // Reading is not editing. 404, so the answer does not confirm the id.
+      expect((await edit(player, txtId, 'vandalised')).status).toBe(404);
+      expect((await serve(owner, txtId)).text).toBe(TEXT.toString());
+    });
+
+    it('a stranger cannot edit it', async () => {
+      expect((await edit(stranger, txtId, 'vandalised')).status).toBe(404);
+    });
+
+    it('a PDF cannot be edited as text', async () => {
+      const res = await edit(owner, pdfId, 'not a pdf any more');
+      expect(res.status).toBe(400);
+      expect(res.body.message).toMatch(/upload a new file/i);
+      // and the bytes are untouched
+      expect((await serve(owner, pdfId)).headers['content-type']).toMatch(/^application\/pdf/);
+    });
+
+    it('refuses a NUL byte in the new content', async () => {
+      expect((await edit(owner, txtId, 'a\u0000b')).status).toBe(400);
+      expect((await serve(owner, txtId)).text).toBe(TEXT.toString());
+    });
+
+    it('404s on a document that does not exist', async () => {
+      expect((await edit(owner, '00000000-0000-4000-8000-000000000000', 'x')).status).toBe(404);
+    });
+  });
+
   describe('cascade', () => {
     it('deleting the campaign keeps the document', async () => {
       const stamp = Date.now();

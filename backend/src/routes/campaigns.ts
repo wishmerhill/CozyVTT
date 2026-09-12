@@ -1766,33 +1766,59 @@ router.delete('/:campaignId/macros/:macroId', campaignMember, async (req: Authen
  */
 router.get('/:campaignId/documents', campaignMember, async (req: AuthenticatedRequest, res: Response) => {
   try {
-    const links = await prisma.campaignDocument.findMany({
-      where: { campaignId: req.params.campaignId },
-      orderBy: { createdAt: 'asc' },
-      include: {
-        asset: {
-          select: {
-            id: true,
-            name: true,
-            description: true,
-            originalName: true,
-            mimeType: true,
-            fileSize: true,
-            createdAt: true,
-            uploadedBy: { select: { id: true, displayName: true } },
-          },
-        },
-        linkedBy: { select: { id: true, displayName: true } },
-      },
-    });
+    const { campaignId } = req.params;
+    const assetFields = {
+      id: true,
+      name: true,
+      description: true,
+      originalName: true,
+      mimeType: true,
+      fileSize: true,
+      createdAt: true,
+      uploadedBy: { select: { id: true, displayName: true } },
+    } as const;
 
-    return res.status(200).json({
-      documents: links.map((link) => ({
+    // Two ways a document can belong here, and the list has to show both or
+    // it does not match what canReadAsset lets a member read: a document
+    // shared into the campaign by link, and one created or uploaded at
+    // CAMPAIGN scope for this campaign in the first place.
+    const [links, own] = await Promise.all([
+      prisma.campaignDocument.findMany({
+        where: { campaignId },
+        orderBy: { createdAt: 'asc' },
+        include: {
+          asset: { select: assetFields },
+          linkedBy: { select: { id: true, displayName: true } },
+        },
+      }),
+      prisma.asset.findMany({
+        where: { type: 'DOCUMENT', scope: 'CAMPAIGN', campaignId },
+        orderBy: { createdAt: 'asc' },
+        select: assetFields,
+      }),
+    ]);
+
+    const linkedIds = new Set(links.map((l) => l.assetId));
+    const documents = [
+      ...links.map((link) => ({
         ...link.asset,
         linkedAt: link.createdAt,
         linkedBy: link.linkedBy,
+        // Shared in from elsewhere: the DM can stop sharing it.
+        shared: true,
       })),
-    });
+      ...own
+        .filter((a) => !linkedIds.has(a.id))
+        .map((a) => ({
+          ...a,
+          linkedAt: a.createdAt,
+          linkedBy: a.uploadedBy,
+          // The campaign's own document: there is no link to remove.
+          shared: false,
+        })),
+    ];
+
+    return res.status(200).json({ documents });
   } catch (error) {
     logger.error('Error listing campaign documents', { err: error });
     return res.status(500).json({ error: 'Internal Server Error', message: 'Failed to list documents' });

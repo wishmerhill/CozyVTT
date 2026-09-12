@@ -7,7 +7,20 @@ import { authenticated } from '../middleware/compose';
 import { prisma } from '../config/database';
 import { UploadRequest, uploadGeneric, handleUploadError } from '../middleware/upload';
 import { validateFileType, validateFileSize } from '../middleware/fileValidation';
-import { AssetType, AssetScope, deleteFile, relocateUpload } from '../utils/fileUtils';
+import {
+  AssetType,
+  AssetScope,
+  deleteFile,
+  relocateUpload,
+  getFilePath,
+  ensureDirectory,
+  generateUniqueFilename,
+} from '../utils/fileUtils';
+import {
+  CreateDocumentSchema,
+  UpdateDocumentContentSchema,
+  TYPED_DOCUMENT_MIME,
+} from '../validators/documents';
 import { canReadAsset, type AssetAccessFacts, canPlaceAssetAtScope } from '../services/permissions';
 import path from 'path';
 import fs from 'fs';
@@ -693,6 +706,121 @@ router.get('/:id/download', authenticated, async (req: AuthenticatedRequest, res
  * Serve a map image
  * Requires: Authentication + access to asset
  */
+/**
+ * POST /api/assets/documents
+ * Create a plain text or Markdown document from typed content.
+ * Requires: authentication, and the same scope rules as uploading
+ *
+ * The content is written to disk exactly as sent, under a generated filename,
+ * and never interpreted. The one difference from an upload is where the bytes
+ * came from; every rule about who may place an asset where, what the file is
+ * named, and how it is served is shared with the upload path.
+ */
+router.post('/documents', authenticated, async (req: AuthenticatedRequest, res: Response) => {
+  try {
+    const parsed = CreateDocumentSchema.safeParse(req.body);
+    if (!parsed.success) {
+      return res.status(400).json({
+        error: 'Validation Error',
+        message: parsed.error.issues[0]?.message ?? 'Invalid document',
+      });
+    }
+    const { name, description, format, content, scope, campaignId } = parsed.data;
+    const userId = req.session.userId!;
+
+    const decision = await canPlaceAssetAtScope(userId, 'DOCUMENT', scope, campaignId);
+    if (!decision.allowed) {
+      return res.status(decision.status).json({
+        error: decision.status === 400 ? 'Validation Error' : 'Forbidden',
+        message: decision.message,
+      });
+    }
+
+    const bytes = Buffer.from(content, 'utf8');
+    const filename = generateUniqueFilename(`document.${format}`);
+    const dir = getFilePath('DOCUMENT', scope === 'CAMPAIGN' ? 'CAMPAIGN' : 'GLOBAL', campaignId);
+    await ensureDirectory(dir);
+    const filePath = path.join(dir, filename).replace(/\\/g, '/');
+    await fs.promises.writeFile(filePath, bytes);
+
+    const asset = await prisma.asset.create({
+      data: {
+        type: 'DOCUMENT',
+        scope,
+        uploadedById: userId,
+        campaignId: scope === 'CAMPAIGN' ? campaignId ?? null : null,
+        filename,
+        originalName: `${name}.${format}`,
+        mimeType: TYPED_DOCUMENT_MIME[format],
+        fileSize: bytes.length,
+        filePath,
+        name,
+        description: description || null,
+        tags: [],
+      },
+    });
+
+    return res.status(201).json({ asset });
+  } catch (error) {
+    logger.error('Error creating document', { err: error });
+    return res.status(500).json({ error: 'Internal Server Error', message: 'Failed to create document' });
+  }
+});
+
+/**
+ * PUT /api/assets/documents/:id/content
+ * Replace the text of a plain text or Markdown document.
+ * Requires: the uploader, or an admin
+ *
+ * A PDF cannot be edited here; it is a file, not text. The size recorded on
+ * the row is updated so the library keeps telling the truth about it.
+ */
+router.put('/documents/:id/content', authenticated, async (req: AuthenticatedRequest, res: Response) => {
+  try {
+    const parsed = UpdateDocumentContentSchema.safeParse(req.body);
+    if (!parsed.success) {
+      return res.status(400).json({
+        error: 'Validation Error',
+        message: parsed.error.issues[0]?.message ?? 'Invalid content',
+      });
+    }
+
+    const asset = await prisma.asset.findUnique({ where: { id: req.params.id, type: 'DOCUMENT' } });
+    if (!asset) {
+      return res.status(404).json({ error: 'Not Found', message: 'Document not found' });
+    }
+
+    const isAdmin = req.session.platformRole === 'ADMIN';
+    if (asset.uploadedById !== req.session.userId && !isAdmin) {
+      // 404 rather than 403: a document you may not edit is one whose existence
+      // this route should not confirm.
+      return res.status(404).json({ error: 'Not Found', message: 'Document not found' });
+    }
+
+    const ext = path.extname(asset.filePath).toLowerCase();
+    if (ext !== '.txt' && ext !== '.md') {
+      return res.status(400).json({
+        error: 'Validation Error',
+        message: 'Only plain text and Markdown documents can be edited. Upload a new file to replace a PDF.',
+      });
+    }
+
+    const documentPath = normalizePath(asset.filePath);
+    const bytes = Buffer.from(parsed.data.content, 'utf8');
+    await fs.promises.writeFile(documentPath, bytes);
+
+    const updated = await prisma.asset.update({
+      where: { id: asset.id },
+      data: { fileSize: bytes.length },
+    });
+
+    return res.status(200).json({ asset: updated });
+  } catch (error) {
+    logger.error('Error updating document content', { err: error });
+    return res.status(500).json({ error: 'Internal Server Error', message: 'Failed to save document' });
+  }
+});
+
 /**
  * The content type a document is served with, decided from its extension.
  *
