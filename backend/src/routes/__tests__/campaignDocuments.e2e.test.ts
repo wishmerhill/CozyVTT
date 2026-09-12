@@ -281,6 +281,32 @@ describe('campaign documents', () => {
     });
   });
 
+  describe('downloading follows the same rule as reading', () => {
+    /**
+     * The download route had its own copy of the access rules, older than
+     * canReadAsset and missing what it knows. A member who could read a shared
+     * document inline was refused when downloading the same bytes.
+     */
+    const download = (agent: ReturnType<typeof request.agent>, id: string) =>
+      agent.get(`/api/assets/${id}/download`);
+
+    it('a member can download a document shared with their campaign', async () => {
+      await link(owner, campaignA, pdfId);
+      const res = await download(player, pdfId);
+      expect(res.status).toBe(200);
+      expect(res.headers['content-disposition']).toMatch(/attachment/);
+    });
+
+    it('a member cannot download one that is not shared', async () => {
+      expect((await download(player, txtId)).status).toBe(403);
+    });
+
+    it('a stranger cannot download a shared document', async () => {
+      await link(owner, campaignA, pdfId);
+      expect((await download(stranger, pdfId)).status).toBe(403);
+    });
+  });
+
   describe('cascade', () => {
     it('deleting the campaign keeps the document', async () => {
       const stamp = Date.now();

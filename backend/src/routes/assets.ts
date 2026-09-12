@@ -697,7 +697,6 @@ router.delete('/:id', authenticated, async (req: AuthenticatedRequest, res: Resp
 router.get('/:id/download', authenticated, async (req: AuthenticatedRequest, res: Response) => {
   try {
     const { id } = req.params;
-    const userId = req.session.userId!;
 
     const asset = await prisma.asset.findUnique({
       where: { id },
@@ -710,18 +709,12 @@ router.get('/:id/download', authenticated, async (req: AuthenticatedRequest, res
       });
     }
 
-    // Check access permissions
-    const isAdminDownload = req.session.platformRole === 'ADMIN';
-    if (asset.scope === 'USER' && asset.uploadedById !== userId && !isAdminDownload) {
+    // The same rule the serving routes use. This route had its own older
+    // copy, which did not know an asset can be readable because a campaign
+    // uses it or because a document was shared, so a member who could read a
+    // file inline was refused when downloading the same bytes.
+    if (!(await canReadAssetFile(asset, req))) {
       return res.status(403).json({ error: 'Forbidden', message: 'You do not have access to this asset' });
-    }
-    if (asset.scope === 'CAMPAIGN' && asset.campaignId && !isAdminDownload) {
-      const membership = await prisma.campaignMembership.findUnique({
-        where: { userId_campaignId: { userId, campaignId: asset.campaignId } },
-      });
-      if (!membership) {
-        return res.status(403).json({ error: 'Forbidden', message: 'You do not have access to this asset' });
-      }
     }
 
     // Check if file exists (normalize path for cross-platform compatibility)
