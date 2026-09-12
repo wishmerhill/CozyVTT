@@ -274,14 +274,14 @@ router.post(
         });
       }
 
-      if (!['MAP', 'TOKEN', 'AUDIO', 'AVATAR'].includes(type)) {
+      if (!['MAP', 'TOKEN', 'AUDIO', 'AVATAR', 'DOCUMENT'].includes(type)) {
         // Clean up uploaded file
         if (req.file?.path) {
           await deleteFile(req.file.path);
         }
         return res.status(400).json({
           error: 'Validation Error',
-          message: 'Invalid asset type. Must be MAP, TOKEN, AUDIO, or AVATAR',
+          message: 'Invalid asset type. Must be MAP, TOKEN, AUDIO, AVATAR, or DOCUMENT',
         });
       }
 

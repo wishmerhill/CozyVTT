@@ -3000,7 +3000,7 @@ paths:
           in: query
           schema:
             type: string
-            enum: [MAP, TOKEN, AUDIO, AVATAR]
+            enum: [MAP, TOKEN, AUDIO, AVATAR, DOCUMENT]
         - name: scope
           in: query
           schema:
@@ -3065,6 +3065,7 @@ paths:
         | TOKEN  | `MAX_TOKEN_SIZE_MB`  | 5 MB |
         | AUDIO  | `MAX_AUDIO_SIZE_MB`  | 20 MB |
         | AVATAR | `MAX_AVATAR_SIZE_MB` | 2 MB |
+        | DOCUMENT | `MAX_DOCUMENT_SIZE_MB` | 10 MB |
 
         Image assets generate a 512×512 thumbnail server-side.
 
@@ -3089,7 +3090,7 @@ paths:
                   format: binary
                 type:
                   type: string
-                  enum: [MAP, TOKEN, AUDIO, AVATAR]
+                  enum: [MAP, TOKEN, AUDIO, AVATAR, DOCUMENT]
                 scope:
                   type: string
                   enum: [GLOBAL, USER, CAMPAIGN]
@@ -6666,7 +6667,7 @@ components:
           format: uuid
         type:
           type: string
-          enum: [MAP, TOKEN, AUDIO, AVATAR]
+          enum: [MAP, TOKEN, AUDIO, AVATAR, DOCUMENT]
         scope:
           type: string
           enum: [GLOBAL, CAMPAIGN]

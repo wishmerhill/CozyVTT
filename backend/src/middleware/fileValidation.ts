@@ -5,6 +5,7 @@ import path from 'path';
 import { AssetType, isAllowedMimeType, deleteFile, getFileSizeLimit, ALLOWED_EXTENSIONS } from '../utils/fileUtils';
 import { UploadRequest } from './upload';
 import logger from '../utils/logger';
+import { isPlainTextFile } from '../utils/textFile';
 
 /**
  * Validate uploaded file by checking actual MIME type from file content (magic bytes)
@@ -47,6 +48,7 @@ export async function validateFileType(
     const ext = path.extname(req.file.originalname).toLowerCase();
     const isPDF = ext === '.pdf';
     const isMP3 = ext === '.mp3';
+    const isTextDocument = assetType === 'DOCUMENT' && (ext === '.txt' || ext === '.md');
 
     // If file-type couldn't detect type, check if it's a known exception
     if (!fileType) {
@@ -56,6 +58,14 @@ export async function validateFileType(
         return;
       } else if (isMP3 && assetType === 'AUDIO') {
         // MP3 for audio is allowed
+        next();
+        return;
+      } else if (isTextDocument && (await isPlainTextFile(filePath))) {
+        // Plain text and Markdown have no magic bytes, so file-type cannot
+        // identify them and they always land here. The extension is not
+        // trusted on its own: the bytes have to prove they are text. A PDF
+        // document does not need this branch, because file-type identifies a
+        // real PDF and it passes the MIME check below like any other file.
         next();
         return;
       } else {

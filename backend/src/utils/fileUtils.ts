@@ -180,7 +180,19 @@ export function getFilePath(
     case 'AVATAR':
       return path.join(baseDir, 'avatars');
 
+    case 'DOCUMENT':
+      if (scope === 'GLOBAL') {
+        return path.join(baseDir, 'documents', 'global');
+      } else {
+        if (!campaignId) {
+          throw new Error('campaignId is required for CAMPAIGN scope');
+        }
+        return path.join(baseDir, 'documents', 'campaigns', campaignId);
+      }
+
     default:
+      // OTHER has no upload path. relocateUpload swallows this and leaves the
+      // file in temp, which is why the route must never let OTHER reach here.
       throw new Error(`Unknown asset type: ${assetType}`);
   }
 }
