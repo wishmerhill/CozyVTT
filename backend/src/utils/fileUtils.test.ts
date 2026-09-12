@@ -5,7 +5,7 @@
  * FILE_SIZE_LIMITS, and the proxy body-size warnings derived from them.
  */
 
-import { resolveFileSizeLimits, DEFAULT_FILE_SIZE_LIMITS_MB } from './fileUtils';
+import { resolveFileSizeLimits, DEFAULT_FILE_SIZE_LIMITS_MB, isAllowedExtension } from './fileUtils';
 import { parseProxyBodySize } from './proxyLimits';
 
 const MB = 1024 * 1024;
@@ -23,6 +23,8 @@ describe('resolveFileSizeLimits', () => {
       TOKEN: DEFAULT_FILE_SIZE_LIMITS_MB.TOKEN * MB,
       AUDIO: DEFAULT_FILE_SIZE_LIMITS_MB.AUDIO * MB,
       AVATAR: DEFAULT_FILE_SIZE_LIMITS_MB.AVATAR * MB,
+      DOCUMENT: DEFAULT_FILE_SIZE_LIMITS_MB.DOCUMENT * MB,
+      OTHER: 0,
     });
     expect(limits.MAP).toBe(50 * MB);
     expect(limits.AUDIO).toBe(20 * MB);
@@ -140,5 +142,60 @@ describe('getProxyLimitWarnings', () => {
     const warnings = loadWith({ MAX_MAP_SIZE_MB: '80' });
 
     expect(warnings.some((w) => w.includes('client_max_body_size 85M'))).toBe(true);
+  });
+});
+
+/**
+ * Every enum value has a row in every table.
+ *
+ * `AssetType` used to be declared twice: six values in the schema, four in this
+ * file. Nothing here knew DOCUMENT or OTHER existed. The type now comes from
+ * Prisma, so a value with no size, extension list or MIME list fails to compile,
+ * and these pin the runtime side of the same promise.
+ */
+describe('isAllowedExtension', () => {
+  it('accepts a listed extension for a modelled type', () => {
+    expect(isAllowedExtension('MAP', '.png')).toBe(true);
+    expect(isAllowedExtension('TOKEN', 'gif')).toBe(true);
+    expect(isAllowedExtension('DOCUMENT', '.pdf')).toBe(true);
+    expect(isAllowedExtension('DOCUMENT', '.md')).toBe(true);
+    expect(isAllowedExtension('DOCUMENT', 'txt')).toBe(true);
+  });
+
+  it('refuses an extension the type does not list', () => {
+    expect(isAllowedExtension('AVATAR', '.gif')).toBe(false);
+    expect(isAllowedExtension('AUDIO', '.png')).toBe(false);
+    expect(isAllowedExtension('DOCUMENT', '.exe')).toBe(false);
+    expect(isAllowedExtension('DOCUMENT', '.html')).toBe(false);
+  });
+
+  it('refuses everything for OTHER, which has no upload path', () => {
+    expect(() => isAllowedExtension('OTHER', '.pdf')).not.toThrow();
+    expect(isAllowedExtension('OTHER', '.pdf')).toBe(false);
+    expect(isAllowedExtension('OTHER', '.txt')).toBe(false);
+  });
+
+  it('is case-insensitive about the extension', () => {
+    expect(isAllowedExtension('MAP', '.PNG')).toBe(true);
+    expect(isAllowedExtension('DOCUMENT', '.PDF')).toBe(true);
+  });
+});
+
+describe('size limits cover every asset type', () => {
+  it('gives DOCUMENT a limit and OTHER none', () => {
+    const limits = resolveFileSizeLimits({});
+    expect(limits.DOCUMENT).toBe(10 * 1024 * 1024);
+    expect(limits.OTHER).toBe(0);
+  });
+
+  it('reads MAX_DOCUMENT_SIZE_MB like the other types', () => {
+    const limits = resolveFileSizeLimits({ MAX_DOCUMENT_SIZE_MB: '25' });
+    expect(limits.DOCUMENT).toBe(25 * 1024 * 1024);
+  });
+
+  it('does not offer a variable for OTHER', () => {
+    // A setting that did nothing would be worse than no setting.
+    const limits = resolveFileSizeLimits({ MAX_OTHER_SIZE_MB: '99' });
+    expect(limits.OTHER).toBe(0);
   });
 });

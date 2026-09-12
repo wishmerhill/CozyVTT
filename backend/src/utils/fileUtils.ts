@@ -1,13 +1,28 @@
 import { randomUUID } from 'crypto';
+import type { AssetType as PrismaAssetType } from '@prisma/client';
 import path from 'path';
 import fs from 'fs/promises';
 import logger from './logger';
 import { errorCode } from './errors';
 
 /**
- * Asset types supported by the application
+ * Asset types, as the database declares them.
+ *
+ * This used to be a second, four-value declaration of the same enum. It had
+ * drifted: the schema also had DOCUMENT and OTHER, and nothing here knew. Taking
+ * the type from Prisma means every table below must name every value, so a new
+ * enum member fails to compile until it has a size, an extension list and a MIME
+ * list, instead of being silently unsupported.
  */
-export type AssetType = 'MAP' | 'TOKEN' | 'AUDIO' | 'AVATAR';
+export type AssetType = PrismaAssetType;
+
+/**
+ * The types a self-hoster can size with a MAX_<TYPE>_SIZE_MB variable.
+ *
+ * OTHER is in the enum but has no upload path, so it has no variable and no
+ * limit. Listing it here would invite a setting that does nothing.
+ */
+const CONFIGURABLE_ASSET_TYPES = ['MAP', 'TOKEN', 'AUDIO', 'AVATAR', 'DOCUMENT'] as const satisfies readonly AssetType[];
 
 /**
  * Asset scope - global (platform-wide), user (personal), or campaign-specific
@@ -23,9 +38,10 @@ export const DEFAULT_FILE_SIZE_LIMITS_MB: Record<AssetType, number> = {
   TOKEN: 5,
   AUDIO: 20,
   AVATAR: 2,
+  DOCUMENT: 10,
+  // Not uploadable. Zero so nothing can slip through a limit check by accident.
+  OTHER: 0,
 };
-
-const ASSET_TYPES: AssetType[] = ['MAP', 'TOKEN', 'AUDIO', 'AVATAR'];
 
 /**
  * Resolve per-type upload limits (in bytes) from MAX_<TYPE>_SIZE_MB environment
@@ -40,9 +56,9 @@ const ASSET_TYPES: AssetType[] = ['MAP', 'TOKEN', 'AUDIO', 'AVATAR'];
 export function resolveFileSizeLimits(
   env: NodeJS.ProcessEnv = process.env
 ): Record<AssetType, number> {
-  const limits = {} as Record<AssetType, number>;
+  const limits = { OTHER: 0 } as Record<AssetType, number>;
 
-  for (const assetType of ASSET_TYPES) {
+  for (const assetType of CONFIGURABLE_ASSET_TYPES) {
     const varName = `MAX_${assetType}_SIZE_MB`;
     const raw = env[varName];
     const fallbackMB = DEFAULT_FILE_SIZE_LIMITS_MB[assetType];
@@ -89,7 +105,9 @@ export const ALLOWED_MIME_TYPES = {
   TOKEN: ['image/png', 'image/jpeg', 'image/webp', 'image/gif'],
   AUDIO: ['audio/mpeg', 'audio/ogg', 'audio/wav'],
   AVATAR: ['image/png', 'image/jpeg', 'image/webp'],
-} as const;
+  DOCUMENT: ['application/pdf', 'text/plain', 'text/markdown'],
+  OTHER: [],
+} as const satisfies Record<AssetType, readonly string[]>;
 
 /**
  * Allowed file extensions for each asset type
@@ -99,7 +117,9 @@ export const ALLOWED_EXTENSIONS = {
   TOKEN: ['.png', '.jpg', '.jpeg', '.webp', '.gif'],
   AUDIO: ['.mp3', '.ogg', '.wav'],
   AVATAR: ['.png', '.jpg', '.jpeg', '.webp'],
-} as const;
+  DOCUMENT: ['.pdf', '.txt', '.md'],
+  OTHER: [],
+} as const satisfies Record<AssetType, readonly string[]>;
 
 /**
  * Generate a unique filename with UUID and preserve extension

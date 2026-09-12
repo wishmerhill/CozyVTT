@@ -2,7 +2,7 @@ import { Response, NextFunction } from 'express';
 import { fileTypeFromFile } from 'file-type';
 import fs from 'fs/promises';
 import path from 'path';
-import { AssetType, isAllowedMimeType, deleteFile, getFileSizeLimit } from '../utils/fileUtils';
+import { AssetType, isAllowedMimeType, deleteFile, getFileSizeLimit, ALLOWED_EXTENSIONS } from '../utils/fileUtils';
 import { UploadRequest } from './upload';
 import logger from '../utils/logger';
 
@@ -76,7 +76,7 @@ export async function validateFileType(
 
       res.status(400).json({
         error: 'Validation Error',
-        message: `Invalid file type. ${assetType} files must be one of: ${getAllowedMimeTypesString(assetType)}`,
+        message: `Invalid file type. ${assetType} files must be one of: ${getAllowedExtensionsString(assetType)}`,
       });
       return;
     }
@@ -103,16 +103,12 @@ export async function validateFileType(
 }
 
 /**
- * Helper to get allowed MIME types as a string
+ * The allowed extensions for an error message, read from the one table that
+ * decides them. This used to be a hand-written list of format names that had
+ * drifted from the real list; extensions are also what a person recognises.
  */
-function getAllowedMimeTypesString(assetType: AssetType): string {
-  const mimeTypes = {
-    MAP: 'PNG, JPEG, WEBP, PDF',
-    TOKEN: 'PNG, JPEG, WEBP, GIF',
-    AUDIO: 'MP3, OGG, WAV',
-    AVATAR: 'PNG, JPEG, WEBP',
-  };
-  return mimeTypes[assetType] || '';
+function getAllowedExtensionsString(assetType: AssetType): string {
+  return ALLOWED_EXTENSIONS[assetType].join(', ');
 }
 
 /**

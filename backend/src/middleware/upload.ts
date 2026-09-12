@@ -13,6 +13,7 @@ import {
   isAllowedExtension,
   ensureDirectory,
   getTempDirectory,
+  ALLOWED_EXTENSIONS,
 } from '../utils/fileUtils';
 
 /**
@@ -86,16 +87,12 @@ const fileFilter = (req: UploadRequest, file: Express.Multer.File, cb: FileFilte
 };
 
 /**
- * Helper to get allowed extensions as a string
+ * The allowed extensions for an error message, read from the one table that
+ * decides them. This used to be a hand-written copy that had already drifted
+ * from the real list.
  */
 function getAllowedExtensionsString(assetType: AssetType): string {
-  const extensions = {
-    MAP: '.png, .jpg, .jpeg, .webp, .pdf',
-    TOKEN: '.png, .jpg, .jpeg, .webp, .gif',
-    AUDIO: '.mp3, .ogg, .wav',
-    AVATAR: '.png, .jpg, .jpeg, .webp',
-  };
-  return extensions[assetType] || '';
+  return ALLOWED_EXTENSIONS[assetType].join(', ');
 }
 
 /**

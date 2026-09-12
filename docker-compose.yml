@@ -78,6 +78,7 @@ services:
       MAX_TOKEN_SIZE_MB: ${MAX_TOKEN_SIZE_MB:-5}
       MAX_AUDIO_SIZE_MB: ${MAX_AUDIO_SIZE_MB:-20}
       MAX_AVATAR_SIZE_MB: ${MAX_AVATAR_SIZE_MB:-2}
+      MAX_DOCUMENT_SIZE_MB: ${MAX_DOCUMENT_SIZE_MB:-10}
       # Read-only here: lets the backend warn at startup when the Nginx body
       # cap is smaller than the limits above (it is applied by the nginx service)
       NGINX_MAX_BODY_SIZE: ${NGINX_MAX_BODY_SIZE:-55M}
