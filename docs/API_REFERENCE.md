@@ -1031,7 +1031,8 @@ Write a text or Markdown document without uploading a file.
 
 Scope is decided by the same rule as an upload: `GLOBAL` needs a platform
 admin or `globalAssetManager`, `CAMPAIGN` needs that campaign's DM. The result
-is an ordinary asset of type `DOCUMENT`.
+is an ordinary asset of type `DOCUMENT`, and it counts against the upload
+rate limit, since it creates a file on disk exactly as an upload does.
 
 ---
 
@@ -1388,7 +1389,7 @@ when it sees it.
 | Login, password reset, MFA | 5 requests | 15 minutes | Failures only |
 | Register | 10 requests | 1 hour | Every request |
 | Forgot password | 5 requests | 15 minutes | Every request |
-| File upload | 30 requests | 1 minute | Every request |
+| File upload, and writing a document | 30 requests | 1 minute | Every request |
 | General API | 300 requests | 1 minute | Every request |
 | Dice rolls (WebSocket) | 30 rolls | 1 minute | Every roll |
 | Token movement (WebSocket) | 60 events | 1 second | Every event |

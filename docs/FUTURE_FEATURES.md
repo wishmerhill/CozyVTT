@@ -51,6 +51,19 @@ _Nothing in progress._
   exists — the reason it has not been done yet. **Revisit** when a second thing
   needs shared logic, or if the checks disagree in a way a user notices.
 
+- **The app page ships with no Content-Security-Policy in production.** The
+  CSP in `backend/src/server.ts` (helmet) applies to responses the backend
+  sends, which in the production stack is `/api/` and `/socket.io/` only. The
+  page itself, `index.html`, is served by the frontend's nginx through the
+  outer nginx, and neither adds a CSP, `X-Frame-Options` or the other helmet
+  headers. So `imgSrc`, `scriptSrc` and `frameAncestors` protect the JSON, not
+  the app. The dev stack (Vite) is the same. Found while reviewing the document
+  library, where it decides whether a Markdown image can point at an outside
+  host. The fix is a matching `add_header Content-Security-Policy` in
+  `frontend/nginx.conf`, written once and kept in step with `server.ts`, or a
+  build step that emits the header from one definition. **Verify in a running
+  production stack before assuming**; this was read from the two configs.
+
 - **`file-type` has no automated coverage.** The upload validator's first line
   of defence is what that library says a file is, and it is ESM-only, which the
   Jest setup here cannot load; every test that reaches it swaps in a stub

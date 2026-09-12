@@ -714,9 +714,11 @@ router.get('/:id/download', authenticated, async (req: AuthenticatedRequest, res
  * The content is written to disk exactly as sent, under a generated filename,
  * and never interpreted. The one difference from an upload is where the bytes
  * came from; every rule about who may place an asset where, what the file is
- * named, and how it is served is shared with the upload path.
+ * named, and how it is served is shared with the upload path. That includes
+ * the upload rate limit: this creates a file on disk exactly as an upload does,
+ * and a script exhausting storage should hit the same ceiling either way.
  */
-router.post('/documents', authenticated, async (req: AuthenticatedRequest, res: Response) => {
+router.post('/documents', authenticated, uploadLimiter, async (req: AuthenticatedRequest, res: Response) => {
   try {
     const parsed = CreateDocumentSchema.safeParse(req.body);
     if (!parsed.success) {

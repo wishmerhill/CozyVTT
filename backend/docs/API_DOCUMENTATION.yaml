@@ -47,7 +47,8 @@ info:
       on the mail it sends
     - MFA setup verification: 5 attempts per 15 minutes
     - MFA login verification: 5 attempts per 15 minutes (separate limit)
-    - Asset uploads: 30 requests per minute per user (configurable via `ASSET_UPLOAD_RATE_LIMIT`)
+    - Asset uploads and typed documents (`POST /api/assets/upload`, `POST /api/assets/documents`):
+      30 requests per minute per user (configurable via `ASSET_UPLOAD_RATE_LIMIT`)
     - Chat messages: 5 per minute (WebSocket)
     - Dice rolls: 30 per minute (WebSocket)
     - Token movement: 60 per second (WebSocket, throttled)
@@ -3435,7 +3436,8 @@ paths:
         global asset manager instance-wide. The content is checked to be text,
         bounded at 900 KB (typed content arrives as JSON; anything larger is a
         file to upload), written to disk exactly as sent, and never interpreted.
-        A PDF cannot be typed.
+        A PDF cannot be typed. Counts against the upload rate limit, since it
+        creates a file on disk exactly as an upload does.
       operationId: createDocument
       security:
         - cookieAuth: []
