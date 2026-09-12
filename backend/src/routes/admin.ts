@@ -26,7 +26,7 @@ import {
 import { sanitizeInput, validateEmail } from '../utils/validation';
 import { hashPassword, sanitizeUser } from '../services/auth';
 import { isSmtpConfigured, sendTestEmail, sendWelcomeEmail, sendInvitationEmail } from '../services/email';
-import { FILE_SIZE_LIMITS } from '../utils/fileUtils';
+import { UPLOAD_LIMITS } from '../utils/fileUtils';
 import { extractArchiveSafely } from '../utils/archive';
 import logger from '../utils/logger';
 
@@ -653,12 +653,7 @@ router.get('/activity', async (_req, res) => {
 // ============================================
 router.get('/config', (_req, res) => {
   return res.json({
-    uploadLimits: {
-      MAP: FILE_SIZE_LIMITS.MAP,
-      TOKEN: FILE_SIZE_LIMITS.TOKEN,
-      AUDIO: FILE_SIZE_LIMITS.AUDIO,
-      AVATAR: FILE_SIZE_LIMITS.AVATAR,
-    },
+    uploadLimits: { ...UPLOAD_LIMITS },
     sessionTimeoutMs: parseInt(process.env.SESSION_MAX_AGE || '3600000'),
     rememberMeTimeoutMs: parseInt(process.env.REMEMBER_ME_MAX_AGE || '2592000000'),
     smtp: {

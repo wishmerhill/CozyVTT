@@ -372,11 +372,17 @@ export interface AdminActivityData {
 // ============================================
 
 /** Upload limits in bytes, keyed by asset type — served by GET /api/config. */
+/**
+ * The limits a self-hoster can set, one per MAX_<TYPE>_SIZE_MB variable. The
+ * same shape comes back from GET /api/config and GET /api/admin/config, so it
+ * is declared once here. OTHER is not uploadable and is never reported.
+ */
 export interface ServerUploadLimits {
   MAP: number;
   TOKEN: number;
   AUDIO: number;
   AVATAR: number;
+  DOCUMENT: number;
 }
 
 export interface ServerConfig {
@@ -396,12 +402,7 @@ export interface ServerConfig {
 // ============================================
 
 export interface AdminServerConfig {
-  uploadLimits: {
-    MAP: number;
-    TOKEN: number;
-    AUDIO: number;
-    AVATAR: number;
-  };
+  uploadLimits: ServerUploadLimits;
   sessionTimeoutMs: number;
   rememberMeTimeoutMs: number;
   smtp: {

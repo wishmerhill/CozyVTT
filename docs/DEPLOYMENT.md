@@ -616,7 +616,7 @@ These take effect on `docker compose up -d` (no image rebuild needed): the backe
 The backend logs its effective limits at startup and warns when they exceed the configured proxy cap:
 
 ```
-Upload limits: MAP 50MB, TOKEN 5MB, AUDIO 250MB, AVATAR 2MB
+Upload limits: MAP 50MB, TOKEN 5MB, AUDIO 250MB, AVATAR 2MB, DOCUMENT 50MB
 NGINX_MAX_BODY_SIZE=55M is smaller than the largest upload limit AUDIO (250 MB). ...
 ```
 

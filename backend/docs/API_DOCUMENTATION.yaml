@@ -188,6 +188,8 @@ paths:
                         type: integer
                       AVATAR:
                         type: integer
+                      DOCUMENT:
+                        type: integer
                   maxUploadBytes:
                     type: integer
                     description: Largest configured limit — the cap enforced before the asset type is known
@@ -197,6 +199,7 @@ paths:
                   TOKEN: 5242880
                   AUDIO: 20971520
                   AVATAR: 2097152
+                  DOCUMENT: 52428800
                 maxUploadBytes: 52428800
 
   # ============================================
@@ -5506,6 +5509,8 @@ paths:
                       AUDIO:
                         type: integer
                       AVATAR:
+                        type: integer
+                      DOCUMENT:
                         type: integer
                   sessionTimeoutMs:
                     type: integer

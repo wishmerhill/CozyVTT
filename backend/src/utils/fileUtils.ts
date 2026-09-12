@@ -22,7 +22,13 @@ export type AssetType = PrismaAssetType;
  * OTHER is in the enum but has no upload path, so it has no variable and no
  * limit. Listing it here would invite a setting that does nothing.
  */
-const CONFIGURABLE_ASSET_TYPES = ['MAP', 'TOKEN', 'AUDIO', 'AVATAR', 'DOCUMENT'] as const satisfies readonly AssetType[];
+export const CONFIGURABLE_ASSET_TYPES = ['MAP', 'TOKEN', 'AUDIO', 'AVATAR', 'DOCUMENT'] as const satisfies readonly AssetType[];
+
+export type ConfigurableAssetType = (typeof CONFIGURABLE_ASSET_TYPES)[number];
+
+export function isConfigurableAssetType(value: string): value is ConfigurableAssetType {
+  return (CONFIGURABLE_ASSET_TYPES as readonly string[]).includes(value);
+}
 
 /**
  * Asset scope - global (platform-wide), user (personal), or campaign-specific
@@ -92,10 +98,22 @@ export function resolveFileSizeLimits(
 export const FILE_SIZE_LIMITS: Record<AssetType, number> = resolveFileSizeLimits();
 
 /**
+ * The limits a self-hoster can set, for everything that reports them: the
+ * startup log, GET /api/config and the admin panel. Derived from
+ * FILE_SIZE_LIMITS so a type cannot be enforced without being shown. The admin
+ * route once listed four types by hand, and the fifth was invisible.
+ */
+export const UPLOAD_LIMITS: Readonly<Record<ConfigurableAssetType, number>> = Object.freeze(
+  Object.fromEntries(
+    CONFIGURABLE_ASSET_TYPES.map((type) => [type, FILE_SIZE_LIMITS[type]])
+  ) as Record<ConfigurableAssetType, number>
+);
+
+/**
  * The largest configured limit — the cap for the generic multer instance that
  * parses uploads before the asset type is known (see middleware/upload.ts).
  */
-export const MAX_UPLOAD_BYTES: number = Math.max(...Object.values(FILE_SIZE_LIMITS));
+export const MAX_UPLOAD_BYTES: number = Math.max(...Object.values(UPLOAD_LIMITS));
 
 /**
  * Allowed MIME types for each asset type

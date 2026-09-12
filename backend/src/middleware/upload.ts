@@ -5,7 +5,7 @@ import { Request, Response, NextFunction } from 'express';
 import {
   AssetType,
   AssetScope,
-  FILE_SIZE_LIMITS,
+  isConfigurableAssetType,
   MAX_UPLOAD_BYTES,
   generateUniqueFilename,
   getFilePath,
@@ -176,8 +176,8 @@ export function handleUploadError(err: unknown, req: Request, res: Response, nex
       // back to the parsed body, then to a type-agnostic message.
       const bodyType = typeof req.body?.type === 'string' ? req.body.type.toUpperCase() : undefined;
       const assetType = (req as UploadRequest).assetType || bodyType;
-      const isKnownType = !!assetType && assetType in FILE_SIZE_LIMITS;
-      const limit = isKnownType ? getFileSizeLimit(assetType as AssetType) : MAX_UPLOAD_BYTES;
+      const isKnownType = !!assetType && isConfigurableAssetType(assetType);
+      const limit = isKnownType ? getFileSizeLimit(assetType) : MAX_UPLOAD_BYTES;
       const limitMB = (limit / (1024 * 1024)).toFixed(0);
 
       return res.status(400).json({
