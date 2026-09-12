@@ -1,4 +1,4 @@
-import { CampaignRole, PlatformRole } from '@prisma/client';
+import { CampaignRole, PlatformRole, AssetType, AssetScope } from '@prisma/client';
 import { prisma } from '../config/database';
 import { readTokens } from '../utils/prisma-json';
 
@@ -311,6 +311,70 @@ export async function canExportCampaign(
   }
 
   return campaign.ownerId === userId;
+}
+
+/**
+ * Whether a user may place a new asset at a scope.
+ *
+ * The single rule for anything that creates an asset row, whether by uploading
+ * a file or by typing a document. It used to live inline in the upload route,
+ * and the document-creation route would have needed a copy.
+ *
+ * - USER: anyone signed in, into their own library.
+ * - GLOBAL: an admin, or a user granted globalAssetManager.
+ * - CAMPAIGN: the campaign's DM. Tokens are the one exception, because a player
+ *   uploads their own character's token art.
+ *
+ * Returns the refusal's status and message so a caller can answer exactly as
+ * the upload route always has.
+ */
+export type ScopeDecision =
+  | { allowed: true }
+  | { allowed: false; status: 400 | 403; message: string };
+
+export async function canPlaceAssetAtScope(
+  userId: string,
+  type: AssetType,
+  scope: AssetScope,
+  campaignId: string | undefined
+): Promise<ScopeDecision> {
+  if (scope === 'USER') {
+    return { allowed: true };
+  }
+
+  if (scope === 'GLOBAL') {
+    const user = await prisma.user.findUnique({
+      where: { id: userId },
+      select: { platformRole: true, globalAssetManager: true },
+    });
+    if (user?.platformRole !== 'ADMIN' && !user?.globalAssetManager) {
+      return {
+        allowed: false,
+        status: 403,
+        message: 'Only administrators or global asset managers can upload GLOBAL assets',
+      };
+    }
+    return { allowed: true };
+  }
+
+  // CAMPAIGN
+  if (!campaignId) {
+    return { allowed: false, status: 400, message: 'Campaign ID is required for CAMPAIGN scope' };
+  }
+  const membership = await prisma.campaignMembership.findUnique({
+    where: { userId_campaignId: { userId, campaignId } },
+  });
+  if (!membership) {
+    return { allowed: false, status: 403, message: 'You do not have access to this campaign' };
+  }
+  if (membership.role !== 'DM' && type !== 'TOKEN') {
+    return {
+      allowed: false,
+      status: 403,
+      message: 'Only the Dungeon Master can upload campaign assets',
+    };
+  }
+  return { allowed: true };
 }
 
 /**

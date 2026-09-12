@@ -200,6 +200,45 @@ describe('POST /api/assets/upload with type DOCUMENT', () => {
     });
   });
 
+  describe('scope rules, answered by the one shared decision', () => {
+    /**
+     * The upload route used to carry these checks inline; they now come from
+     * canPlaceAssetAtScope so the document-creation route can ask the same
+     * question. The wording is pinned because nothing else pins it, and a
+     * refactor that changed a message would otherwise pass every test.
+     */
+    it('refuses GLOBAL for an ordinary user, with the original wording', async () => {
+      const res = await agent
+        .post('/api/assets/upload')
+        .field('type', 'DOCUMENT')
+        .field('scope', 'GLOBAL')
+        .attach('file', TEXT, { filename: 'g.txt', contentType: 'text/plain' });
+      expect(res.status).toBe(403);
+      expect(res.body.message).toBe('Only administrators or global asset managers can upload GLOBAL assets');
+    });
+
+    it('refuses CAMPAIGN with no campaign id, with the original wording', async () => {
+      const res = await agent
+        .post('/api/assets/upload')
+        .field('type', 'DOCUMENT')
+        .field('scope', 'CAMPAIGN')
+        .attach('file', TEXT, { filename: 'c.txt', contentType: 'text/plain' });
+      expect(res.status).toBe(400);
+      expect(res.body.message).toBe('Campaign ID is required for CAMPAIGN scope');
+    });
+
+    it('refuses CAMPAIGN for a non-member, with the original wording', async () => {
+      const res = await agent
+        .post('/api/assets/upload')
+        .field('type', 'DOCUMENT')
+        .field('scope', 'CAMPAIGN')
+        .field('campaignId', '00000000-0000-4000-8000-000000000000')
+        .attach('file', TEXT, { filename: 'c.txt', contentType: 'text/plain' });
+      expect(res.status).toBe(403);
+      expect(res.body.message).toBe('You do not have access to this campaign');
+    });
+  });
+
   it('cleans the temp directory after every refusal above', () => {
     // Runs last. The five accepted uploads prove the refusals above have
     // already happened, so an empty temp directory means each one deleted

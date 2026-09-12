@@ -8,7 +8,7 @@ import { prisma } from '../config/database';
 import { UploadRequest, uploadGeneric, handleUploadError } from '../middleware/upload';
 import { validateFileType, validateFileSize } from '../middleware/fileValidation';
 import { AssetType, AssetScope, deleteFile, relocateUpload } from '../utils/fileUtils';
-import { canReadAsset, type AssetAccessFacts } from '../services/permissions';
+import { canReadAsset, type AssetAccessFacts, canPlaceAssetAtScope } from '../services/permissions';
 import path from 'path';
 import fs from 'fs';
 import sharp from 'sharp';
@@ -304,78 +304,24 @@ router.post(
         });
       }
 
-      // USER scope: any authenticated user can upload to their own personal library
-      if (assetScope === 'USER') {
-        req.assetType = type as AssetType;
-        req.assetScope = 'USER' as AssetScope;
-        req.campaignId = undefined;
-        return next();
-      }
-
-      // GLOBAL scope requires ADMIN or globalAssetManager permission
-      if (assetScope === 'GLOBAL') {
-        const user = await prisma.user.findUnique({
-          where: { id: req.session.userId! },
-          select: { platformRole: true, globalAssetManager: true },
+      // One rule for every way an asset row gets created, shared with the
+      // route that creates a document from typed text. Refusals answer with
+      // the same status and wording as before.
+      const decision = await canPlaceAssetAtScope(
+        req.session.userId!,
+        type as AssetType,
+        assetScope,
+        campaignId
+      );
+      if (!decision.allowed) {
+        // Clean up uploaded file
+        if (req.file?.path) {
+          await deleteFile(req.file.path);
+        }
+        return res.status(decision.status).json({
+          error: decision.status === 400 ? 'Validation Error' : 'Forbidden',
+          message: decision.message,
         });
-
-        if (user?.platformRole !== 'ADMIN' && !user?.globalAssetManager) {
-          // Clean up uploaded file
-          if (req.file?.path) {
-            await deleteFile(req.file.path);
-          }
-          return res.status(403).json({
-            error: 'Forbidden',
-            message: 'Only administrators or global asset managers can upload GLOBAL assets',
-          });
-        }
-      }
-
-      // If campaign scope, verify campaign exists and user has access
-      if (assetScope === 'CAMPAIGN') {
-        if (!campaignId) {
-          // Clean up uploaded file
-          if (req.file?.path) {
-            await deleteFile(req.file.path);
-          }
-          return res.status(400).json({
-            error: 'Validation Error',
-            message: 'Campaign ID is required for CAMPAIGN scope',
-          });
-        }
-
-        // Verify campaign membership and DM role
-        const membership = await prisma.campaignMembership.findUnique({
-          where: {
-            userId_campaignId: {
-              userId: req.session.userId!,
-              campaignId,
-            },
-          },
-        });
-
-        if (!membership) {
-          // Clean up uploaded file
-          if (req.file?.path) {
-            await deleteFile(req.file.path);
-          }
-          return res.status(403).json({
-            error: 'Forbidden',
-            message: 'You do not have access to this campaign',
-          });
-        }
-
-        // Only DMs can upload campaign assets (except TOKEN - players can upload their own character tokens)
-        if (membership.role !== 'DM' && type !== 'TOKEN') {
-          // Clean up uploaded file
-          if (req.file?.path) {
-            await deleteFile(req.file.path);
-          }
-          return res.status(403).json({
-            error: 'Forbidden',
-            message: 'Only the Dungeon Master can upload campaign assets',
-          });
-        }
       }
 
       // Set asset metadata on request for file validation
