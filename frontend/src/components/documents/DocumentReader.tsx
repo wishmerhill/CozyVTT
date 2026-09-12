@@ -10,8 +10,8 @@
  * - **PDF** goes in an <iframe> pointing at the document route, and the browser's
  *   own viewer renders it. The route serves it with a sandbox policy and
  *   sniffing disabled, so the frame has no origin to act in.
- * - **Markdown** is fetched as text and rendered here with react-markdown, which
- *   ignores raw HTML unless rehype-raw is added, and it is not. The server
+ * - **Markdown** is fetched as text and rendered with the app's one Markdown
+ *   component, which keeps raw HTML off and strips unsafe links. The server
  *   serves Markdown as text/plain on purpose, so even opened in a new tab it is
  *   shown as text.
  * - **Plain text** is fetched and shown in a <pre>.
@@ -22,7 +22,7 @@
 
 import { useEffect, useState } from 'react';
 import { ExternalLink, FileText, Loader2, Pencil, Save, X } from 'lucide-react';
-import ReactMarkdown from 'react-markdown';
+import Markdown from '@/components/common/Markdown';
 import { Modal, Button, Textarea } from '@/components/ui';
 import { apiErrorMessage } from '@/utils/errors';
 import api from '@/services/api';
@@ -236,10 +236,10 @@ export default function DocumentReader({
             {error}
           </p>
         ) : format === 'markdown' ? (
-          /* react-markdown ignores raw HTML unless rehype-raw is added, which it
-             deliberately is not. A <script> in the file is shown as text. */
+          /* The shared renderer: raw HTML off, unsafe links stripped, tables and
+             single-newline breaks on. See components/common/Markdown. */
           <div className="flex-1 min-h-0 overflow-y-auto px-4 py-3 rounded-lg border border-moss-green/20 bg-parchment/60 prose-notes">
-            <ReactMarkdown>{text ?? ''}</ReactMarkdown>
+            <Markdown>{text ?? ''}</Markdown>
           </div>
         ) : (
           <pre className="flex-1 min-h-0 overflow-auto px-4 py-3 rounded-lg border border-moss-green/20 bg-parchment/60 text-sm whitespace-pre-wrap font-mono text-ink">
