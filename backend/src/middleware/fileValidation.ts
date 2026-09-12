@@ -7,6 +7,37 @@ import { UploadRequest } from './upload';
 import logger from '../utils/logger';
 import { isPlainTextFile } from '../utils/textFile';
 
+/** The first bytes of a file, or an empty buffer if it cannot be read. */
+async function leadingBytes(filePath: string, count: number): Promise<Buffer> {
+  let handle: fs.FileHandle | undefined;
+  try {
+    handle = await fs.open(filePath, 'r');
+    const buf = Buffer.alloc(count);
+    const { bytesRead } = await handle.read(buf, 0, count, 0);
+    return buf.subarray(0, bytesRead);
+  } catch {
+    return Buffer.alloc(0);
+  } finally {
+    await handle?.close();
+  }
+}
+
+/** Every PDF begins with the literal bytes %PDF-. */
+async function startsWithPdfHeader(filePath: string): Promise<boolean> {
+  const head = await leadingBytes(filePath, 5);
+  return head.toString('latin1') === '%PDF-';
+}
+
+/**
+ * An MP3 begins with an ID3v2 tag, or with an MPEG audio frame sync: eleven set
+ * bits, 0xFF followed by a byte whose top three bits are set.
+ */
+async function startsWithMp3Header(filePath: string): Promise<boolean> {
+  const head = await leadingBytes(filePath, 3);
+  if (head.length >= 3 && head.toString('latin1') === 'ID3') return true;
+  return head.length >= 2 && head[0] === 0xff && (head[1] & 0xe0) === 0xe0;
+}
+
 /**
  * Validate uploaded file by checking actual MIME type from file content (magic bytes)
  * This prevents users from uploading malicious files with fake extensions
@@ -50,14 +81,18 @@ export async function validateFileType(
     const isMP3 = ext === '.mp3';
     const isTextDocument = assetType === 'DOCUMENT' && (ext === '.txt' || ext === '.md');
 
-    // If file-type couldn't detect type, check if it's a known exception
+    // If file-type couldn't detect type, check if it's a known exception.
+    //
+    // These exceptions used to accept on extension alone. file-type does
+    // identify real PDFs and MP3s, so the only files that reach here under
+    // those names are ones it could not identify at all, and a filename is not
+    // evidence. The leading bytes are checked instead: a PDF starts with %PDF-
+    // and an MP3 with an ID3 tag or an MPEG frame sync.
     if (!fileType) {
-      if (isPDF && assetType === 'MAP') {
-        // PDF for maps is allowed
+      if (isPDF && assetType === 'MAP' && (await startsWithPdfHeader(filePath))) {
         next();
         return;
-      } else if (isMP3 && assetType === 'AUDIO') {
-        // MP3 for audio is allowed
+      } else if (isMP3 && assetType === 'AUDIO' && (await startsWithMp3Header(filePath))) {
         next();
         return;
       } else if (isTextDocument && (await isPlainTextFile(filePath))) {
