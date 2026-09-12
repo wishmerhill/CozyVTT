@@ -3118,7 +3118,10 @@ paths:
       tags:
         - Assets
       summary: List assets
-      description: List assets with filtering and pagination
+      description: >-
+        List assets with filtering and pagination. With no `type`, documents
+        are left out: they have their own section, and are fetched by asking
+        for `type=DOCUMENT` explicitly.
       operationId: listAssets
       security:
         - cookieAuth: []

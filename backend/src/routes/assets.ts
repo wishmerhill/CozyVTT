@@ -127,6 +127,11 @@ router.get('/', authenticated, async (req: AuthenticatedRequest, res: Response) 
     // Type filter
     if (type) {
       where.type = type as AssetType;
+    } else {
+      // Documents have their own section. A rulebook among the map thumbnails
+      // is what that separation exists to avoid, so a list with no type leaves
+      // them out. Asking for type=DOCUMENT is how the Documents page fetches.
+      where.type = { not: 'DOCUMENT' };
     }
 
     // Scope filter

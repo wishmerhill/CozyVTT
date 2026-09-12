@@ -307,6 +307,28 @@ describe('campaign documents', () => {
     });
   });
 
+  describe('the asset library keeps documents separate', () => {
+    /**
+     * Documents have their own section. A rulebook among map thumbnails is
+     * what the separation exists to avoid, so listing assets with no type
+     * leaves documents out, and asking for DOCUMENT is how they are fetched.
+     */
+    it('a list with no type does not include documents', async () => {
+      const res = await owner.get('/api/assets?limit=100');
+      expect(res.status).toBe(200);
+      const types = new Set(res.body.assets.map((a: { type: string }) => a.type));
+      expect(types.has('DOCUMENT')).toBe(false);
+    });
+
+    it('a list asking for DOCUMENT returns only documents', async () => {
+      const res = await owner.get('/api/assets?type=DOCUMENT&limit=100');
+      expect(res.status).toBe(200);
+      const ids = res.body.assets.map((a: { id: string }) => a.id);
+      expect(ids).toEqual(expect.arrayContaining([pdfId, mdId, txtId]));
+      for (const a of res.body.assets) expect(a.type).toBe('DOCUMENT');
+    });
+  });
+
   describe('cascade', () => {
     it('deleting the campaign keeps the document', async () => {
       const stamp = Date.now();
