@@ -147,6 +147,7 @@ export default function DocumentReader({
       icon={FileText}
       size="xl"
       layer={layer}
+      fitViewport
       closeDisabled={saving}
       footer={
         <>
@@ -188,7 +189,9 @@ export default function DocumentReader({
         </>
       }
     >
-      <div className="h-[75vh] min-h-[24rem] flex flex-col">
+      {/* Fills the space the modal leaves between its header and footer, so
+          the controls stay in view and only the document scrolls. */}
+      <div className="flex-1 min-h-0 flex flex-col">
         {editing ? (
           /* Stored as typed. The server checks it is text and bounds its size;
              what makes it harmless is how it is rendered and served, not what
