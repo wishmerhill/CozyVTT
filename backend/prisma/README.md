@@ -33,6 +33,11 @@ The schema is in [`schema.prisma`](./schema.prisma) — 18 models grouped by dom
   the way `PersonalNote` is. The `expression` column is checked against the real
   dice parser when it is written, so a stored macro is always one that can be
   rolled — see `validators/diceMacros.ts`
+- `CampaignDocument` — shares a `DOCUMENT` asset with one campaign. A document
+  is private to its uploader until linked; the link is what lets that
+  campaign's members read it, and `canReadAsset` in `services/permissions.ts`
+  is where that is decided. Deleting the campaign removes the link and keeps the
+  document; deleting the asset removes every link to it
 
 **Assets & messages**
 - `Asset` — file metadata (the actual files live in `backend/uploads/`); scoped GLOBAL / USER / CAMPAIGN
