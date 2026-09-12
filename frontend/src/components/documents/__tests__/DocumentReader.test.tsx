@@ -141,6 +141,20 @@ describe('DocumentReader', () => {
     open.mockRestore();
   });
 
+  it('asks the server before trusting a cached copy', async () => {
+    // A text document can be edited in place. With a plain fetch the browser
+    // served the pre-edit text from its cache on the next open.
+    mockFetch('current text');
+    render(
+      <DocumentReader isOpen onClose={vi.fn()} documentId="doc-6" name="Notes" originalName="notes.txt" />
+    );
+    await screen.findByText('current text');
+    expect(globalThis.fetch).toHaveBeenCalledWith(
+      '/api/assets/documents/doc-6',
+      expect.objectContaining({ cache: 'no-cache' })
+    );
+  });
+
   it('fetches nothing while closed', async () => {
     mockFetch('unused');
     render(

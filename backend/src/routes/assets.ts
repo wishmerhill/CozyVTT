@@ -874,14 +874,18 @@ router.get('/documents/:id', authenticated, async (req: AuthenticatedRequest, re
     }
 
     const documentPath = normalizePath(asset.filePath);
-    if (!fs.existsSync(documentPath)) {
+    let stat: fs.Stats;
+    try {
+      stat = await fs.promises.stat(documentPath);
+    } catch {
       return res.status(404).json({
         error: 'Not Found',
         message: 'Asset file not found on server',
       });
     }
 
-    const contentType = DOCUMENT_CONTENT_TYPES[path.extname(documentPath).toLowerCase()];
+    const ext = path.extname(documentPath).toLowerCase();
+    const contentType = DOCUMENT_CONTENT_TYPES[ext];
     if (!contentType) {
       // Only the three validated extensions are ever stored as DOCUMENT. Anything
       // else here means the row and the file disagree, and it is not served.
@@ -889,7 +893,23 @@ router.get('/documents/:id', authenticated, async (req: AuthenticatedRequest, re
       return res.status(404).json({ error: 'Not Found', message: 'Document not found' });
     }
 
-    if (handleAssetCaching(req, res, asset.id)) return;
+    if (ext === '.pdf') {
+      // A PDF cannot change under its id; the edit route refuses it and a
+      // replacement is a new asset. The year-long immutable cache is right.
+      if (handleAssetCaching(req, res, asset.id)) return;
+    } else {
+      // Text and Markdown can be rewritten in place, so the same caching would
+      // hand a reader the old text for a year. Revalidate on every request,
+      // with an ETag from the file itself so an unchanged document still
+      // answers 304.
+      const etag = `"${asset.id}-${stat.size}-${Math.floor(stat.mtimeMs)}"`;
+      res.set('Cache-Control', 'private, no-cache');
+      res.set('ETag', etag);
+      if (req.headers['if-none-match'] === etag) {
+        return res.status(304).end();
+      }
+    }
+
     return res.sendFile(documentPath, {
       headers: {
         'Content-Type': contentType,

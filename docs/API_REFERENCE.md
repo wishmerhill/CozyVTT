@@ -1009,6 +1009,12 @@ HTML; and the response carries `X-Content-Type-Options: nosniff` with a
 `default-src 'none'; sandbox` Content-Security-Policy. Documents are stored
 unchanged and the server never parses them.
 
+A PDF is cached like any other asset, immutable under its id. Text and
+Markdown are not, because they can be edited in place: they come back
+`Cache-Control: private, no-cache` with an ETag that changes when the file
+does, so a reader revalidates every time and gets a `304` when nothing has
+changed.
+
 ---
 
 ### `POST /api/assets/documents`

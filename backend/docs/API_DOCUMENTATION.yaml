@@ -3551,7 +3551,11 @@ paths:
         `Content-Security-Policy: default-src 'none'; sandbox` that applies
         whenever the browser renders the response as a document. Note it does
         not sandbox a PDF; a client embedding one should sandbox the frame
-        itself, as CozyVTT's reader does.
+        itself, as CozyVTT's reader does. Caching differs by format: a PDF
+        cannot change under its id and is cacheable as immutable, while text
+        and Markdown can be rewritten in place, so they are served
+        `Cache-Control: private, no-cache` with an ETag that changes with the
+        file. Send `If-None-Match` and an unchanged document answers 304.
       operationId: serveDocument
       security:
         - cookieAuth: []
@@ -3565,6 +3569,8 @@ paths:
       responses:
         '200':
           description: The document, inline
+        '304':
+          description: Unchanged since the ETag in `If-None-Match`
           content:
             application/pdf:
               schema:

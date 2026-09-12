@@ -91,7 +91,11 @@ export default function DocumentReader({
     let cancelled = false;
     setLoading(true);
     setError(null);
-    fetch(url, { credentials: 'include' })
+    // no-cache: always check with the server before showing a cached copy.
+    // Text documents can be edited in place, and the server answers 304 when
+    // nothing changed, so this costs one small request and never shows stale
+    // text.
+    fetch(url, { credentials: 'include', cache: 'no-cache' })
       .then(async (res) => {
         if (!res.ok) {
           throw new Error(

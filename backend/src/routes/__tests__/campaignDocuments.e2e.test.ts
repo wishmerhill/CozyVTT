@@ -443,6 +443,47 @@ describe('campaign documents', () => {
     it('404s on a document that does not exist', async () => {
       expect((await edit(owner, '00000000-0000-4000-8000-000000000000', 'x')).status).toBe(404);
     });
+
+    describe('and reading it again afterwards', () => {
+      // The other asset routes cache for a year as immutable, because their
+      // files never change under an id. An edited document does. Seen in a
+      // browser: save, reopen, and the old text came back from the cache.
+      it('is not told to cache the text as immutable', async () => {
+        const res = await serve(owner, txtId);
+        expect(res.headers['cache-control']).not.toMatch(/immutable/);
+        expect(res.headers['cache-control']).toMatch(/no-cache/);
+      });
+
+      it('gets a different ETag once the text has changed', async () => {
+        const before = (await serve(owner, txtId)).headers['etag'];
+        expect(before).toBeTruthy();
+        await edit(owner, txtId, 'Changed since you last looked.');
+        const after = (await serve(owner, txtId)).headers['etag'];
+        expect(after).not.toBe(before);
+        await edit(owner, txtId, TEXT.toString());
+      });
+
+      it('answers 304 to the current ETag and 200 with the new text to a stale one', async () => {
+        const current = (await serve(owner, txtId)).headers['etag'];
+        const unchanged = await owner
+          .get(`/api/assets/documents/${txtId}`)
+          .set('If-None-Match', current);
+        expect(unchanged.status).toBe(304);
+
+        await edit(owner, txtId, 'Newer.');
+        const revalidated = await owner
+          .get(`/api/assets/documents/${txtId}`)
+          .set('If-None-Match', current);
+        expect(revalidated.status).toBe(200);
+        expect(revalidated.text).toBe('Newer.');
+        await edit(owner, txtId, TEXT.toString());
+      });
+
+      it('still lets a PDF be cached, since a PDF cannot change under its id', async () => {
+        const res = await serve(owner, pdfId);
+        expect(res.headers['cache-control']).toMatch(/immutable/);
+      });
+    });
   });
 
   describe('cascade', () => {
