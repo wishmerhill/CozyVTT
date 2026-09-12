@@ -566,6 +566,27 @@ export interface PersonalNoteSummary {
 }
 
 /**
+ * A document as it appears in a campaign's shared list.
+ *
+ * `id` is the asset id, used with the document serving route. A document is
+ * private to whoever uploaded it until a DM shares it with a campaign; this is
+ * the shape the list of shared documents comes back in.
+ */
+export interface CampaignDocument {
+  id: string;
+  name: string;
+  description: string | null;
+  originalName: string;
+  /** As declared at upload. Not what the file is served as. */
+  mimeType: string;
+  fileSize: number;
+  createdAt: string;
+  uploadedBy: { id: string; displayName: string };
+  linkedAt: string;
+  linkedBy: { id: string; displayName: string };
+}
+
+/**
  * A saved dice roll, shown as a button in the dice panel.
  *
  * Private to whoever saved it and scoped to one campaign, so a table's homebrew

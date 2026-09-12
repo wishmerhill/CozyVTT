@@ -541,6 +541,37 @@ class ApiClient {
    * Your own saved dice macros for this campaign, oldest first — the order they
    * appear as buttons, which stays put when one is edited.
    */
+  /**
+   * Documents the DM has shared with this campaign. Any member can list; the
+   * list is also what grants the right to read each one.
+   */
+  async listCampaignDocuments(
+    campaignId: string,
+  ): Promise<{ documents: import('@/types').CampaignDocument[] }> {
+    const response = await this.client.get(`/api/campaigns/${campaignId}/documents`);
+    return response.data;
+  }
+
+  /** Share a document with a campaign. DM only; the DM must already be able to read it. */
+  async linkCampaignDocument(campaignId: string, assetId: string): Promise<{ link: { id: string } }> {
+    const response = await this.client.post(`/api/campaigns/${campaignId}/documents`, { assetId });
+    return response.data;
+  }
+
+  /** Stop sharing a document with a campaign. The document itself is untouched. */
+  async unlinkCampaignDocument(campaignId: string, assetId: string): Promise<{ message: string }> {
+    const response = await this.client.delete(`/api/campaigns/${campaignId}/documents/${assetId}`);
+    return response.data;
+  }
+
+  /**
+   * The URL a document is read from. Same-origin, so a browser can show it in
+   * an iframe under the current Content Security Policy.
+   */
+  getDocumentUrl(assetId: string): string {
+    return this.getAssetUrl(assetId, 'documents');
+  }
+
   async listDiceMacros(campaignId: string): Promise<{ macros: import('@/types').DiceMacro[] }> {
     const response = await this.client.get(`/api/campaigns/${campaignId}/macros`);
     return response.data;
@@ -734,7 +765,7 @@ class ApiClient {
     return response.data;
   }
 
-  getAssetUrl(id: string, type: 'maps' | 'tokens' | 'audio' | 'avatars'): string {
+  getAssetUrl(id: string, type: import('@/utils/assetUrl').AssetDirectory): string {
     return `${API_BASE_URL}/api/assets/${type}/${id}`;
   }
 
