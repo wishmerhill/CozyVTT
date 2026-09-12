@@ -62,6 +62,18 @@ describe('DocumentReader', () => {
     expect(frame).toHaveAttribute('src', '/api/assets/documents/doc-1');
   });
 
+  it('sandboxes the PDF frame without allow-same-origin', () => {
+    // The attribute is what isolates the viewer: a null origin that cannot send
+    // the SameSite=Lax session cookie. A sandbox directive on the PDF response
+    // does not do this, so the attribute is the only thing standing here.
+    render(
+      <DocumentReader isOpen onClose={vi.fn()} documentId="doc-1" name="Rules" originalName="rules.pdf" />
+    );
+    const sandbox = screen.getByTitle('Rules').getAttribute('sandbox') ?? '';
+    expect(sandbox.split(/\s+/)).toContain('allow-scripts');
+    expect(sandbox).not.toMatch(/allow-same-origin/);
+  });
+
   it('does not fetch a PDF itself', () => {
     mockFetch('should not be called');
     render(

@@ -771,10 +771,12 @@ const DOCUMENT_CONTENT_TYPES: Record<string, string> = {
  * campaign the caller belongs to. `canReadAsset` is where that is decided; this
  * route only asks.
  *
- * Headers are the other half of the safety story. `nosniff` is already set by
- * helmet. The Content-Security-Policy here sandboxes the response on its own,
- * so if anything inside a PDF or a browser viewer escapes, it has no origin to
- * act in and cannot reach the API.
+ * Headers are the other half of the safety story. `nosniff` stops the browser
+ * second-guessing the content type. The Content-Security-Policy applies when
+ * the browser renders this response as a document, which is the case for a text
+ * file opened directly; it does not sandbox a PDF, because CSP governs documents
+ * the browser parses and a PDF is not one. That was checked, not assumed. What
+ * isolates the PDF viewer is the sandbox attribute on the reader's iframe.
  */
 router.get('/documents/:id', authenticated, async (req: AuthenticatedRequest, res: Response) => {
   try {

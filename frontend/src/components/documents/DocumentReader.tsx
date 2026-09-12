@@ -120,11 +120,22 @@ export default function DocumentReader({
     >
       <div className="h-[75vh] min-h-[24rem] flex flex-col">
         {format === 'pdf' ? (
-          /* The browser's own PDF viewer. Same origin, so the current CSP allows
-             the frame; the response's own sandbox policy contains what is inside. */
+          /* The browser's own PDF viewer, in a sandboxed frame.
+
+             The sandbox attribute is what actually contains it. It gives the
+             frame a null origin, and the session cookie is SameSite=Lax, so a
+             null-origin frame cannot send it: even if something inside the
+             viewer ran script, it would have no session and no origin. A
+             sandbox directive on the response itself does not do this for a
+             PDF, because CSP governs documents the browser parses and a PDF is
+             not one; that was checked, not assumed.
+
+             allow-scripts is needed because the viewers themselves are script.
+             allow-same-origin is deliberately absent. */
           <iframe
             src={url}
             title={name}
+            sandbox="allow-scripts"
             className="flex-1 w-full rounded-lg border border-moss-green/20 bg-white"
           />
         ) : loading ? (

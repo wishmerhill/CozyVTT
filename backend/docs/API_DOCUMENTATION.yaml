@@ -3433,8 +3433,11 @@ paths:
         validated extension, never from what was declared at upload, and
         Markdown is served as text/plain so the browser never renders a
         document as a page. The response carries
-        `Content-Security-Policy: default-src 'none'; sandbox` and
-        `X-Content-Type-Options: nosniff`.
+        `X-Content-Type-Options: nosniff` and a
+        `Content-Security-Policy: default-src 'none'; sandbox` that applies
+        whenever the browser renders the response as a document. Note it does
+        not sandbox a PDF; a client embedding one should sandbox the frame
+        itself, as CozyVTT's reader does.
       operationId: serveDocument
       security:
         - cookieAuth: []

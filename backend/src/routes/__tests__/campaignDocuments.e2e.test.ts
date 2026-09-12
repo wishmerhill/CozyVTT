@@ -7,9 +7,9 @@
  *
  * Also pinned: what the serving route puts on the wire. The content type must
  * come from the validated extension and never from the stored MIME type, so a
- * Markdown file that is secretly HTML is served as text/plain. And the response
- * carries the sandbox policy and nosniff, which is what makes an inline PDF safe
- * to open.
+ * Markdown file that is secretly HTML is served as text/plain. The response
+ * carries nosniff and a sandbox CSP; the CSP matters for text opened directly
+ * and does nothing for a PDF, which is why the reader sandboxes its own frame.
  *
  * file-type is stubbed to identify PDFs by their header; see
  * documentUpload.e2e.test.ts for why and for what was verified by hand.
