@@ -354,6 +354,31 @@ a body changing neither is refused so a mistake is visible. A new expression is
 checked exactly as it was on creation, so an edit cannot leave a macro
 unrollable.
 
+### `GET|POST /api/campaigns/:campaignId/documents`
+
+The rulebooks and handouts a campaign's members can read. **`GET` requires
+campaign membership; `POST` requires the DM role.**
+
+`GET` returns every document the campaign can see: those uploaded or written
+with `CAMPAIGN` scope inside it, and those a DM has shared from elsewhere. Each
+item carries the asset fields plus `linkedAt`, `linkedBy` and a `shared`
+boolean, which is what tells the two apart, so the client knows whether
+"unshare" is a thing it can offer.
+
+`POST` takes `{ assetId }` and shares an existing document. The asset must be of
+type `DOCUMENT` **and readable by the DM making the request**, or the answer is
+`404`. That check is what stops sharing from becoming a way to hand a campaign
+somebody else's private file by guessing an id. Sharing the same document twice
+is a no-op, not an error.
+
+### `DELETE /api/campaigns/:campaignId/documents/:assetId`
+
+Stop sharing a document with the campaign. **Requires DM role.** The document
+itself is untouched; the campaign's members simply stop being able to read it.
+Answers `200` with a message, or `404` if that document was not shared with
+this campaign. A document that is `CAMPAIGN`-scoped inside the campaign has no
+link to remove; delete the asset instead.
+
 ### `POST /api/campaigns/:campaignId/invite`
 
 Invite a user to the campaign. **Requires DM role.**
@@ -930,7 +955,7 @@ SRD creatures stored before hit points were tracked are updated in place with `h
 List assets accessible to the authenticated user (Global + their own User scope + Campaign scope for their campaigns).
 
 **Query params:**
-- `type` — filter by `MAP`, `TOKEN`, `AUDIO`, `AVATAR`
+- `type` — filter by `MAP`, `TOKEN`, `AUDIO`, `AVATAR`, `DOCUMENT`. With no `type`, documents are left out: they have their own page in the app, and a rulebook does not belong among map thumbnails
 - `scope` — filter by `GLOBAL`, `USER`, `CAMPAIGN`
 - `search` — search by name or tags
 - `campaignId` — required when filtering by `CAMPAIGN` scope
@@ -946,7 +971,7 @@ Upload a new asset. Uses `multipart/form-data`.
 
 **Form fields:**
 - `file` — the file (required)
-- `type` — `MAP`, `TOKEN`, `AUDIO`, or `AVATAR` (required)
+- `type` — `MAP`, `TOKEN`, `AUDIO`, `AVATAR` or `DOCUMENT` (required)
 - `scope` — `GLOBAL`, `USER`, or `CAMPAIGN` (required)
 - `name` — display name (required)
 - `campaignId` — required when `scope` is `CAMPAIGN`
@@ -963,6 +988,54 @@ Get a single asset's metadata.
 ### `GET /api/assets/avatars/:userId`
 
 Get the current avatar for a user. Returns the image file directly.
+
+---
+
+### `GET /api/assets/documents/:id`
+
+Serve a document's file: a PDF, or the text of a `.txt` or `.md`. The reader
+overlay and the "open in a new tab" link both use this URL.
+
+Who may read it is one rule, `canReadAsset`, shared with every other route that
+touches an asset: a `GLOBAL` document is readable by everyone signed in; a
+`USER` one by its uploader and by the members of any campaign it is shared
+with; a `CAMPAIGN` one by that campaign's members. Anyone else gets `404`, not
+`403`, so the reply cannot confirm the id exists.
+
+The response is built not to be trusted by the browser. `Content-Type` comes
+from the validated extension, never from the type the uploader declared;
+Markdown and text are sent as `text/plain`, so nothing is ever rendered as
+HTML; and the response carries `X-Content-Type-Options: nosniff` with a
+`default-src 'none'; sandbox` Content-Security-Policy. Documents are stored
+unchanged and the server never parses them.
+
+---
+
+### `POST /api/assets/documents`
+
+Write a text or Markdown document without uploading a file.
+
+**Body:**
+- `name` *(required)* — up to 200 characters
+- `format` *(required)* — `txt` or `md`
+- `content` *(required)* — the text, up to 900 KB; must be plain text (UTF-8, no control bytes)
+- `scope` *(optional, default `USER`)* — `GLOBAL`, `USER` or `CAMPAIGN`
+- `campaignId` — required when `scope` is `CAMPAIGN`
+- `description` *(optional)*
+
+Scope is decided by the same rule as an upload: `GLOBAL` needs a platform
+admin or `globalAssetManager`, `CAMPAIGN` needs that campaign's DM. The result
+is an ordinary asset of type `DOCUMENT`.
+
+---
+
+### `PUT /api/assets/documents/:id/content`
+
+Replace the text of a `.txt` or `.md` document. **The uploader or a platform
+admin only**; anyone else gets `404`. A PDF answers `400`: only text and
+Markdown can be edited in place. Takes `{ content }` under the same limits as
+creation. Readers see the new text the next time they open it; there is no
+live refresh.
 
 ---
 
@@ -1218,7 +1291,8 @@ Public. Returns the upload limits the server enforces, derived from the `MAX_<TY
     "MAP": 52428800,
     "TOKEN": 5242880,
     "AUDIO": 20971520,
-    "AVATAR": 2097152
+    "AVATAR": 2097152,
+    "DOCUMENT": 52428800
   },
   "maxUploadBytes": 52428800,
   "smtp": { "configured": true }

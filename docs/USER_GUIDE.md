@@ -13,10 +13,11 @@ This guide covers everything you need to get started, from the setup wizard to a
 3. [Campaign Management](#campaign-management)
 4. [Character Management](#character-management)
 5. [The Asset Library](#the-asset-library)
-6. [Running Sessions](#running-sessions)
-7. [Advanced Features](#advanced-features)
-8. [Your Profile](#your-profile)
-9. [Troubleshooting & FAQ](#troubleshooting--faq)
+6. [Documents](#documents)
+7. [Running Sessions](#running-sessions)
+8. [Advanced Features](#advanced-features)
+9. [Your Profile](#your-profile)
+10. [Troubleshooting & FAQ](#troubleshooting--faq)
 
 ---
 
@@ -100,7 +101,7 @@ After logging in, the **Dashboard** is your home base. From here you can see eve
 
 *Screenshot pending — Campaign card grid with status indicators.*
 
-**Quick Access** — Cards for your Character Library and Asset Library so you can navigate there in one click.
+**Quick Access** — Cards for your Character Library, Asset Library and Documents so you can navigate there in one click.
 
 ### Creating a New Campaign
 
@@ -345,6 +346,8 @@ The Asset Library is where all your campaign media lives — maps, token images,
 | **Audio** | Ambient soundscapes, background music |
 | **Avatar** | Your personal profile picture |
 
+Rulebooks and handouts are not here. They have their own **Documents** section, described below, so a PDF never sits among your map thumbnails.
+
 ### Uploading Assets
 
 Click the **Upload** button to add a new asset. You'll choose:
@@ -367,6 +370,48 @@ Use the **search bar** to find assets by name or tag. Filter by scope (Global, P
 Click any asset card to open its **detail panel** on the right. From there you can see full metadata, edit tags, or delete the asset.
 
 *Screenshot pending — Asset detail panel.*
+
+---
+
+## Documents
+
+Rulebooks, house rules, handouts: the things a table reads rather than looks at. **Documents** on your dashboard keeps them apart from maps and tokens, and lets you read them without leaving CozyVTT.
+
+### What you can keep here
+
+| Format | How it gets here | Editable later? |
+|--------|------------------|-----------------|
+| **PDF** | Upload | No, it is a file; upload a new one to replace it |
+| **Plain text** (`.txt`) | Upload, or **Write one** | Yes, by whoever uploaded or wrote it |
+| **Markdown** (`.md`) | Upload, or **Write one** | Yes, by whoever uploaded or wrote it |
+
+Markdown documents render headings, lists, emphasis, tables, task lists and links. A single press of Enter starts a new line, the way it does in a chat message, so notes read the way you typed them.
+
+The size limit is set by whoever runs your instance; the default is 50 MB, enough for most rulebook PDFs. Written documents are limited to about 900 KB of text, which is a very long document, and anything bigger is a file to upload.
+
+### Who can read a document
+
+This is decided by where you put it when you upload or write it:
+
+| Scope | Who can read it |
+|-------|-----------------|
+| **Personal** | You alone, until a DM shares it with a campaign (see below). |
+| **Campaign** | Every member of that campaign, immediately. Only the campaign's DM can put a document here. |
+| **Global** | Everyone on the instance. Only an administrator or a global asset manager can put a document here. |
+
+A DM can share a Personal or Global document with their campaign from inside it, and stop sharing it later. Sharing does not copy the file; the campaign's members read the same document you have, and if you edit it they see the new text next time they open it.
+
+### Reading
+
+Click a document's name or its **Read** button to open it in a full-screen reader over whatever page you are on. **Open in a new tab** does what it says, for reading on a second screen while play continues. A PDF is shown by your browser's own PDF viewer.
+
+### Editing
+
+Open a text or Markdown document you uploaded or wrote and press **Edit**. What you type is saved exactly as typed. If a save is refused, your text stays in the box and the reason is shown.
+
+### Safety
+
+Uploads are checked rather than trusted. A PDF must really be a PDF, and a text or Markdown file must really be text; a program renamed to `.md` is refused. Documents are always shown as text or as a PDF, never as a web page, so a file that contains HTML or a script is displayed as-is and nothing in it can run. There is no need to avoid typing `<` or `>` in a document; they show as typed.
 
 ---
 

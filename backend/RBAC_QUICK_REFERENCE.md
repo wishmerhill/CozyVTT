@@ -193,19 +193,24 @@ assume `req.session` knows about them.
 
 ## Reading an asset: access follows use
 
-The four asset-serving routes (`/api/assets/maps/:id`, `/tokens/:id`,
-`/audio/:id`, `/avatars/:userId`) decide read access from the asset's **scope**.
-`GLOBAL` is readable by anyone signed in, `CAMPAIGN` by that campaign's members,
-and `USER` by its uploader.
+The five asset-serving routes (`/api/assets/maps/:id`, `/tokens/:id`,
+`/documents/:id`, `/audio/:id`, `/avatars/:userId`) decide read access from the
+asset's **scope**. `GLOBAL` is readable by anyone signed in, `CAMPAIGN` by that
+campaign's members, and `USER` by its uploader.
 
 Scope alone is not enough for maps and tokens, because an asset can be *used*
 somewhere its scope does not describe. A DM picking a map out of their own
 library — which the picker offers, listing personal assets with no campaign
 filter — leaves every player at that table 403ing on the battlemap. So
-`routes/assets.ts` funnels both image routes through one `canReadAssetFile`,
-which falls back to `assetUsedInUserCampaign(assetId, userId)`: true when a map
-layer, a token placed on a map, a character, a creature template or a token
-template in one of the caller's campaigns points at that asset.
+`routes/assets.ts` funnels the two image routes, the document route and
+`/:id/download` through one `canReadAssetFile`, which is `canReadAsset` in
+`services/permissions.ts`. Beyond scope it asks two more questions:
+`assetUsedInUserCampaign(assetId, userId)`, true when a map layer, a token
+placed on a map, a character, a creature template or a token template in one
+of the caller's campaigns points at that asset; and `documentSharedWithUser`,
+true when a DM has linked the document to a campaign the caller belongs to
+(`CampaignDocument`). The linking route runs the same `canReadAsset` against
+the DM first, so a link can only ever grant what the DM could already read.
 
 Three things this deliberately does **not** do:
 
@@ -215,7 +220,27 @@ Three things this deliberately does **not** do:
 - **It grants read only.** Deleting and editing are decided by their own routes
   and are unchanged — seeing the battlemap must not mean being able to delete it.
 - **It does not cover audio or avatars.** Those have their own reference paths
-  and were left alone.
+  and were left alone. The audio route is a hand copy of the scope half of the
+  rule and carries a `TODO(permissions)`; atmosphere audio picked from a DM's
+  personal library is the case it gets wrong.
+
+### Documents
+
+Documents are assets of type `DOCUMENT`, so everything above applies, plus:
+
+- **Where one may be placed is one decision.** `canPlaceAssetAtScope(userId,
+  type, scope, campaignId)` answers for both the multipart upload and
+  `POST /api/assets/documents`: `GLOBAL` needs a platform admin or
+  `globalAssetManager`, `CAMPAIGN` needs that campaign's DM, `USER` needs
+  nothing. It returns `{ allowed, status, message }` so both routes refuse
+  with the same wording.
+- **Editing is the uploader's or an admin's.** `PUT /documents/:id/content`
+  checks `uploadedById` against the session, not `canReadAsset`; being able to
+  read a shared rulebook must not mean being able to rewrite it for the table.
+- **Sharing and unsharing are the DM's** (`campaignDM` on the link routes).
+  Unlinking revokes read for the whole campaign at once.
+- **Refusals are `404`, not `403`**, on the serving, edit and link routes, so
+  no reply confirms that a private id exists.
 
 Two things to get right when adding a check of this kind:
 

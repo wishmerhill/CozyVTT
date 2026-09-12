@@ -552,6 +552,22 @@ To remove a player from your campaign, open **Campaign Settings** and find the p
 
 Players assign their own characters to your campaign when they accept an invitation. If a player needs to swap characters (e.g., death, retirement, trying a new one), they can reassign from their Characters page, or you can coordinate with them.
 
+### Sharing Rulebooks and Handouts
+
+The **book icon** in the campaign header opens the documents shared with this campaign. Every member sees it; what the DM sees in addition is the means to change it.
+
+**Three ways to put a document in front of the table:**
+
+- **Share existing** — pick one of your own documents, or a global one, from the list. It stays yours; sharing does not copy it, and if you edit it later the table reads the new version.
+- **Upload** — upload a PDF, text or Markdown file straight into the campaign. It belongs to the campaign from the start, so members can read it at once with no share step.
+- **Write** — write a text or Markdown document on the spot, for a handout or the session's notes. Same as Upload: the campaign's own, readable immediately.
+
+**Stop sharing** removes a shared document from the campaign and leaves the document itself untouched. The campaign's own documents (uploaded or written from here) have no share to remove; delete them from **Documents** on your dashboard if they are no longer wanted.
+
+A player sees the shared list and can read and open everything on it, and nothing else. They cannot share, unshare, or edit a document that is not theirs, and the server refuses those regardless of what the page offers.
+
+**Keeping notes current.** Text and Markdown documents can be edited in place: open one and press **Edit**. This is the natural home for a running session log or a set of house rules that change as the campaign goes on, since the table always reads the latest text and you never re-upload. See [Documents](USER_GUIDE.md#documents) in the user guide for formats, sizes and what is and is not allowed.
+
 ---
 
 ## Running a Session

@@ -76,6 +76,7 @@ If you find a security issue, please report it privately per [SECURITY.md](SECUR
 - **Campaign chat** — in-session messaging between all members
 - **System messages** — automatic logs for joins, session events, and dice rolls
 - **Personal notes** — private per-campaign notes in Markdown, with a rendered preview and autosave; readable only by their author, enforced server-side
+- **Documents** — upload a PDF, plain text or Markdown rulebook or handout, or write one in the app, and read it without leaving CozyVTT; a DM shares documents with a campaign, and every member reads them from inside the session; text and Markdown documents can be edited by their uploader
 - **Session history** — every finished session with its date, length and the recap the DM wrote; the DM can edit or clear any past recap
 
 ### Theming & Customization
@@ -93,7 +94,7 @@ If you find a security issue, please report it privately per [SECURITY.md](SECUR
 - **Session-based authentication** with rolling expiry and "remember me"
 - **Password reset** via email (SMTP configurable)
 - **Admin-approval registration** (optional)
-- **File upload validation** — magic-byte content checks (not just MIME header), size limits by type
+- **File upload validation** — magic-byte content checks (not just MIME header), size limits by type; text uploads must genuinely be text, and documents are served as plain text or PDF, never as a web page
 - **Per-endpoint rate limiting** — global API limit, strict auth limit, asset upload limit (configurable via `ASSET_UPLOAD_RATE_LIMIT`)
 - **WebSocket campaign isolation** — server-authenticated campaign membership; no client-spoofing
 - **Production refuses to start** with a placeholder `SESSION_SECRET`
@@ -189,7 +190,7 @@ All runtime configuration is managed through the Admin dashboard after setup:
 | Settings | Require Admin Approval | New registrations must be approved before login |
 | Settings | Timezone | Server timezone for session timestamps |
 | Settings | SMTP | Email server settings (test via the dashboard) |
-| Settings | Upload Limits | Per-type file size limits (maps, tokens, audio, avatars) |
+| Settings | Upload Limits | Per-type file size limits (maps, tokens, audio, avatars, documents) |
 | Appearance | Default Theme | Theme shown on the login page and used for new users (each user can override from their profile) |
 | Appearance | Default Font | Default font family applied alongside the default theme |
 | Appearance | Custom Theme | Build a palette from primary, accent, background, and text colors, with a live readability check |
@@ -276,6 +277,7 @@ uploads/
   tokens/      Token images and thumbnails
   audio/       Ambient audio files
   avatars/     User profile avatars
+  documents/   PDF, text and Markdown documents
   backups/     Database backup files (pg_dump)
 ```
 

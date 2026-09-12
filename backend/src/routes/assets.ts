@@ -1016,6 +1016,11 @@ router.get('/audio/:id', authenticated, async (req: AuthenticatedRequest, res: R
     }
 
     // Check access permissions
+    // TODO(permissions): this is a hand copy of canReadAsset, the same drift
+    // /:id/download had. It answers 403 where the shared rule answers 404 and
+    // ignores use-in-campaign. Switch to canReadAssetFile in its own commit,
+    // with a test that a member of a campaign whose ambience uses this track
+    // can fetch it.
     const isAdminAudio = req.session.platformRole === 'ADMIN';
     if (asset.scope === 'USER' && asset.uploadedById !== userId && !isAdminAudio) {
       return res.status(403).json({ error: 'Forbidden', message: 'You do not have access to this asset' });
