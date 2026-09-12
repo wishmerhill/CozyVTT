@@ -119,6 +119,8 @@ tags:
     description: Export and import campaigns as portable `.cozyvtt` archives
   - name: Messages
     description: Chat message history
+  - name: Documents
+    description: PDF, text and Markdown files uploaded as assets, shared with a campaign by its DM and read inline
   - name: Dice Macros
     description: A player's own saved dice rolls for one campaign, private to whoever saved them
   - name: Admin
@@ -1931,6 +1933,131 @@ paths:
   # confirm the id exists. The DM has no access to a player's notes.
   # ============================================
 
+  /api/campaigns/{campaignId}/documents:
+    get:
+      tags:
+        - Documents
+      summary: List documents shared with a campaign
+      description: >-
+        Every member can list. A document appears here only after the DM has
+        shared it, and appearing here is what grants members the right to read
+        it through `GET /api/assets/documents/{id}`.
+      operationId: listCampaignDocuments
+      security:
+        - cookieAuth: []
+      parameters:
+        - $ref: '#/components/parameters/CampaignId'
+      responses:
+        '200':
+          description: Shared documents, in the order they were shared
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  documents:
+                    type: array
+                    items:
+                      $ref: '#/components/schemas/CampaignDocument'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+    post:
+      tags:
+        - Documents
+      summary: Share a document with a campaign
+      description: >-
+        DM only. The DM must already be able to read the document; a document
+        the caller cannot read answers 404, so sharing cannot be used to grant a
+        table access to a stranger's private file from nothing but its id.
+        Sharing a document twice is not an error.
+      operationId: linkCampaignDocument
+      security:
+        - cookieAuth: []
+      parameters:
+        - $ref: '#/components/parameters/CampaignId'
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required:
+                - assetId
+              properties:
+                assetId:
+                  type: string
+                  format: uuid
+      responses:
+        '201':
+          description: Shared
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  link:
+                    type: object
+                    properties:
+                      id:
+                        type: string
+                        format: uuid
+                      campaignId:
+                        type: string
+                        format: uuid
+                      assetId:
+                        type: string
+                        format: uuid
+                      linkedById:
+                        type: string
+                        format: uuid
+                      createdAt:
+                        type: string
+                        format: date-time
+        '400':
+          $ref: '#/components/responses/BadRequest'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+        '404':
+          $ref: '#/components/responses/NotFound'
+
+  /api/campaigns/{campaignId}/documents/{assetId}:
+    delete:
+      tags:
+        - Documents
+      summary: Stop sharing a document with a campaign
+      description: DM only. The document itself is untouched; only the share is removed.
+      operationId: unlinkCampaignDocument
+      security:
+        - cookieAuth: []
+      parameters:
+        - $ref: '#/components/parameters/CampaignId'
+        - name: assetId
+          in: path
+          required: true
+          schema:
+            type: string
+            format: uuid
+      responses:
+        '200':
+          description: Unshared
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  message:
+                    type: string
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+        '404':
+          $ref: '#/components/responses/NotFound'
+
   /api/campaigns/{campaignId}/macros:
     get:
       tags:
@@ -3287,6 +3414,47 @@ paths:
                 format: binary
         '403':
           $ref: '#/components/responses/Forbidden'
+        '404':
+          $ref: '#/components/responses/NotFound'
+
+  /api/assets/documents/{id}:
+    get:
+      tags:
+        - Documents
+      summary: Serve a document for reading inline
+      description: >-
+        A PDF, plain text or Markdown file. A document is private to its
+        uploader unless a DM has shared it with a campaign the caller belongs
+        to; anyone else gets 404, not 403, so the reply never confirms a
+        private id exists. The content type is decided from the file's
+        validated extension, never from what was declared at upload, and
+        Markdown is served as text/plain so the browser never renders a
+        document as a page. The response carries
+        `Content-Security-Policy: default-src 'none'; sandbox` and
+        `X-Content-Type-Options: nosniff`.
+      operationId: serveDocument
+      security:
+        - cookieAuth: []
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: string
+            format: uuid
+      responses:
+        '200':
+          description: The document, inline
+          content:
+            application/pdf:
+              schema:
+                type: string
+                format: binary
+            text/plain:
+              schema:
+                type: string
+        '401':
+          $ref: '#/components/responses/Unauthorized'
         '404':
           $ref: '#/components/responses/NotFound'
 
@@ -6567,6 +6735,50 @@ components:
                 Markdown source, stored exactly as typed. Rendered on the client
                 with raw HTML disabled, so markup in a note is shown as text
                 rather than executed.
+
+    CampaignDocument:
+      type: object
+      description: A document as it appears in a campaign's shared list.
+      properties:
+        id:
+          type: string
+          format: uuid
+          description: The asset id, used with GET /api/assets/documents/{id}
+        name:
+          type: string
+        description:
+          type: string
+          nullable: true
+        originalName:
+          type: string
+          example: players-handbook.pdf
+        mimeType:
+          type: string
+          description: As declared at upload. Not what the file is served as.
+        fileSize:
+          type: integer
+        createdAt:
+          type: string
+          format: date-time
+        uploadedBy:
+          type: object
+          properties:
+            id:
+              type: string
+              format: uuid
+            displayName:
+              type: string
+        linkedAt:
+          type: string
+          format: date-time
+        linkedBy:
+          type: object
+          properties:
+            id:
+              type: string
+              format: uuid
+            displayName:
+              type: string
 
     DiceMacro:
       type: object

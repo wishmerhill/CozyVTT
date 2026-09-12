@@ -749,6 +749,90 @@ router.get('/:id/download', authenticated, async (req: AuthenticatedRequest, res
  * Serve a map image
  * Requires: Authentication + access to asset
  */
+/**
+ * The content type a document is served with, decided from its extension.
+ *
+ * Never from `Asset.mimeType`: that value arrived with the upload, and handing
+ * an uploader control of the served content type is how a file that is also
+ * valid HTML gets rendered as a page. Markdown is served as plain text on
+ * purpose. The reader fetches it and renders it itself with raw HTML disabled;
+ * the browser is never asked to treat the file as a document in its own right.
+ */
+const DOCUMENT_CONTENT_TYPES: Record<string, string> = {
+  '.pdf': 'application/pdf',
+  '.txt': 'text/plain; charset=utf-8',
+  '.md': 'text/plain; charset=utf-8',
+};
+
+/**
+ * GET /api/assets/documents/:id
+ * Serve a document (PDF, text or Markdown) for reading inline.
+ * Requires: authentication, and read access to the asset
+ *
+ * A document is private to its uploader unless a DM has shared it with a
+ * campaign the caller belongs to. `canReadAsset` is where that is decided; this
+ * route only asks.
+ *
+ * Headers are the other half of the safety story. `nosniff` is already set by
+ * helmet. The Content-Security-Policy here sandboxes the response on its own,
+ * so if anything inside a PDF or a browser viewer escapes, it has no origin to
+ * act in and cannot reach the API.
+ */
+router.get('/documents/:id', authenticated, async (req: AuthenticatedRequest, res: Response) => {
+  try {
+    const { id } = req.params;
+
+    const asset = await prisma.asset.findUnique({
+      where: { id, type: 'DOCUMENT' },
+    });
+
+    if (!asset) {
+      return res.status(404).json({
+        error: 'Not Found',
+        message: 'Document not found',
+      });
+    }
+
+    if (!(await canReadAssetFile(asset, req))) {
+      // 404 rather than 403, matching the read routes for private things: the
+      // answer must not confirm the id exists.
+      return res.status(404).json({ error: 'Not Found', message: 'Document not found' });
+    }
+
+    const documentPath = normalizePath(asset.filePath);
+    if (!fs.existsSync(documentPath)) {
+      return res.status(404).json({
+        error: 'Not Found',
+        message: 'Asset file not found on server',
+      });
+    }
+
+    const contentType = DOCUMENT_CONTENT_TYPES[path.extname(documentPath).toLowerCase()];
+    if (!contentType) {
+      // Only the three validated extensions are ever stored as DOCUMENT. Anything
+      // else here means the row and the file disagree, and it is not served.
+      logger.error('Document asset has an unexpected extension', { assetId: id, filePath: asset.filePath });
+      return res.status(404).json({ error: 'Not Found', message: 'Document not found' });
+    }
+
+    if (handleAssetCaching(req, res, asset.id)) return;
+    return res.sendFile(documentPath, {
+      headers: {
+        'Content-Type': contentType,
+        'Content-Disposition': 'inline',
+        'Content-Security-Policy': "default-src 'none'; sandbox",
+        'X-Content-Type-Options': 'nosniff',
+      },
+    });
+  } catch (error) {
+    logger.error('Error serving document', { err: error });
+    return res.status(500).json({
+      error: 'Internal Server Error',
+      message: 'Failed to serve document',
+    });
+  }
+});
+
 router.get('/maps/:id', authenticated, async (req: AuthenticatedRequest, res: Response) => {
   try {
     const { id } = req.params;

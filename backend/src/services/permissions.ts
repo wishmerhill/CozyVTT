@@ -433,7 +433,8 @@ export async function canReadAsset(
 
   if (asset.scope === 'USER') {
     if (asset.uploadedById === userId) return true;
-    return assetUsedInUserCampaign(asset.id, userId, asset.uploadedById);
+    if (await assetUsedInUserCampaign(asset.id, userId, asset.uploadedById)) return true;
+    return documentSharedWithUser(asset.id, userId);
   }
 
   if (asset.scope === 'CAMPAIGN' && asset.campaignId) {
@@ -442,11 +443,31 @@ export async function canReadAsset(
     });
     if (membership) return true;
     // Scoped to one campaign, but a map in another may point at it.
-    return assetUsedInUserCampaign(asset.id, userId, asset.uploadedById);
+    if (await assetUsedInUserCampaign(asset.id, userId, asset.uploadedById)) return true;
+    return documentSharedWithUser(asset.id, userId);
   }
 
   // GLOBAL, or a campaign asset with no campaign recorded.
   return true;
+}
+
+/**
+ * Whether a document has been shared with a campaign this user belongs to.
+ *
+ * A document is private to its uploader until a DM links it to a campaign, and
+ * the link is the only thing that opens it to that campaign's members. Checked
+ * last, after the cheaper questions, and only for the scopes where privacy is
+ * in question at all.
+ */
+async function documentSharedWithUser(assetId: string, userId: string): Promise<boolean> {
+  const link = await prisma.campaignDocument.findFirst({
+    where: {
+      assetId,
+      campaign: { memberships: { some: { userId } } },
+    },
+    select: { id: true },
+  });
+  return link !== null;
 }
 
 /**

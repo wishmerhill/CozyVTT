@@ -3,7 +3,7 @@ import multer from 'multer';
 import { AuthenticatedRequest } from '../middleware/rbac';
 import { authenticated, campaignMember, campaignDM, adminOnly } from '../middleware/compose';
 import { prisma } from '../config/database';
-import { canDeleteCampaign, canTransferDM } from '../services/permissions';
+import { canDeleteCampaign, canTransferDM, canReadAsset } from '../services/permissions';
 import { captureGameState, restoreGameState, getNextSessionNumber, getLastSession, type GameState } from '../services/sessionState';
 import {
   sendSystemMessage,
@@ -27,6 +27,7 @@ import {
   UpdateDiceMacroSchema,
   MAX_MACROS_PER_CAMPAIGN,
 } from '../validators/diceMacros';
+import { LinkDocumentSchema } from '../validators/campaignDocuments';
 import { UpdateSessionNotesSchema } from '../validators/sessionNotes';
 import type { Prisma } from '@prisma/client';
 import { errorMessage } from '../utils/errors';
@@ -1747,6 +1748,127 @@ router.delete('/:campaignId/macros/:macroId', campaignMember, async (req: Authen
   } catch (error) {
     logger.error('Error deleting dice macro', { err: error });
     return res.status(500).json({ error: 'Internal Server Error', message: 'Failed to delete macro' });
+  }
+});
+
+/**
+ * Documents shared with a campaign.
+ *
+ * A document asset is private to whoever uploaded it. Linking it here is what
+ * lets the campaign's members read it, and `canReadAsset` is where that grant
+ * is honoured. Only the DM links and unlinks; every member can list.
+ */
+
+/**
+ * GET /api/campaigns/:campaignId/documents
+ * The documents shared with this campaign.
+ * Requires: Campaign membership (any role)
+ */
+router.get('/:campaignId/documents', campaignMember, async (req: AuthenticatedRequest, res: Response) => {
+  try {
+    const links = await prisma.campaignDocument.findMany({
+      where: { campaignId: req.params.campaignId },
+      orderBy: { createdAt: 'asc' },
+      include: {
+        asset: {
+          select: {
+            id: true,
+            name: true,
+            description: true,
+            originalName: true,
+            mimeType: true,
+            fileSize: true,
+            createdAt: true,
+            uploadedBy: { select: { id: true, displayName: true } },
+          },
+        },
+        linkedBy: { select: { id: true, displayName: true } },
+      },
+    });
+
+    return res.status(200).json({
+      documents: links.map((link) => ({
+        ...link.asset,
+        linkedAt: link.createdAt,
+        linkedBy: link.linkedBy,
+      })),
+    });
+  } catch (error) {
+    logger.error('Error listing campaign documents', { err: error });
+    return res.status(500).json({ error: 'Internal Server Error', message: 'Failed to list documents' });
+  }
+});
+
+/**
+ * POST /api/campaigns/:campaignId/documents
+ * Share a document with this campaign. Requires: Campaign DM role
+ *
+ * The DM must already be able to read the asset. Without that check, linking
+ * would be a way to grant a whole table access to a stranger's private file
+ * from nothing but its id.
+ */
+router.post('/:campaignId/documents', campaignDM, async (req: AuthenticatedRequest, res: Response) => {
+  try {
+    const parsed = LinkDocumentSchema.safeParse(req.body);
+    if (!parsed.success) {
+      return res.status(400).json({
+        error: 'Validation Error',
+        message: parsed.error.issues[0]?.message ?? 'Invalid request',
+      });
+    }
+
+    const { campaignId } = req.params;
+    const userId = req.session.userId!;
+    const { assetId } = parsed.data;
+
+    const asset = await prisma.asset.findUnique({
+      where: { id: assetId },
+      select: { id: true, type: true, scope: true, uploadedById: true, campaignId: true },
+    });
+
+    // 404 for both a missing asset and one the caller may not read: the reply
+    // must not confirm that a private id exists.
+    if (!asset || asset.type !== 'DOCUMENT') {
+      return res.status(404).json({ error: 'Not Found', message: 'Document not found' });
+    }
+    if (!(await canReadAsset(asset, userId, req.session.platformRole === 'ADMIN'))) {
+      return res.status(404).json({ error: 'Not Found', message: 'Document not found' });
+    }
+
+    const link = await prisma.campaignDocument.upsert({
+      where: { campaignId_assetId: { campaignId, assetId } },
+      create: { campaignId, assetId, linkedById: userId },
+      // Already shared: nothing to change, and not an error worth surfacing.
+      update: {},
+    });
+
+    return res.status(201).json({ link });
+  } catch (error) {
+    logger.error('Error linking document to campaign', { err: error });
+    return res.status(500).json({ error: 'Internal Server Error', message: 'Failed to share document' });
+  }
+});
+
+/**
+ * DELETE /api/campaigns/:campaignId/documents/:assetId
+ * Stop sharing a document with this campaign. Requires: Campaign DM role
+ *
+ * The document itself is untouched; only the link goes.
+ */
+router.delete('/:campaignId/documents/:assetId', campaignDM, async (req: AuthenticatedRequest, res: Response) => {
+  try {
+    const { count } = await prisma.campaignDocument.deleteMany({
+      where: { campaignId: req.params.campaignId, assetId: req.params.assetId },
+    });
+
+    if (count === 0) {
+      return res.status(404).json({ error: 'Not Found', message: 'That document is not shared with this campaign' });
+    }
+
+    return res.status(200).json({ message: 'Document unshared' });
+  } catch (error) {
+    logger.error('Error unlinking document from campaign', { err: error });
+    return res.status(500).json({ error: 'Internal Server Error', message: 'Failed to unshare document' });
   }
 });
 
