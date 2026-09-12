@@ -184,7 +184,7 @@ describe('isAllowedExtension', () => {
 describe('size limits cover every asset type', () => {
   it('gives DOCUMENT a limit and OTHER none', () => {
     const limits = resolveFileSizeLimits({});
-    expect(limits.DOCUMENT).toBe(10 * 1024 * 1024);
+    expect(limits.DOCUMENT).toBe(50 * 1024 * 1024);
     expect(limits.OTHER).toBe(0);
   });
 

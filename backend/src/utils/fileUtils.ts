@@ -38,7 +38,7 @@ export const DEFAULT_FILE_SIZE_LIMITS_MB: Record<AssetType, number> = {
   TOKEN: 5,
   AUDIO: 20,
   AVATAR: 2,
-  DOCUMENT: 10,
+  DOCUMENT: 50,
   // Not uploadable. Zero so nothing can slip through a limit check by accident.
   OTHER: 0,
 };

@@ -19,7 +19,7 @@ export const DEFAULT_UPLOAD_LIMITS: Record<AssetType, number> = {
   [AssetType.TOKEN]: 5 * MB,
   [AssetType.AUDIO]: 20 * MB,
   [AssetType.AVATAR]: 2 * MB,
-  [AssetType.DOCUMENT]: 10 * MB,
+  [AssetType.DOCUMENT]: 50 * MB,
   [AssetType.OTHER]: 10 * MB,
 };
 

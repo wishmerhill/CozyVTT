@@ -3195,7 +3195,7 @@ paths:
         | TOKEN  | `MAX_TOKEN_SIZE_MB`  | 5 MB |
         | AUDIO  | `MAX_AUDIO_SIZE_MB`  | 20 MB |
         | AVATAR | `MAX_AVATAR_SIZE_MB` | 2 MB |
-        | DOCUMENT | `MAX_DOCUMENT_SIZE_MB` | 10 MB |
+        | DOCUMENT | `MAX_DOCUMENT_SIZE_MB` | 50 MB |
 
         Image assets generate a 512×512 thumbnail server-side.
 

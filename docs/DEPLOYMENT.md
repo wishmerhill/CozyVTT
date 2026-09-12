@@ -594,7 +594,7 @@ MAX_MAP_SIZE_MB=50
 MAX_TOKEN_SIZE_MB=5
 MAX_AUDIO_SIZE_MB=20
 MAX_AVATAR_SIZE_MB=2
-MAX_DOCUMENT_SIZE_MB=10
+MAX_DOCUMENT_SIZE_MB=50
 
 # Request body cap for the bundled Nginx — must be >= the largest limit above
 # plus ~5 MB of multipart overhead
