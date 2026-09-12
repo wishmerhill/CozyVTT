@@ -584,6 +584,12 @@ export interface CampaignDocument {
   uploadedBy: { id: string; displayName: string };
   linkedAt: string;
   linkedBy: { id: string; displayName: string };
+  /**
+   * True when shared into the campaign by link, which the DM can undo. False
+   * when it is the campaign's own document, created or uploaded at CAMPAIGN
+   * scope, where there is no link to remove.
+   */
+  shared: boolean;
 }
 
 /**

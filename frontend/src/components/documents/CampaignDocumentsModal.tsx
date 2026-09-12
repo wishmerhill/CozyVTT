@@ -13,13 +13,16 @@
  */
 
 import { useCallback, useEffect, useState } from 'react';
-import { BookOpen, ExternalLink, Link2, Loader2, Unlink } from 'lucide-react';
+import { BookOpen, ExternalLink, FilePlus, Link2, Loader2, Unlink, Upload } from 'lucide-react';
 import { Modal, Button } from '@/components/ui';
 import ConfirmDialog from '@/components/common/ConfirmDialog';
 import DocumentReader, { documentFormat } from './DocumentReader';
+import NewDocumentDialog from './NewDocumentDialog';
+import AssetUploadModal from '@/components/assets/AssetUploadModal';
+import { useAuth } from '@/contexts/AuthContext';
 import api from '@/services/api';
 import { apiErrorMessage } from '@/utils/errors';
-import { AssetType, type Asset, type CampaignDocument } from '@/types';
+import { AssetType, AssetScope, PlatformRole, type Asset, type CampaignDocument } from '@/types';
 
 interface CampaignDocumentsModalProps {
   isOpen: boolean;
@@ -43,6 +46,13 @@ export default function CampaignDocumentsModal({ isOpen, onClose, campaignId, is
   // DM only: what could be shared.
   const [mine, setMine] = useState<Asset[]>([]);
   const [pickerOpen, setPickerOpen] = useState(false);
+  const [showUpload, setShowUpload] = useState(false);
+  const [showNew, setShowNew] = useState(false);
+
+  const { user } = useAuth();
+  const isAdmin = user?.platformRole === PlatformRole.ADMIN;
+  /** Edit rights: the uploader or an admin. The server decides for real. */
+  const canEdit = (doc: CampaignDocument) => isAdmin || doc.uploadedBy.id === user?.id;
 
   const load = useCallback(async () => {
     setLoading(true);
@@ -162,7 +172,7 @@ export default function CampaignDocumentsModal({ isOpen, onClose, campaignId, is
                   >
                     <ExternalLink className="w-4 h-4" />
                   </a>
-                  {isDM && (
+                  {isDM && doc.shared && (
                     <button
                       type="button"
                       onClick={() => setToUnshare(doc)}
@@ -181,17 +191,40 @@ export default function CampaignDocumentsModal({ isOpen, onClose, campaignId, is
 
           {isDM && (
             <div className="pt-3 border-t border-moss-green/20 space-y-2">
-              <div className="flex items-center justify-between">
-                <span className="text-xs text-ink-secondary">Share a document</span>
-                <Button
-                  type="button"
-                  variant="secondary"
-                  onClick={() => setPickerOpen((v) => !v)}
-                  className="flex items-center gap-1.5 text-xs"
-                >
-                  <Link2 className="w-3.5 h-3.5" />
-                  {pickerOpen ? 'Hide' : 'Choose'}
-                </Button>
+              <div className="flex items-center justify-between gap-2 flex-wrap">
+                <span className="text-xs text-ink-secondary">Add to this campaign</span>
+                <div className="flex items-center gap-1.5">
+                  <Button
+                    type="button"
+                    variant="secondary"
+                    onClick={() => setShowNew(true)}
+                    className="flex items-center gap-1.5 text-xs"
+                    title="Write a text or Markdown document for this campaign"
+                  >
+                    <FilePlus className="w-3.5 h-3.5" />
+                    Write
+                  </Button>
+                  <Button
+                    type="button"
+                    variant="secondary"
+                    onClick={() => setShowUpload(true)}
+                    className="flex items-center gap-1.5 text-xs"
+                    title="Upload a file for this campaign"
+                  >
+                    <Upload className="w-3.5 h-3.5" />
+                    Upload
+                  </Button>
+                  <Button
+                    type="button"
+                    variant="secondary"
+                    onClick={() => setPickerOpen((v) => !v)}
+                    className="flex items-center gap-1.5 text-xs"
+                    title="Share one of your existing documents"
+                  >
+                    <Link2 className="w-3.5 h-3.5" />
+                    {pickerOpen ? 'Hide' : 'Share existing'}
+                  </Button>
+                </div>
               </div>
               {pickerOpen &&
                 (shareable.length === 0 ? (
@@ -236,7 +269,33 @@ export default function CampaignDocumentsModal({ isOpen, onClose, campaignId, is
         name={reading?.name ?? ''}
         originalName={reading?.originalName ?? ''}
         layer="overlay"
+        canEdit={reading !== null && canEdit(reading)}
+        onSaved={(id, fileSize) => setShared((prev) => prev.map((d) => (d.id === id ? { ...d, fileSize } : d)))}
       />
+
+      {isDM && (
+        <>
+          <AssetUploadModal
+            isOpen={showUpload}
+            onClose={() => setShowUpload(false)}
+            onSuccess={() => {
+              // Uploaded at CAMPAIGN scope, so it is the campaign's own and
+              // appears in the list with no share step.
+              void load();
+            }}
+            defaultType={AssetType.DOCUMENT}
+            defaultScope={AssetScope.CAMPAIGN}
+            defaultCampaignId={campaignId}
+          />
+          <NewDocumentDialog
+            isOpen={showNew}
+            onClose={() => setShowNew(false)}
+            onCreated={() => void load()}
+            lockedScope="CAMPAIGN"
+            campaignId={campaignId}
+          />
+        </>
+      )}
 
       <ConfirmDialog
         isOpen={toUnshare !== null}

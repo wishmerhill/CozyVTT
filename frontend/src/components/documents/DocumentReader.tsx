@@ -21,9 +21,10 @@
  */
 
 import { useEffect, useState } from 'react';
-import { ExternalLink, FileText, Loader2 } from 'lucide-react';
+import { ExternalLink, FileText, Loader2, Pencil, Save, X } from 'lucide-react';
 import ReactMarkdown from 'react-markdown';
-import { Modal, Button } from '@/components/ui';
+import { Modal, Button, Textarea } from '@/components/ui';
+import { apiErrorMessage } from '@/utils/errors';
 import api from '@/services/api';
 
 export type DocumentFormat = 'pdf' | 'markdown' | 'text';
@@ -49,6 +50,14 @@ interface DocumentReaderProps {
   originalName: string;
   /** 'overlay' when opened from inside another modal, so it stacks above it. */
   layer?: 'base' | 'overlay';
+  /**
+   * Whether to offer editing. Only text and Markdown can be edited, and only
+   * by the uploader or an admin; the server decides for real, this only avoids
+   * offering a button that would be refused.
+   */
+  canEdit?: boolean;
+  /** Called after a save, with the new size, so a list can update. */
+  onSaved?: (assetId: string, fileSize: number) => void;
 }
 
 export default function DocumentReader({
@@ -58,16 +67,23 @@ export default function DocumentReader({
   name,
   originalName,
   layer = 'base',
+  canEdit = false,
+  onSaved,
 }: DocumentReaderProps) {
   const [text, setText] = useState<string | null>(null);
   const [error, setError] = useState<string | null>(null);
   const [loading, setLoading] = useState(false);
+
+  const [editing, setEditing] = useState(false);
+  const [draft, setDraft] = useState('');
+  const [saving, setSaving] = useState(false);
 
   const format = documentFormat(originalName);
   const url = documentId ? api.getDocumentUrl(documentId) : '';
 
   // Text formats are fetched and rendered here. A PDF is left to the iframe.
   useEffect(() => {
+    setEditing(false);
     if (!isOpen || !documentId || format === 'pdf') {
       setText(null);
       return;
@@ -98,6 +114,31 @@ export default function DocumentReader({
     };
   }, [isOpen, documentId, format, url]);
 
+  const editable = canEdit && format !== 'pdf';
+
+  const startEditing = () => {
+    setDraft(text ?? '');
+    setEditing(true);
+    setError(null);
+  };
+
+  const handleSave = async () => {
+    if (!documentId) return;
+    setSaving(true);
+    setError(null);
+    try {
+      const { asset } = await api.updateDocumentContent(documentId, draft);
+      setText(draft);
+      setEditing(false);
+      onSaved?.(asset.id, asset.fileSize);
+    } catch (err) {
+      // The server's own wording, which says what was wrong with the text.
+      setError(apiErrorMessage(err) ?? 'Could not save the document. Your text is still here.');
+    } finally {
+      setSaving(false);
+    }
+  };
+
   return (
     <Modal
       open={isOpen}
@@ -106,20 +147,67 @@ export default function DocumentReader({
       icon={FileText}
       size="xl"
       layer={layer}
+      closeDisabled={saving}
       footer={
-        <Button
-          type="button"
-          variant="secondary"
-          onClick={() => window.open(url, '_blank', 'noopener,noreferrer')}
-          className="flex items-center gap-2"
-        >
-          <ExternalLink className="w-4 h-4" />
-          Open in a new tab
-        </Button>
+        <>
+          {editable && !editing && (
+            <Button type="button" variant="secondary" onClick={startEditing} className="flex items-center gap-2">
+              <Pencil className="w-4 h-4" />
+              Edit
+            </Button>
+          )}
+          {editing && (
+            <>
+              <Button
+                type="button"
+                variant="secondary"
+                onClick={() => setEditing(false)}
+                disabled={saving}
+                className="flex items-center gap-2"
+              >
+                <X className="w-4 h-4" />
+                Cancel
+              </Button>
+              <Button type="button" onClick={handleSave} disabled={saving} className="flex items-center gap-2">
+                {saving ? <Loader2 className="w-4 h-4 animate-spin" /> : <Save className="w-4 h-4" />}
+                Save
+              </Button>
+            </>
+          )}
+          {!editing && (
+            <Button
+              type="button"
+              variant="secondary"
+              onClick={() => window.open(url, '_blank', 'noopener,noreferrer')}
+              className="flex items-center gap-2"
+            >
+              <ExternalLink className="w-4 h-4" />
+              Open in a new tab
+            </Button>
+          )}
+        </>
       }
     >
       <div className="h-[75vh] min-h-[24rem] flex flex-col">
-        {format === 'pdf' ? (
+        {editing ? (
+          /* Stored as typed. The server checks it is text and bounds its size;
+             what makes it harmless is how it is rendered and served, not what
+             is stripped here. A refused save keeps the text and shows why. */
+          <>
+            {error && (
+              <p className="text-xs text-danger-ink mb-2" role="alert">
+                {error}
+              </p>
+            )}
+            <Textarea
+              value={draft}
+              onChange={(e) => setDraft(e.target.value)}
+              aria-label={`Edit ${name}`}
+              className="flex-1 min-h-0 w-full font-mono text-sm resize-none"
+              disabled={saving}
+            />
+          </>
+        ) : format === 'pdf' ? (
           /* The browser's own PDF viewer, in a sandboxed frame.
 
              The sandbox attribute is what actually contains it. It gives the

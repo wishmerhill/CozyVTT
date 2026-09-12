@@ -15,6 +15,13 @@ import CampaignDocumentsModal from '../CampaignDocumentsModal';
 import type { Asset, CampaignDocument } from '@/types';
 import { AssetType, AssetScope } from '@/types';
 
+// Not under test here, and it needs a QueryClient of its own.
+vi.mock('@/components/assets/AssetUploadModal', () => ({ default: () => null }));
+
+vi.mock('@/contexts/AuthContext', () => ({
+  useAuth: () => ({ user: { id: 'dm', platformRole: 'USER', globalAssetManager: false } }),
+}));
+
 vi.mock('@/services/api', () => {
   const client = {
     listCampaignDocuments: vi.fn(),
@@ -44,6 +51,7 @@ const shared = (id: string, name: string, originalName: string): CampaignDocumen
   uploadedBy: { id: 'dm', displayName: 'The DM' },
   linkedAt: '2026-01-02T00:00:00.000Z',
   linkedBy: { id: 'dm', displayName: 'The DM' },
+  shared: true,
 });
 
 const mine = (id: string, name: string, originalName: string): Asset =>
@@ -103,7 +111,7 @@ describe('CampaignDocumentsModal', () => {
     it('offers only documents not already shared', async () => {
       render(<CampaignDocumentsModal isOpen onClose={vi.fn()} campaignId="c1" isDM />);
       await screen.findByText('Core Rules');
-      fireEvent.click(screen.getByRole('button', { name: /choose/i }));
+      fireEvent.click(screen.getByRole('button', { name: /share existing/i }));
 
       // d1 is shared already; only d2 should be offered.
       expect(screen.getByText('House Rules')).toBeInTheDocument();
@@ -121,7 +129,7 @@ describe('CampaignDocumentsModal', () => {
 
       render(<CampaignDocumentsModal isOpen onClose={vi.fn()} campaignId="c1" isDM />);
       await screen.findByText('Core Rules');
-      fireEvent.click(screen.getByRole('button', { name: /choose/i }));
+      fireEvent.click(screen.getByRole('button', { name: /share existing/i }));
       fireEvent.click(screen.getByRole('button', { name: /^share$/i }));
 
       await waitFor(() => expect(linkCampaignDocument).toHaveBeenCalledWith('c1', 'd2'));
@@ -149,7 +157,7 @@ describe('CampaignDocumentsModal', () => {
       });
       render(<CampaignDocumentsModal isOpen onClose={vi.fn()} campaignId="c1" isDM />);
       await screen.findByText('Core Rules');
-      fireEvent.click(screen.getByRole('button', { name: /choose/i }));
+      fireEvent.click(screen.getByRole('button', { name: /share existing/i }));
       expect(screen.getByText(/everything you can share is already shared/i)).toBeInTheDocument();
     });
 
@@ -158,9 +166,31 @@ describe('CampaignDocumentsModal', () => {
       listAssets.mockResolvedValue({ assets: [], pagination: { page: 1, limit: 100, total: 0 } });
       render(<CampaignDocumentsModal isOpen onClose={vi.fn()} campaignId="c1" isDM />);
       await screen.findByText(/nothing shared yet/i);
-      fireEvent.click(screen.getByRole('button', { name: /choose/i }));
+      fireEvent.click(screen.getByRole('button', { name: /share existing/i }));
       expect(screen.getByText(/upload one from documents on your dashboard/i)).toBeInTheDocument();
     });
+  });
+
+  it('offers Write and Upload to the DM and not to a player', async () => {
+    const { unmount } = render(<CampaignDocumentsModal isOpen onClose={vi.fn()} campaignId="c1" isDM />);
+    await screen.findByText('Core Rules');
+    expect(screen.getByRole('button', { name: /^write$/i })).toBeInTheDocument();
+    expect(screen.getByRole('button', { name: /^upload$/i })).toBeInTheDocument();
+    unmount();
+
+    render(<CampaignDocumentsModal isOpen onClose={vi.fn()} campaignId="c1" isDM={false} />);
+    await screen.findByText('Core Rules');
+    expect(screen.queryByRole('button', { name: /^write$/i })).not.toBeInTheDocument();
+    expect(screen.queryByRole('button', { name: /^upload$/i })).not.toBeInTheDocument();
+  });
+
+  it('does not offer to unshare the campaign\'s own document, which has no link', async () => {
+    listCampaignDocuments.mockResolvedValue({
+      documents: [{ ...shared('own', 'Table Notes', 'notes.txt'), shared: false }],
+    });
+    render(<CampaignDocumentsModal isOpen onClose={vi.fn()} campaignId="c1" isDM />);
+    await screen.findByText('Table Notes');
+    expect(screen.queryByLabelText('Stop sharing Table Notes')).not.toBeInTheDocument();
   });
 
   it('surfaces the server\'s reason when sharing is refused', async () => {
@@ -170,7 +200,7 @@ describe('CampaignDocumentsModal', () => {
     });
     render(<CampaignDocumentsModal isOpen onClose={vi.fn()} campaignId="c1" isDM />);
     await screen.findByText('Core Rules');
-    fireEvent.click(screen.getByRole('button', { name: /choose/i }));
+    fireEvent.click(screen.getByRole('button', { name: /share existing/i }));
     fireEvent.click(screen.getByRole('button', { name: /^share$/i }));
     expect(await screen.findByRole('alert')).toHaveTextContent(/document not found/i);
   });

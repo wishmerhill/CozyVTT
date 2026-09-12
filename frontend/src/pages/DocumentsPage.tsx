@@ -14,11 +14,12 @@
 import { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useQueryClient } from '@tanstack/react-query';
-import { ArrowLeft, BookOpen, ExternalLink, FileText, Loader2, Trash2, Upload } from 'lucide-react';
+import { ArrowLeft, BookOpen, ExternalLink, FilePlus, FileText, Loader2, Trash2, Upload } from 'lucide-react';
 import { Button } from '@/components/ui';
 import ConfirmDialog from '@/components/common/ConfirmDialog';
 import AssetUploadModal from '@/components/assets/AssetUploadModal';
 import DocumentReader, { documentFormat } from '@/components/documents/DocumentReader';
+import NewDocumentDialog from '@/components/documents/NewDocumentDialog';
 import { useAssetsQuery } from '@/hooks/queries';
 import { useAuth } from '@/contexts/AuthContext';
 import { useToast } from '@/contexts/ToastContext';
@@ -52,6 +53,7 @@ export default function DocumentsPage() {
 
   const [page, setPage] = useState(1);
   const [showUpload, setShowUpload] = useState(false);
+  const [showNew, setShowNew] = useState(false);
   const [reading, setReading] = useState<Asset | null>(null);
   const [toDelete, setToDelete] = useState<Asset | null>(null);
   const [deletingId, setDeletingId] = useState<string | null>(null);
@@ -109,15 +111,29 @@ export default function DocumentsPage() {
               </div>
             </div>
           </div>
-          <Button type="button" onClick={() => setShowUpload(true)} className="flex items-center gap-2">
-            <Upload className="w-4 h-4" />
-            Upload a document
-          </Button>
+          <div className="flex items-center gap-2">
+            <Button
+              type="button"
+              variant="secondary"
+              onClick={() => setShowNew(true)}
+              className="flex items-center gap-2"
+            >
+              <FilePlus className="w-4 h-4" />
+              <span className="hidden sm:inline">Write one</span>
+            </Button>
+            <Button type="button" onClick={() => setShowUpload(true)} className="flex items-center gap-2">
+              <Upload className="w-4 h-4" />
+              Upload a document
+            </Button>
+          </div>
         </div>
 
         <p className="text-sm text-ink-secondary">
-          PDF, plain text and Markdown, up to the size limit your instance allows. A document is yours
-          alone until a DM shares it with a campaign from that campaign's settings.
+          PDF, plain text and Markdown, up to the size limit your instance allows. Who can read one
+          depends on where you put it: <strong>Personal</strong> is yours alone until a DM shares it
+          with a campaign; <strong>Campaign</strong> belongs to that table and its members can read
+          it; <strong>Global</strong> is readable by everyone on this instance. Text and Markdown
+          can be written here and edited later; a PDF is a file you upload.
         </p>
 
         {/* List */}
@@ -243,6 +259,17 @@ export default function DocumentsPage() {
         documentId={reading?.id ?? null}
         name={reading?.name ?? ''}
         originalName={reading?.originalName ?? ''}
+        canEdit={reading !== null && canDelete(reading)}
+        onSaved={() => queryClient.invalidateQueries({ queryKey: ['assets'] })}
+      />
+
+      <NewDocumentDialog
+        isOpen={showNew}
+        onClose={() => setShowNew(false)}
+        onCreated={(asset) => {
+          queryClient.invalidateQueries({ queryKey: ['assets'] });
+          showToast(`"${asset.name}" created`, 'success');
+        }}
       />
 
       <ConfirmDialog

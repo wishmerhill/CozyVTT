@@ -13,15 +13,19 @@
  */
 
 import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest';
-import { render, screen, waitFor } from '@testing-library/react';
+import { render, screen, waitFor, fireEvent } from '@testing-library/react';
 import DocumentReader, { documentFormat } from '../DocumentReader';
 
 vi.mock('@/services/api', () => {
   const client = {
     getDocumentUrl: (id: string) => `/api/assets/documents/${id}`,
+    updateDocumentContent: vi.fn(),
   };
   return { api: client, default: client };
 });
+
+import api from '@/services/api';
+const updateDocumentContent = api.updateDocumentContent as ReturnType<typeof vi.fn>;
 
 const originalFetch = globalThis.fetch;
 
@@ -143,5 +147,74 @@ describe('DocumentReader', () => {
       <DocumentReader isOpen={false} onClose={vi.fn()} documentId="doc-2" name="X" originalName="x.md" />
     );
     await waitFor(() => expect(globalThis.fetch).not.toHaveBeenCalled());
+  });
+
+  describe('editing', () => {
+    it('offers Edit only when allowed, and never for a PDF', async () => {
+      mockFetch('text');
+      const { unmount } = render(
+        <DocumentReader isOpen onClose={vi.fn()} documentId="d" name="N" originalName="n.md" canEdit />
+      );
+      await screen.findByText('text');
+      expect(screen.getByRole('button', { name: /^edit$/i })).toBeInTheDocument();
+      unmount();
+
+      render(<DocumentReader isOpen onClose={vi.fn()} documentId="d" name="P" originalName="p.pdf" canEdit />);
+      expect(screen.queryByRole('button', { name: /^edit$/i })).not.toBeInTheDocument();
+    });
+
+    it('does not offer Edit without the right', async () => {
+      mockFetch('text');
+      render(<DocumentReader isOpen onClose={vi.fn()} documentId="d" name="N" originalName="n.md" />);
+      await screen.findByText('text');
+      expect(screen.queryByRole('button', { name: /^edit$/i })).not.toBeInTheDocument();
+    });
+
+    it('saves what was typed and shows it', async () => {
+      mockFetch('# Old');
+      updateDocumentContent.mockResolvedValue({ asset: { id: 'd', fileSize: 5 } });
+      const onSaved = vi.fn();
+      render(
+        <DocumentReader isOpen onClose={vi.fn()} documentId="d" name="N" originalName="n.md" canEdit onSaved={onSaved} />
+      );
+      await screen.findByRole('heading', { name: 'Old' });
+      fireEvent.click(screen.getByRole('button', { name: /^edit$/i }));
+
+      const box = screen.getByLabelText('Edit N');
+      expect(box).toHaveValue('# Old');
+      fireEvent.change(box, { target: { value: '# New' } });
+      fireEvent.click(screen.getByRole('button', { name: /^save$/i }));
+
+      await waitFor(() => expect(updateDocumentContent).toHaveBeenCalledWith('d', '# New'));
+      expect(await screen.findByRole('heading', { name: 'New' })).toBeInTheDocument();
+      expect(onSaved).toHaveBeenCalledWith('d', 5);
+    });
+
+    it('keeps the text and shows the reason when a save is refused', async () => {
+      mockFetch('fine');
+      updateDocumentContent.mockRejectedValue({
+        isAxiosError: true,
+        response: { data: { error: 'Validation Error', message: 'The text contains characters that do not belong in a document.' } },
+      });
+      render(<DocumentReader isOpen onClose={vi.fn()} documentId="d" name="N" originalName="n.txt" canEdit />);
+      await screen.findByText('fine');
+      fireEvent.click(screen.getByRole('button', { name: /^edit$/i }));
+      fireEvent.change(screen.getByLabelText('Edit N'), { target: { value: 'attempt' } });
+      fireEvent.click(screen.getByRole('button', { name: /^save$/i }));
+
+      expect(await screen.findByRole('alert')).toHaveTextContent(/do not belong in a document/i);
+      expect(screen.getByLabelText('Edit N')).toHaveValue('attempt');
+    });
+
+    it('cancel discards the draft and returns to reading', async () => {
+      mockFetch('original');
+      render(<DocumentReader isOpen onClose={vi.fn()} documentId="d" name="N" originalName="n.txt" canEdit />);
+      await screen.findByText('original');
+      fireEvent.click(screen.getByRole('button', { name: /^edit$/i }));
+      fireEvent.change(screen.getByLabelText('Edit N'), { target: { value: 'changed' } });
+      fireEvent.click(screen.getByRole('button', { name: /^cancel$/i }));
+      expect(updateDocumentContent).not.toHaveBeenCalled();
+      expect(screen.getByText('original')).toBeInTheDocument();
+    });
   });
 });

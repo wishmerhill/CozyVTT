@@ -565,6 +565,28 @@ class ApiClient {
   }
 
   /**
+   * Create a text or Markdown document from typed content. The same scope rules
+   * as an upload apply; the content is stored as typed and never interpreted.
+   */
+  async createDocument(body: {
+    name: string;
+    format: 'txt' | 'md';
+    content: string;
+    description?: string;
+    scope?: 'USER' | 'CAMPAIGN' | 'GLOBAL';
+    campaignId?: string;
+  }): Promise<{ asset: import('@/types').Asset }> {
+    const response = await this.client.post('/api/assets/documents', body);
+    return response.data;
+  }
+
+  /** Replace a text or Markdown document's content. Uploader or admin only. */
+  async updateDocumentContent(assetId: string, content: string): Promise<{ asset: import('@/types').Asset }> {
+    const response = await this.client.put(`/api/assets/documents/${assetId}/content`, { content });
+    return response.data;
+  }
+
+  /**
    * The URL a document is read from. Same-origin, so a browser can show it in
    * an iframe under the current Content Security Policy.
    */
