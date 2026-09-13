@@ -83,10 +83,47 @@ describe('Markdown', () => {
     });
 
     it('drops an onerror on an image written in Markdown', () => {
-      const { container } = render(<Markdown>{'![x](https://example.com/a.png "onerror=alert(1)")'}</Markdown>);
+      const { container } = render(<Markdown>{'![x](/api/assets/maps/abc "onerror=alert(1)")'}</Markdown>);
       const img = container.querySelector('img');
       expect(img).not.toBeNull();
       expect(img?.getAttribute('onerror')).toBeNull();
+    });
+  });
+
+  describe('images', () => {
+    // An image on another host makes every reader's browser fetch it, which
+    // tells that host who opened the document and when. Only this instance's
+    // own images are shown; the rest fall back to their alt text.
+    it('shows an image served by this instance', () => {
+      const { container } = render(<Markdown>{'![the dungeon](/api/assets/maps/abc)'}</Markdown>);
+      const img = container.querySelector('img');
+      expect(img?.getAttribute('src')).toBe('/api/assets/maps/abc');
+      expect(img?.getAttribute('alt')).toBe('the dungeon');
+    });
+
+    it('shows an image given with this instance\'s full address', () => {
+      const { container } = render(
+        <Markdown>{`![map](${window.location.origin}/api/assets/maps/abc)`}</Markdown>
+      );
+      expect(container.querySelector('img')?.getAttribute('src')).toBe(
+        `${window.location.origin}/api/assets/maps/abc`
+      );
+    });
+
+    it('does not load an image from another host, and shows its alt text instead', () => {
+      const { container } = render(<Markdown>{'![tracker](https://evil.example/pixel.png)'}</Markdown>);
+      expect(container.querySelector('img')).toBeNull();
+      expect(container.textContent).toContain('tracker');
+    });
+
+    it('treats a protocol-relative address as another host', () => {
+      const { container } = render(<Markdown>{'![x](//evil.example/pixel.png)'}</Markdown>);
+      expect(container.querySelector('img')).toBeNull();
+    });
+
+    it('drops an image with no usable address without throwing', () => {
+      const { container } = render(<Markdown>{'![empty]()'}</Markdown>);
+      expect(container.querySelector('img')).toBeNull();
     });
   });
 });

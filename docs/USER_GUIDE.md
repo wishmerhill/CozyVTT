@@ -413,6 +413,8 @@ Open a text or Markdown document you uploaded or wrote and press **Edit**. What 
 
 Uploads are checked rather than trusted. A PDF must really be a PDF, and a text or Markdown file must really be text; a program renamed to `.md` is refused. Documents are always shown as text or as a PDF, never as a web page, so a file that contains HTML or a script is displayed as-is and nothing in it can run. There is no need to avoid typing `<` or `>` in a document; they show as typed.
 
+Pictures in a Markdown document or note only load from your own CozyVTT. An image that points at another website would make every reader's browser contact that site, revealing who opened the document; instead its description is shown and nothing is fetched. To show a picture, upload it to your asset library and link to it from there.
+
 ---
 
 ## Running Sessions
