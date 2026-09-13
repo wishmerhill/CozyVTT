@@ -1024,7 +1024,6 @@ router.get('/tokens/:id', authenticated, async (req: AuthenticatedRequest, res: 
 router.get('/audio/:id', authenticated, async (req: AuthenticatedRequest, res: Response) => {
   try {
     const { id } = req.params;
-    const userId = req.session.userId!;
 
     const asset = await prisma.asset.findUnique({
       where: { id, type: 'AUDIO' },
@@ -1037,23 +1036,11 @@ router.get('/audio/:id', authenticated, async (req: AuthenticatedRequest, res: R
       });
     }
 
-    // Check access permissions
-    // TODO(permissions): this is a hand copy of canReadAsset, the same drift
-    // /:id/download had. It answers 403 where the shared rule answers 404 and
-    // ignores use-in-campaign. Switch to canReadAssetFile in its own commit,
-    // with a test that a member of a campaign whose ambience uses this track
-    // can fetch it.
-    const isAdminAudio = req.session.platformRole === 'ADMIN';
-    if (asset.scope === 'USER' && asset.uploadedById !== userId && !isAdminAudio) {
-      return res.status(403).json({ error: 'Forbidden', message: 'You do not have access to this asset' });
-    }
-    if (asset.scope === 'CAMPAIGN' && asset.campaignId && !isAdminAudio) {
-      const membership = await prisma.campaignMembership.findUnique({
-        where: { userId_campaignId: { userId, campaignId: asset.campaignId } },
-      });
-      if (!membership) {
-        return res.status(403).json({ error: 'Forbidden', message: 'You do not have access to this asset' });
-      }
+    // The one read rule, as maps and tokens use it. Beyond scope it knows a
+    // track the campaign is playing, which is how a personal track reaches the
+    // players. 404 rather than 403, so the reply does not confirm the id.
+    if (!(await canReadAssetFile(asset, req))) {
+      return res.status(404).json({ error: 'Not Found', message: 'Audio asset not found' });
     }
 
     // Check if file exists (normalize path for cross-platform compatibility)
