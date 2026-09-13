@@ -7,6 +7,8 @@
 // ============================================
 
 import { useState, useEffect, lazy, Suspense } from 'react';
+import { isCampaignOwner } from '@/utils/campaignRoles';
+import { useAuth } from '@/contexts/AuthContext';
 import { useNavigate } from 'react-router-dom';
 import { useTranslation } from 'react-i18next';
 import { CampaignProvider, useCampaign } from '@/contexts/CampaignContext';
@@ -21,8 +23,7 @@ import {
   PanelLeftClose,
   PanelLeftOpen,
   PanelRightClose,
-  PanelRightOpen,
-} from 'lucide-react';
+  PanelRightOpen, Settings, BookOpen } from 'lucide-react';
 import {
   Group,
   Panel,
@@ -49,6 +50,7 @@ import CreatureLibrary from '@/components/campaign/CreatureLibrary';
 import TokenTemplateLibrary from '@/components/campaign/TokenTemplateLibrary';
 import TokenRoster from '@/components/campaign/TokenRoster';
 import CampaignSettingsModal from '@/components/campaign/CampaignSettingsModal';
+import CampaignDocumentsModal from '@/components/documents/CampaignDocumentsModal';
 import SessionSidebar from '@/components/campaign/SessionSidebar';
 import SessionToolbar, { type SessionToolKey } from '@/components/campaign/SessionToolbar';
 import ConnectionStatus from '@/components/ConnectionStatus';
@@ -65,6 +67,18 @@ function CampaignPageContent() {
   const { t } = useTranslation(['campaign', 'common']);
   const navigate = useNavigate();
   const { campaign, currentMap, loading, error, userRole, updateCampaignStatus, setActiveSession, refreshCurrentMap } = useCampaign();
+  const { user } = useAuth();
+
+  /**
+   * Owning a campaign and running it are different things once the DM seat can
+   * move. The owner keeps the powers that are theirs — deleting the campaign,
+   * and taking the seat back — so they need a way into the settings panel even
+   * when somebody else is the DM. Without this, handing the game over left the
+   * campaign with nobody able to delete it: the owner had the permission and no
+   * route to it, the new DM had the route and no permission.
+   */
+  const isOwner = isCampaignOwner(campaign, user?.id);
+  const canOpenSettings = userRole === 'DM' || isOwner;
   const { socket, reconnectCount, status } = useWebSocket();
 
   // Mirror combat/initiative state into the game store. Owned here rather than
@@ -112,6 +126,7 @@ function CampaignPageContent() {
   const [isSpiritLayerOpen, setIsSpiritLayerOpen] = useState(false);
   const [isAtmospherePanelOpen, setIsAtmospherePanelOpen] = useState(false);
   const [isSettingsOpen, setIsSettingsOpen] = useState(false);
+  const [isDocumentsOpen, setIsDocumentsOpen] = useState(false);
   const [isCreatureLibraryOpen, setIsCreatureLibraryOpen] = useState(false);
   const [isTokenTemplateLibraryOpen, setIsTokenTemplateLibraryOpen] = useState(false);
   const [quickEditToken, setQuickEditToken] = useState<Token | null>(null);
@@ -319,6 +334,40 @@ function CampaignPageContent() {
             </>
           )}
 
+          {/* An owner who has handed the game over keeps two powers — deleting
+              the campaign and taking the seat back — and this is their way to
+              them. It sits here, beside where the DM's own settings gear would
+              be, because that is where somebody goes looking for it; tucked in
+              the sidebar it read as missing. */}
+          {isOwner && userRole !== 'DM' && (
+            <>
+              <div className="h-6 w-px bg-moss-green/20" />
+              <Tooltip content="Owner settings — delete, or take back the DM role" side="bottom">
+                <Button
+                  variant="ghost"
+                  iconOnly
+                  icon={Settings}
+                  aria-label="Owner Settings"
+                  onClick={() => setIsSettingsOpen(true)}
+                />
+              </Tooltip>
+            </>
+          )}
+
+          {/* Documents shared with the campaign. Every member, not just the
+              DM: a rulebook the table is meant to read has to be reachable by
+              the people reading it. */}
+          <div className="h-6 w-px bg-moss-green/20" />
+          <Tooltip content="Campaign documents" side="bottom">
+            <Button
+              variant="ghost"
+              iconOnly
+              icon={BookOpen}
+              aria-label="Campaign documents"
+              onClick={() => setIsDocumentsOpen(true)}
+            />
+          </Tooltip>
+
           {/* Sidebar collapse toggles (all roles) */}
           <div className="h-6 w-px bg-moss-green/20" />
           <div className="flex items-center gap-1">
@@ -492,11 +541,21 @@ function CampaignPageContent() {
         />
       )}
 
-      {/* Campaign Settings slide-over panel (DM only) */}
-      {userRole === 'DM' && (
+      {/* Campaign Settings slide-over panel — the DM, or the owner, who sees
+          only the parts that are theirs (see CampaignSettingsModal). */}
+      {canOpenSettings && (
         <CampaignSettingsModal
           isOpen={isSettingsOpen}
           onClose={() => setIsSettingsOpen(false)}
+        />
+      )}
+
+      {campaign?.id && (
+        <CampaignDocumentsModal
+          isOpen={isDocumentsOpen}
+          onClose={() => setIsDocumentsOpen(false)}
+          campaignId={campaign.id}
+          isDM={userRole === 'DM'}
         />
       )}
 

@@ -61,6 +61,7 @@ import type {
   AdminOnlineUser,
   AdminSystemLog,
   AdminServerConfig,
+  ServerUploadLimits,
   AdminBackup,
   Asset,
   Campaign,
@@ -104,7 +105,7 @@ function formatBytes(bytes: number): string {
  * Body size a reverse proxy must accept: the largest upload limit plus a few MB
  * of multipart overhead (mirrors UPLOAD_OVERHEAD_BYTES in the backend).
  */
-function requiredProxyBodyMB(uploadLimits: Record<string, number>): number {
+function requiredProxyBodyMB(uploadLimits: ServerUploadLimits): number {
   const largest = Math.max(...Object.values(uploadLimits));
   return Math.ceil((largest + 5 * 1024 * 1024) / (1024 * 1024));
 }

@@ -19,6 +19,7 @@ import {
   UserPlus,
   AlertTriangle,
   ShieldCheck,
+  Crown,
   MessageCircle,
   Download,
 } from 'lucide-react';
@@ -49,7 +50,19 @@ export default function CampaignSettingsModal({
   onClose,
 }: CampaignSettingsModalProps) {
   const { t } = useTranslation('campaign');
-  const { campaign, refreshCampaign } = useCampaign();
+  const { campaign, refreshCampaign, userRole } = useCampaign();
+
+  /**
+   * The panel is open to the DM and to the campaign's owner, who are not always
+   * the same person once the game has been handed over.
+   *
+   * An owner who is no longer the DM keeps exactly two powers, and the server
+   * agrees with this list: they can delete the campaign, and they can take the
+   * DM seat back. Everything else here — renaming, chat settings, exporting,
+   * inviting, removing members — is gated on being the DM, so offering it would
+   * only produce refusals.
+   */
+  const isDmViewer = userRole === 'DM';
   const { showToast } = useToast();
   const { user } = useAuth();
   const navigate = useNavigate();
@@ -70,6 +83,8 @@ export default function CampaignSettingsModal({
   // ── Members ──────────────────────────────────
   const [removingMemberId, setRemovingMemberId] = useState<string | null>(null);
   const [memberToRemove, setMemberToRemove] = useState<CampaignMembership | null>(null);
+  const [memberToPromote, setMemberToPromote] = useState<CampaignMembership | null>(null);
+  const [promotingMemberId, setPromotingMemberId] = useState<string | null>(null);
   const [showInviteModal, setShowInviteModal] = useState(false);
 
   // ── Export ────────────────────────────────────
@@ -89,7 +104,7 @@ export default function CampaignSettingsModal({
       setChatCooldownEnabled(campaign.chatCooldownEnabled);
       setChatCooldownSeconds(campaign.chatCooldownSeconds);
       setDeleteConfirmName('');
-      setActiveTab('general');
+      setActiveTab(isDmViewer ? 'general' : 'members');
     }
   }, [isOpen, campaign]);
 
@@ -152,6 +167,29 @@ export default function CampaignSettingsModal({
       showToast(apiErrorMessage(err) ?? t('settings.removeMemberFailed'), 'error');
     } finally {
       setRemovingMemberId(null);
+    }
+  };
+
+  /**
+   * Hand the game to someone else. One action on the server: they become DM and
+   * you become a player. Ownership of the campaign does not move, so if you own
+   * it you still do.
+   */
+  const handleConfirmMakeDm = async () => {
+    if (!memberToPromote) return;
+    const promoted = memberToPromote;
+    setPromotingMemberId(promoted.userId);
+    setMemberToPromote(null);
+    try {
+      await api.transferDM(campaign.id, promoted.userId);
+      await refreshCampaign();
+      showToast(`${promoted.user?.displayName ?? 'They'} is now the DM`, 'success');
+      // This panel is DM-only, and the caller has just stopped being the DM.
+      onClose();
+    } catch (err) {
+      showToast(apiErrorMessage(err) ?? 'Failed to transfer the DM role', 'error');
+    } finally {
+      setPromotingMemberId(null);
     }
   };
 
@@ -237,12 +275,17 @@ export default function CampaignSettingsModal({
                 {/* ── Tabs ── */}
                 <div className="flex gap-1 mt-4">
                   {(
-                    [
-                      { id: 'general', label: t('settings.tabs.general') },
-                      { id: 'chat', label: t('settings.tabs.chat') },
-                      { id: 'members', label: t('settings.tabs.members') },
-                      { id: 'danger', label: t('settings.tabs.danger') },
-                    ] as { id: SettingsTab; label: string }[]
+                    (isDmViewer
+                      ? [
+                          { id: 'general', label: t('settings.tabs.general') },
+                          { id: 'chat', label: t('settings.tabs.chat') },
+                          { id: 'members', label: t('settings.tabs.members') },
+                          { id: 'danger', label: t('settings.tabs.danger') },
+                        ]
+                      : [
+                          { id: 'members', label: t('settings.tabs.members') },
+                          { id: 'danger', label: t('settings.tabs.danger') },
+                        ]) as { id: SettingsTab; label: string }[]
                   ).map((tab) => (
                     <button
                       key={tab.id}
@@ -478,6 +521,7 @@ export default function CampaignSettingsModal({
                         <Users className="w-4 h-4" />
                         <span>{t('settings.memberCount', { count: memberships.length })}</span>
                       </div>
+                      {isDmViewer && (
                       <Button
                         type="button"
                         onClick={() => setShowInviteModal(true)}
@@ -486,6 +530,7 @@ export default function CampaignSettingsModal({
                         <UserPlus className="w-4 h-4" />
                         {t('roster.invite')}
                       </Button>
+                      )}
                     </div>
 
                     {/* Member list */}
@@ -540,8 +585,27 @@ export default function CampaignSettingsModal({
                                 )}
                               </span>
 
+                              {/* Hand over the game. Offered on anyone who is
+                                  not already the DM, including a spectator. */}
+                              {!isDm && (
+                                <button
+                                  type="button"
+                                  onClick={() => setMemberToPromote(membership)}
+                                  disabled={promotingMemberId === membership.userId}
+                                  title={`Make ${membership.user?.displayName ?? 'this player'} the DM`}
+                                  className="p-1.5 rounded-lg text-spirit-purple hover:bg-spirit-purple/10 transition-colors disabled:opacity-40"
+                                  aria-label={`Make ${membership.user?.displayName} the Dungeon Master`}
+                                >
+                                  {promotingMemberId === membership.userId ? (
+                                    <Loader2 className="w-4 h-4 animate-spin" />
+                                  ) : (
+                                    <Crown className="w-4 h-4" />
+                                  )}
+                                </button>
+                              )}
+
                               {/* Remove button — DM and self cannot be removed */}
-                              {!isDmSelf(membership) && (
+                              {isDmViewer && !isDmSelf(membership) && (
                                 <button
                                   type="button"
                                   onClick={() => handleRemoveMemberClick(membership)}
@@ -638,6 +702,17 @@ export default function CampaignSettingsModal({
         variant="danger"
         onConfirm={handleConfirmRemoveMember}
         onCancel={() => setMemberToRemove(null)}
+      />
+
+      {/* Transfer DM confirm dialog */}
+      <ConfirmDialog
+        isOpen={!!memberToPromote}
+        title="Hand over the DM role"
+        message={`Make ${memberToPromote?.user?.displayName ?? 'this player'} the DM of "${campaign.name}"? They get the DM's controls and you become a player. You stay in the campaign, and this does not change who owns it — you can be made DM again later.`}
+        confirmLabel="Make them DM"
+        cancelLabel="Cancel"
+        onConfirm={handleConfirmMakeDm}
+        onCancel={() => setMemberToPromote(null)}
       />
 
       {/* Final delete confirm dialog */}

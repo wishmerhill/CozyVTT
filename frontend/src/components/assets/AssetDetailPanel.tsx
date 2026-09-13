@@ -1,4 +1,5 @@
 import { useState, useEffect } from 'react';
+import { isCampaignDm } from '@/utils/campaignRoles';
 import { motion, AnimatePresence } from 'framer-motion';
 import ConfirmDialog from '@/components/common/ConfirmDialog';
 import {
@@ -25,6 +26,7 @@ import { api } from '../../services/api';
 import campaignService from '../../services/campaign.service';
 import Button from '@/components/ui/Button';
 import { apiErrorText } from '@/utils/errors';
+import { assetScopeLabel } from '@/utils/assetUrl';
 
 interface AssetDetailPanelProps {
   asset: Asset;
@@ -85,8 +87,10 @@ export default function AssetDetailPanel({ asset, onClose, onDelete, onUpdate }:
   // User can move if they own the asset or are admin
   const canMove = !isScopeFixed && (isOwner || isAdmin);
 
-  // Campaigns where the current user is DM (owns the campaign)
-  const dmCampaigns = userCampaigns.filter((c) => c.ownerId === user?.id);
+  // Campaigns the current user runs. Owning a campaign is a different thing —
+  // after a handover the owner is an ordinary player there, and it is the new
+  // DM who needs campaign scope offered to them.
+  const dmCampaigns = userCampaigns.filter((c) => isCampaignDm(c, user?.id));
 
   // Available scopes to move to (exclude current)
   const availableMoveScopes: AssetScope[] = [];
@@ -135,12 +139,6 @@ export default function AssetDetailPanel({ asset, onClose, onDelete, onUpdate }:
       default:
         return <ImageIcon className="w-5 h-5 text-stone-gray" />;
     }
-  };
-
-  const scopeLabel = (scope: AssetScope) => {
-    if (scope === AssetScope.GLOBAL) return 'Global';
-    if (scope === AssetScope.USER) return 'Personal';
-    return 'Campaign';
   };
 
   const scopeIcon = (scope: AssetScope) => {
@@ -238,7 +236,7 @@ export default function AssetDetailPanel({ asset, onClose, onDelete, onUpdate }:
                     </span>
                     <span className="flex items-center gap-1 px-2 py-1 bg-parchment/50 border border-moss-green/20 rounded-md text-sm text-stone-gray">
                       {scopeIcon(currentAsset.scope)}
-                      {scopeLabel(currentAsset.scope)}
+                      {assetScopeLabel(currentAsset.scope)}
                     </span>
                   </div>
                 </div>
@@ -359,7 +357,7 @@ export default function AssetDetailPanel({ asset, onClose, onDelete, onUpdate }:
                           }`}
                         >
                           {scopeIcon(scope)}
-                          {scopeLabel(scope)}
+                          {assetScopeLabel(scope)}
                         </button>
                       ))}
                     </div>
@@ -408,7 +406,7 @@ export default function AssetDetailPanel({ asset, onClose, onDelete, onUpdate }:
                         ) : (
                           <ArrowRightLeft className="w-4 h-4" />
                         )}
-                        {moving ? 'Moving…' : `Move to ${scopeLabel(moveScope)}`}
+                        {moving ? 'Moving…' : `Move to ${assetScopeLabel(moveScope)}`}
                       </Button>
                     )}
                   </div>

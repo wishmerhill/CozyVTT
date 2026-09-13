@@ -24,6 +24,7 @@ npx tsc --noEmit         # type-check
 - [`src/types/index.ts`](src/types/index.ts) — TypeScript types mirroring the backend
 - [`src/themes.ts`](src/themes.ts) — built-in color themes and font families
 - [`src/components/character-sheets/`](src/components/character-sheets/) — per-game-system character sheet implementations
+- [`src/components/common/Markdown.tsx`](src/components/common/Markdown.tsx) — the one Markdown renderer (notes, documents). Import it; do not use `react-markdown` directly, so raw HTML stays off and the plugin set stays the same everywhere
 
 ## More information
 

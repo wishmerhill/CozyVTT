@@ -8,7 +8,7 @@ import { X, Shield, User as UserIcon } from 'lucide-react';
 import { useFocusTrap } from '@/hooks/useFocusTrap';
 import { useAuth } from '@/contexts/AuthContext';
 import { useOptionalWebSocket } from '@/contexts/WebSocketContext';
-import { canEditCharacter } from '@/services/permissions';
+import { canEditCharacter, canRollAsCharacter } from '@/services/permissions';
 import { api } from '@/services/api';
 import type { Character, GameSystem, CampaignMembership } from '@/types';
 
@@ -103,6 +103,9 @@ export default function CharacterSheetViewerModal({
 
   // Check if user can edit
   const canEdit = user ? canEditCharacter(user, character, membership) : false;
+  // Reading someone else's sheet is deliberate — the server lets any campaign
+  // member do it. Rolling from it is not: those are their modifiers.
+  const canRoll = user ? canRollAsCharacter(user, character, membership) : false;
   const isDMEditingOtherCharacter =
     membership?.role === 'DM' && character.userId !== user?.id;
 
@@ -140,21 +143,33 @@ export default function CharacterSheetViewerModal({
   // Handle click-to-roll — emit dice roll via WebSocket
   const handleRoll = (expression: string, purpose: string) => {
     if (socket) {
-      socket.emitDiceRoll({ expression, purpose });
+      // Named so the panel heads the entry with the character whose sheet this
+      // is, not with whoever happens to be reading it.
+      socket.emitDiceRoll({ expression, purpose, characterName: character.name });
     }
   };
+
+  // Passed to the sheet views only when this viewer may roll; without it the
+  // stats render as plain text rather than clickable rolls.
+  const rollHandler = canRoll ? handleRoll : undefined;
+
+  // Spending follows the same rule as rolling. The server checks it again —
+  // owner or DM — so this only decides whether the control is offered.
+  const spendHitDie = canRoll
+    ? (index: number) => socket?.emitHitDiceSpend({ characterId: character.id, index })
+    : undefined;
 
   // Render appropriate character sheet view based on game system
   const renderCharacterSheet = () => {
     switch (character.gameSystem) {
       case 'DND_5E':
-        return <DnD5eCharacterView character={character} onEdit={canEdit ? handleEdit : undefined} onRoll={handleRoll} />;
+        return <DnD5eCharacterView character={character} onEdit={canEdit ? handleEdit : undefined} onRoll={rollHandler} onSpendHitDie={spendHitDie} />;
       case 'PATHFINDER_2E':
-        return <Pathfinder2eCharacterView character={character} onEdit={canEdit ? handleEdit : undefined} onRoll={handleRoll} />;
+        return <Pathfinder2eCharacterView character={character} onEdit={canEdit ? handleEdit : undefined} onRoll={rollHandler} />;
       case 'SHADOWRUN_6E':
         return <Shadowrun6eCharacterSheet character={character} mode="view" />;
       case 'CALL_OF_CTHULHU_7E':
-        return <CallOfCthulhu7eCharacterView character={character} onEdit={canEdit ? handleEdit : undefined} onRoll={handleRoll} />;
+        return <CallOfCthulhu7eCharacterView character={character} onEdit={canEdit ? handleEdit : undefined} onRoll={rollHandler} />;
       default:
         return <FlexibleCharacterSheetView character={character} onEdit={canEdit ? handleEdit : undefined} />;
     }

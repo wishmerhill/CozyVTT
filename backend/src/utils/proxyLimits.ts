@@ -9,7 +9,7 @@
  * warn about mismatches at startup instead of leaving users to guess.
  */
 
-import { FILE_SIZE_LIMITS, MAX_UPLOAD_BYTES } from './fileUtils';
+import { UPLOAD_LIMITS, MAX_UPLOAD_BYTES } from './fileUtils';
 
 const MB = 1024 * 1024;
 
@@ -56,8 +56,8 @@ export function getProxyLimitWarnings(env: NodeJS.ProcessEnv = process.env): str
   const warnings: string[] = [];
   const required = getRequiredProxyBodyBytes();
   const requiredMB = toMB(required);
-  const largestType = (Object.keys(FILE_SIZE_LIMITS) as Array<keyof typeof FILE_SIZE_LIMITS>).find(
-    (type) => FILE_SIZE_LIMITS[type] === MAX_UPLOAD_BYTES
+  const largestType = (Object.keys(UPLOAD_LIMITS) as Array<keyof typeof UPLOAD_LIMITS>).find(
+    (type) => UPLOAD_LIMITS[type] === MAX_UPLOAD_BYTES
   );
   const largest = `${largestType} (${toMB(MAX_UPLOAD_BYTES)} MB)`;
 

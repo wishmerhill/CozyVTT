@@ -314,11 +314,73 @@ Get all characters assigned to this campaign, with their assigned players.
 
 ### `GET /api/campaigns/:id/messages`
 
-Get chat history for a campaign. Supports cursor-based pagination.
+Get chat history for a campaign, newest first. Paging is by keyset, so new
+messages arriving while someone scrolls back cannot shift the window.
 
 **Query params:**
 - `limit` — number of messages to return (default: 50, max: 100)
-- `before` — message ID to paginate before (for "load more" scrollback)
+- `cursor` — from the previous response's `pagination.nextCursor`. Omit for the
+  newest page. It is opaque; do not build one.
+
+**Response `200`:** `{ messages, pagination }`, where `pagination` is
+`{ limit, hasMore, nextCursor }`. Follow `nextCursor` until `hasMore` is false to
+reach the first message in the campaign.
+
+Dice rolls are not chat messages and never appear here — see
+`GET /api/campaigns/:id/dice-rolls`, which is the only path that applies the
+secret-roll rules.
+
+### `GET|POST /api/campaigns/:campaignId/macros`
+
+A player's saved dice rolls for one campaign. **Requires campaign membership.**
+
+`GET` returns your own macros, **oldest first** — that is the order they appear
+as buttons, and people aim at those without looking, so an edit must not move
+one. `POST` takes `{ name, expression }`.
+
+**They are private to whoever saved them, the DM included.** Every query is
+scoped by the session's own user id; a macro belonging to someone else answers
+`404` rather than `403`, so the reply cannot be used to confirm an id exists.
+
+The expression is **rolled once when it is saved** and the result discarded. An
+expression that merely looks like dice — `2d6+`, `dddd` — is refused at that
+point rather than becoming a button that fails every time it is pressed. Limited
+to 50 per campaign per player.
+
+### `GET|PUT|DELETE /api/campaigns/:campaignId/macros/:macroId`
+
+Read, edit or delete one of your own. `PUT` accepts `name`, `expression` or both;
+a body changing neither is refused so a mistake is visible. A new expression is
+checked exactly as it was on creation, so an edit cannot leave a macro
+unrollable.
+
+### `GET|POST /api/campaigns/:campaignId/documents`
+
+The rulebooks and handouts a campaign's members can read. **`GET` requires
+campaign membership; `POST` requires the DM role.**
+
+`GET` returns every document the campaign can see: those uploaded or written
+with `CAMPAIGN` scope inside it, and those a DM has shared from elsewhere. Each
+item carries the asset fields plus `linkedAt`, `linkedBy` and a `shared`
+boolean, which is what tells the two apart, so the client knows whether
+"unshare" is a thing it can offer.
+
+`POST` takes `{ assetId }` and shares an existing document. Two checks, in
+order. The asset must be of type `DOCUMENT` **and readable by the DM making the
+request**, or the answer is `404`; that stops sharing from becoming a way to
+hand a campaign somebody else's private file by guessing an id. Then it must be
+**the DM's own upload, or `GLOBAL`**, or the answer is `403` with a message
+saying so; that stops a document shared into one campaign from being passed on
+by a member of it who runs another. An admin may share anything. Sharing the
+same document twice is a no-op, not an error.
+
+### `DELETE /api/campaigns/:campaignId/documents/:assetId`
+
+Stop sharing a document with the campaign. **Requires DM role.** The document
+itself is untouched; the campaign's members simply stop being able to read it.
+Answers `200` with a message, or `404` if that document was not shared with
+this campaign. A document that is `CAMPAIGN`-scoped inside the campaign has no
+link to remove; delete the asset instead.
 
 ### `POST /api/campaigns/:campaignId/invite`
 
@@ -332,6 +394,31 @@ Invite a user to the campaign. **Requires DM role.**
 **Response `201`:** `{ message, invitation, emailSent }`
 
 The invitation is created whether or not an email goes out — it is what the invitee accepts from, on their dashboard. `emailSent` reports what actually happened: it is `false` when the caller did not ask, when the instance has no SMTP configured, and when the send failed. A failed send is logged and does not fail the request, because the invitation already exists by that point. This is deliberately unlike `POST /api/admin/users/invite`, which refuses outright without SMTP because there an email is the only way in.
+
+### `PUT /api/campaigns/:campaignId/dm`
+
+Hand the Dungeon Master role to another member of the campaign. **Requires the
+sitting DM, the campaign owner, or a platform admin.**
+
+**Body:**
+- `userId` *(required)* — the member who should become DM. They must already be in the campaign; any role qualifies, including a spectator
+
+**Response `200`:** `{ message, memberships }` — the full membership list, so a client can re-derive everyone's role in one step
+
+The named member becomes `DM` and the sitting DM becomes `PLAYER`, in a single
+transaction: a campaign is never observable with two DMs or none. A campaign
+still has exactly one DM — the seat moves rather than being shared.
+
+**The campaign's owner does not change.** Ownership and the DM role are separate
+facts, which is what allows an owner to hand the game to a co-DM or to an
+automated account and remain at the table as an ordinary player. Deleting a
+campaign stays with the owner; everything else a DM does follows the role.
+
+Rejected with `400` if the named member is already the DM, `404` if they are not
+a member of the campaign, and `403` if the caller is none of the three above.
+Note the generic role endpoint still refuses to change a DM's role or create a
+second one — this is the only supported way to move the seat, so that there is
+one atomic path rather than two.
 
 ### `DELETE /api/campaigns/:campaignId/messages/join-leave`
 
@@ -871,7 +958,7 @@ SRD creatures stored before hit points were tracked are updated in place with `h
 List assets accessible to the authenticated user (Global + their own User scope + Campaign scope for their campaigns).
 
 **Query params:**
-- `type` — filter by `MAP`, `TOKEN`, `AUDIO`, `AVATAR`
+- `type` — filter by `MAP`, `TOKEN`, `AUDIO`, `AVATAR`, `DOCUMENT`. With no `type`, documents are left out: they have their own page in the app, and a rulebook does not belong among map thumbnails
 - `scope` — filter by `GLOBAL`, `USER`, `CAMPAIGN`
 - `search` — search by name or tags
 - `campaignId` — required when filtering by `CAMPAIGN` scope
@@ -887,7 +974,7 @@ Upload a new asset. Uses `multipart/form-data`.
 
 **Form fields:**
 - `file` — the file (required)
-- `type` — `MAP`, `TOKEN`, `AUDIO`, or `AVATAR` (required)
+- `type` — `MAP`, `TOKEN`, `AUDIO`, `AVATAR` or `DOCUMENT` (required)
 - `scope` — `GLOBAL`, `USER`, or `CAMPAIGN` (required)
 - `name` — display name (required)
 - `campaignId` — required when `scope` is `CAMPAIGN`
@@ -901,9 +988,82 @@ Get a single asset's metadata.
 
 ---
 
+### `GET /api/assets/audio/:id`
+
+Stream an audio file, with HTTP range requests supported so a browser can seek.
+
+Read access is the shared `canReadAsset` rule: `GLOBAL` for anyone signed in,
+`CAMPAIGN` for that campaign's members, `USER` for its uploader, **plus anyone
+in a campaign that is currently playing this track** as its atmosphere. That
+last clause is what lets a DM play a track from their personal library, since
+the sound is fetched by each player's browser rather than relayed by the server.
+It covers that one track and lasts only while it is set. Anyone else gets `404`,
+not `403`.
+
+The `Content-Type` comes from the file's validated extension, never from the
+type declared at upload, and the response carries `X-Content-Type-Options:
+nosniff`.
+
+---
+
 ### `GET /api/assets/avatars/:userId`
 
 Get the current avatar for a user. Returns the image file directly.
+
+---
+
+### `GET /api/assets/documents/:id`
+
+Serve a document's file: a PDF, or the text of a `.txt` or `.md`. The reader
+overlay and the "open in a new tab" link both use this URL.
+
+Who may read it is one rule, `canReadAsset`, shared with every other route that
+touches an asset: a `GLOBAL` document is readable by everyone signed in; a
+`USER` one by its uploader and by the members of any campaign it is shared
+with; a `CAMPAIGN` one by that campaign's members. Anyone else gets `404`, not
+`403`, so the reply cannot confirm the id exists.
+
+The response is built not to be trusted by the browser. `Content-Type` comes
+from the validated extension, never from the type the uploader declared;
+Markdown and text are sent as `text/plain`, so nothing is ever rendered as
+HTML; and the response carries `X-Content-Type-Options: nosniff` with a
+`default-src 'none'; sandbox` Content-Security-Policy. Documents are stored
+unchanged and the server never parses them.
+
+A PDF is cached like any other asset, immutable under its id. Text and
+Markdown are not, because they can be edited in place: they come back
+`Cache-Control: private, no-cache` with an ETag that changes when the file
+does, so a reader revalidates every time and gets a `304` when nothing has
+changed.
+
+---
+
+### `POST /api/assets/documents`
+
+Write a text or Markdown document without uploading a file.
+
+**Body:**
+- `name` *(required)* — up to 200 characters
+- `format` *(required)* — `txt` or `md`
+- `content` *(required)* — the text, up to 900 KB; must be plain text (UTF-8, no control bytes)
+- `scope` *(optional, default `USER`)* — `GLOBAL`, `USER` or `CAMPAIGN`
+- `campaignId` — required when `scope` is `CAMPAIGN`
+- `description` *(optional)*
+
+Scope is decided by the same rule as an upload: `GLOBAL` needs a platform
+admin or `globalAssetManager`, `CAMPAIGN` needs that campaign's DM. The result
+is an ordinary asset of type `DOCUMENT`, and it counts against the upload
+rate limit, since it creates a file on disk exactly as an upload does.
+
+---
+
+### `PUT /api/assets/documents/:id/content`
+
+Replace the text of a `.txt` or `.md` document. **The uploader or a platform
+admin only**; anyone else gets `404`. A PDF answers `400`: only text and
+Markdown can be edited in place. Takes `{ content }` under the same limits as
+creation. Readers see the new text the next time they open it; there is no
+live refresh.
 
 ---
 
@@ -1159,7 +1319,8 @@ Public. Returns the upload limits the server enforces, derived from the `MAX_<TY
     "MAP": 52428800,
     "TOKEN": 5242880,
     "AUDIO": 20971520,
-    "AVATAR": 2097152
+    "AVATAR": 2097152,
+    "DOCUMENT": 52428800
   },
   "maxUploadBytes": 52428800,
   "smtp": { "configured": true }
@@ -1249,7 +1410,7 @@ when it sees it.
 | Login, password reset, MFA | 5 requests | 15 minutes | Failures only |
 | Register | 10 requests | 1 hour | Every request |
 | Forgot password | 5 requests | 15 minutes | Every request |
-| File upload | 30 requests | 1 minute | Every request |
+| File upload, and writing a document | 30 requests | 1 minute | Every request |
 | General API | 300 requests | 1 minute | Every request |
 | Dice rolls (WebSocket) | 30 rolls | 1 minute | Every roll |
 | Token movement (WebSocket) | 60 events | 1 second | Every event |

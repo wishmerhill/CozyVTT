@@ -81,6 +81,37 @@ The left sidebar's **Campaign Roster** shows all players currently in your campa
 
 This replaced the "X has joined the campaign" messages that used to appear in chat. Those fired on every page load and every momentary disconnect, so a player with a patchy connection could bury the conversation without saying a word. If your campaign still has a backlog of them, the **eraser button** at the top of the chat panel clears them for everyone — it only removes those notices, and leaves the rest of the conversation alone. Nothing was deleted automatically when you upgraded.
 
+### Handing the game to someone else
+
+Sometimes the person running the game needs to change: you are handing a
+campaign to a co-DM, you are stepping back but the group plays on, or you want
+someone else to narrate while you play a character for a session.
+
+Open **Campaign Settings → Members** and click the **crown** next to whoever
+should take over. You will be asked to confirm, because it takes effect at once.
+
+What happens:
+
+- **They become the DM** and get the DM's controls — maps, tokens, fog, the lot.
+- **You become a player** in the same campaign. You keep your characters and
+  stay at the table; you simply stop having the DM's controls.
+- **It happens live.** Nobody has to reload. If you are both in the session when
+  you do it, the controls move between you there and then.
+- **Owning the campaign does not move.** If you created it, you still own it —
+  which means you can still delete it, and you can be made DM again later.
+
+**A campaign has exactly one DM**, so handing it over is a swap rather than an
+addition. If you want two people running a game at once, that is not something
+CozyVTT does yet.
+
+> **Getting it back.** The new DM can hand it back the same way. And if the
+> campaign is yours — you created it — you keep a way in regardless: an **Owner
+> Settings** button appears in the sidebar, holding the two things that stay
+> yours, deleting the campaign and taking the DM seat back. It sits in the top
+> bar, in the same place the DM's own settings button occupies. So handing the
+> game over can never lock you out of your own campaign. If you are *not* the owner,
+> ask the new DM, or your instance's administrator can move it for you.
+
 ---
 
 ## Preparing Your Maps
@@ -229,6 +260,8 @@ Right-click an NPC token on the map (DM only) and choose **Roll...** to open the
 For d20 systems (D&D 5e, PF2e) the picker also has an **Advantage / Disadvantage** selector that rewrites the dice expression before rolling (`2d20kh1` / `2d20kl1`). Pathfinder 2e shows the same selector labeled **Fortune / Misfortune**.
 
 > **Tokens linked to a player's character** are the exception. They roll from the character sheet rather than from a stat block, so their menu offers the sheet's own **Roll...** and a **View Character Sheet** entry instead of the NPC picker. Both used to be listed at once, which put two identical-looking **Roll...** entries on the same menu.
+
+> **Spending a player's hit dice.** A D&D 5e character's menu includes a **Hit Dice** section, and choosing one rolls a single die plus their Constitution and takes one off their pool — on *their* sheet, not a copy of it. That is deliberate, so you can cover a short rest for someone who isn't at the table, but it is a change to their character rather than just a roll. The hit points are not applied automatically; use the **+** on their roster card for the amount rolled.
 
 **What each system offers.** The rolls on the menu depend on your campaign's game system, because not every system has something meaningful to compute from a stat block:
 
@@ -519,6 +552,22 @@ To remove a player from your campaign, open **Campaign Settings** and find the p
 
 Players assign their own characters to your campaign when they accept an invitation. If a player needs to swap characters (e.g., death, retirement, trying a new one), they can reassign from their Characters page, or you can coordinate with them.
 
+### Sharing Rulebooks and Handouts
+
+The **book icon** in the campaign header opens the documents shared with this campaign. Every member sees it; what the DM sees in addition is the means to change it.
+
+**Three ways to put a document in front of the table:**
+
+- **Share existing** — pick one of your own documents, or a global one, from the list. It stays yours; sharing does not copy it, and if you edit it later the table reads the new version. Documents other people have shared with campaigns you play in are not on this list: reading one there does not make it yours to pass on.
+- **Upload** — upload a PDF, text or Markdown file straight into the campaign. It belongs to the campaign from the start, so members can read it at once with no share step.
+- **Write** — write a text or Markdown document on the spot, for a handout or the session's notes. Same as Upload: the campaign's own, readable immediately.
+
+**Stop sharing** removes a shared document from the campaign and leaves the document itself untouched. The campaign's own documents (uploaded or written from here) have no share to remove; delete them from **Documents** on your dashboard if they are no longer wanted.
+
+A player sees the shared list and can read and open everything on it, and nothing else. They cannot share, unshare, or edit a document that is not theirs, and the server refuses those regardless of what the page offers.
+
+**Keeping notes current.** Text and Markdown documents can be edited in place: open one and press **Edit**. This is the natural home for a running session log or a set of house rules that change as the campaign goes on, since the table always reads the latest text and you never re-upload. See [Documents](USER_GUIDE.md#documents) in the user guide for formats, sizes and what is and is not allowed.
+
 ---
 
 ## Running a Session
@@ -599,7 +648,7 @@ dialog.
 
 ### The Chat Panel (DM View)
 
-As the DM, chat works the same as it does for players — type and hit Enter to send. However, you have one extra option: **Secret Dice Rolls**. When you roll dice, you can choose to roll secretly. Only you see the result in chat; players see a "DM rolled secretly" notice.
+As the DM, chat works the same as it does for players — type and hit Enter to send. However, you have one extra option: **Secret Dice Rolls**. When you roll dice, you can choose to roll secretly. Only you see the result in the **Dice** panel; players see a "DM rolled secretly" notice.
 
 This is perfect for behind-the-screen perception checks, wandering monster rolls, and dramatic reveals.
 
@@ -632,7 +681,7 @@ Combatants are the tokens already on your map — you don't type names in by han
 
 Each combatant carries its token's name, portrait and HP across automatically, but **not an initiative value** — a combatant joins the order showing **—** until something rolls for it. Joining the fight and having a place in it are separate steps, so a token added to tonight's fight never arrives carrying last week's result. Set a value by clicking the dash beside a combatant, or use the dice button on the row to roll one.
 
-**Players can roll their own.** Once you've added a player's token, a dice button appears for them too — but only on their own row, and only for a token they control. They can also right-click their token on the map and pick **Roll Initiative** from the **Roll...** menu. Either way it lands in your turn order and the roll shows in chat.
+**Players can roll their own.** Once you've added a player's token, a dice button appears for them too — but only on their own row, and only for a token they control. They can also right-click their token on the map and pick **Roll Initiative** from the **Roll...** menu. Either way it lands in your turn order and the roll shows in the **Dice** panel.
 
 You keep everything else: only you decide who is in the fight, drag the order around, type a value in by hand, advance the turn, or end combat. You can still roll for any combatant, players included — useful when someone is away from the keyboard as the fight starts. A player who isn't in the tracker yet has nothing to roll: the option doesn't appear until you add them.
 
@@ -995,6 +1044,10 @@ Upload audio files to your Asset Library (type: **Audio**), then select them in 
 - Audio loops automatically until you change or stop it
 - Use ambient sounds (rain, tavern chatter, dungeon drips) to set the scene without narrating it
 
+**Which tracks you can play.** The panel lists your own audio, anything in the global library, and audio uploaded to this campaign. Audio belonging to a *different* campaign is not offered, even one you play in, because it belongs to that table.
+
+**What your players can hear.** The sound is not relayed from your computer; each player's browser fetches the track from your CozyVTT instance. So while a track is playing, everyone in the campaign can fetch that one track, including a track from your personal library. Stop it, and it is private to you again. Nothing else in your library is exposed, and no one can browse or list your audio.
+
 *GIF pending — Setting ambient audio and the player hearing it start.*
 
 ### Atmosphere Effects
@@ -1040,7 +1093,7 @@ When you're ready to play again, navigate to the campaign and click **Start Sess
 
 - **Use the map notes / description** to leave yourself reminders about where the party is and what's happening. The campaign description field in Campaign Settings is a good place for this.
 - **Update token HP** at session end so it reflects the party's state going into the next session
-- **Clear chat history** if you want a fresh start for a new chapter (optional — old history doesn't affect gameplay, just scrollback)
+- **Tidy up old join/leave notices** if your campaign is old enough to have them — the eraser at the top of the chat panel removes those and nothing else (see [The Campaign Roster](#the-campaign-roster)). There's no way to clear the conversation itself, and no need to: old chat doesn't affect gameplay, and you can scroll back through it whenever you want
 
 ---
 

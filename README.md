@@ -38,7 +38,7 @@ If you find a security issue, please report it privately per [SECURITY.md](SECUR
 
 ### Platform
 - **Multi-campaign** — one server, unlimited campaigns, isolated from each other
-- **Role-based access control** — Platform Admin, Campaign DM, Player, and Spectator roles
+- **Role-based access control** — Platform Admin, Campaign DM, Player, and Spectator roles; the DM seat can be handed to another member without losing ownership of the campaign
 - **Setup wizard** — guided first-run initialization; no manual database seeding required
 - **Admin dashboard** — user management, system settings, activity logs, database backups
 
@@ -70,11 +70,13 @@ If you find a security issue, please report it privately per [SECURITY.md](SECUR
 - **Real-time results** — rolls appear in the campaign chat log for all players
 - **Secret rolls** — hidden from the other players; your DM can still see them, and they stay in your own list marked as secret
 - **Dice history** — a running log of the session's rolls that survives a refresh, filtered per person by the server
+- **Saved rolls** — name a dice expression and it becomes a one-click button in the dice panel; private to you and scoped to one campaign, with the expression checked when you save it so a saved roll always works
 
 ### Communication
 - **Campaign chat** — in-session messaging between all members
 - **System messages** — automatic logs for joins, session events, and dice rolls
 - **Personal notes** — private per-campaign notes in Markdown, with a rendered preview and autosave; readable only by their author, enforced server-side
+- **Documents** — upload a PDF, plain text or Markdown rulebook or handout, or write one in the app, and read it without leaving CozyVTT; a DM shares documents with a campaign, and every member reads them from inside the session; text and Markdown documents can be edited by their uploader
 - **Session history** — every finished session with its date, length and the recap the DM wrote; the DM can edit or clear any past recap
 
 ### Theming & Customization
@@ -92,7 +94,7 @@ If you find a security issue, please report it privately per [SECURITY.md](SECUR
 - **Session-based authentication** with rolling expiry and "remember me"
 - **Password reset** via email (SMTP configurable)
 - **Admin-approval registration** (optional)
-- **File upload validation** — magic-byte content checks (not just MIME header), size limits by type
+- **File upload validation** — magic-byte content checks (not just MIME header), size limits by type; text uploads must genuinely be text, and documents are served as plain text or PDF, never as a web page
 - **Per-endpoint rate limiting** — global API limit, strict auth limit, asset upload limit (configurable via `ASSET_UPLOAD_RATE_LIMIT`)
 - **WebSocket campaign isolation** — server-authenticated campaign membership; no client-spoofing
 - **Production refuses to start** with a placeholder `SESSION_SECRET`
@@ -188,7 +190,7 @@ All runtime configuration is managed through the Admin dashboard after setup:
 | Settings | Require Admin Approval | New registrations must be approved before login |
 | Settings | Timezone | Server timezone for session timestamps |
 | Settings | SMTP | Email server settings (test via the dashboard) |
-| Settings | Upload Limits | Per-type file size limits (maps, tokens, audio, avatars) |
+| Settings | Upload Limits | Per-type file size limits (maps, tokens, audio, avatars, documents) |
 | Appearance | Default Theme | Theme shown on the login page and used for new users (each user can override from their profile) |
 | Appearance | Default Font | Default font family applied alongside the default theme |
 | Appearance | Custom Theme | Build a palette from primary, accent, background, and text colors, with a live readability check |
@@ -207,6 +209,7 @@ Instance branding (logo, mascot, favicon) is **not** set from the dashboard yet 
 | Token images | 5 MB | `MAX_TOKEN_SIZE_MB` |
 | Audio files | 20 MB | `MAX_AUDIO_SIZE_MB` |
 | Avatar images | 2 MB | `MAX_AVATAR_SIZE_MB` |
+| Documents (PDF, text, Markdown) | 50 MB | `MAX_DOCUMENT_SIZE_MB` |
 
 Set these in `.env` and restart — no rebuild needed. If you raise one, raise your reverse proxy's body limit to match (`NGINX_MAX_BODY_SIZE` for the bundled Nginx). See [Upload Size Limits](docs/DEPLOYMENT.md#upload-size-limits).
 
@@ -274,6 +277,7 @@ uploads/
   tokens/      Token images and thumbnails
   audio/       Ambient audio files
   avatars/     User profile avatars
+  documents/   PDF, text and Markdown documents
   backups/     Database backup files (pg_dump)
 ```
 

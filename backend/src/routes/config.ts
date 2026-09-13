@@ -1,5 +1,5 @@
 import { Router, Request, Response } from 'express';
-import { FILE_SIZE_LIMITS, MAX_UPLOAD_BYTES } from '../utils/fileUtils';
+import { UPLOAD_LIMITS, MAX_UPLOAD_BYTES } from '../utils/fileUtils';
 import { isSmtpConfigured } from '../services/email';
 import { getSystemSettings } from '../services/systemSettings';
 import logger from '../utils/logger';
@@ -39,7 +39,7 @@ router.get('/', async (_req: Request, res: Response) => {
   }
 
   res.json({
-    uploadLimits: { ...FILE_SIZE_LIMITS },
+    uploadLimits: { ...UPLOAD_LIMITS },
     maxUploadBytes: MAX_UPLOAD_BYTES,
     smtp: { configured: isSmtpConfigured() },
     distanceUnit,

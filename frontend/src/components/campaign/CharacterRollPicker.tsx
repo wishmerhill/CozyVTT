@@ -21,6 +21,7 @@ import {
   type CharacterRolls,
 } from '@/utils/characterRolls';
 import { resolveCharacterInitiative } from '@/utils/rules/initiative';
+import CustomRollFooter from './CustomRollFooter';
 
 // ---------------------------------------------------------------------------
 // Types
@@ -31,8 +32,20 @@ interface CharacterRollPickerProps {
   character?: Character;
   /** If character is not supplied, fetch by ID */
   characterId?: string;
-  /** Called with the final dice expression and purpose when the player clicks a roll button */
-  onRoll: (expression: string, purpose: string) => void;
+  /**
+   * Called with the final dice expression, purpose, and the name of the
+   * character the roll is for, when the player clicks a roll button.
+   *
+   * The name comes from here rather than from each caller because this is the
+   * component that already holds the character; three call sites looking it up
+   * for themselves is how the roll menu got its ownership check wrong.
+   */
+  onRoll: (expression: string, purpose: string, characterName?: string) => void;
+  /**
+   * Called when the chosen roll spends a hit die, with the position of the
+   * pool. The roll itself still goes through `onRoll`; this is the decrement.
+   */
+  onSpendHitDie?: (index: number) => void;
   /**
    * Roll initiative for the token this picker was opened from, sending the
    * result to the initiative tracker rather than only to the dice log.
@@ -112,6 +125,7 @@ export default function CharacterRollPicker({
   character: initialCharacter,
   characterId,
   onRoll,
+  onSpendHitDie,
   onRollInitiative,
   onClose,
   anchorX,
@@ -184,7 +198,10 @@ export default function CharacterRollPicker({
       purpose = `${purpose} (${modeLabel})`;
     }
 
-    onRoll(expr, purpose);
+    onRoll(expr, purpose, character?.name);
+    // Spending is recorded after the roll, so a failure to decrement cannot
+    // swallow the roll the player just made.
+    if (opt.hitDiceIndex !== undefined) onSpendHitDie?.(opt.hitDiceIndex);
     onClose();
   };
 
@@ -209,7 +226,7 @@ export default function CharacterRollPicker({
   return (
     <div
       ref={pickerRef}
-      className="fixed z-[60] bg-soft-cream border-2 border-moss-green/30 rounded-lg shadow-2xl overflow-hidden"
+      className="fixed z-[60] bg-soft-cream border-2 border-moss-green/30 rounded-lg shadow-2xl overflow-hidden flex flex-col"
       style={{
         left:       pos ? pos.x : anchorX,
         top:        pos ? pos.y : anchorY,
@@ -220,7 +237,7 @@ export default function CharacterRollPicker({
       }}
     >
       {/* Header */}
-      <div className="flex items-center justify-between px-3 py-2 bg-moss-green/10 border-b border-moss-green/20">
+      <div className="flex-shrink-0 flex items-center justify-between px-3 py-2 bg-moss-green/10 border-b border-moss-green/20">
         <div className="flex items-center gap-2">
           <Dices className="w-4 h-4 text-brand-ink" />
           <span className="text-sm font-semibold text-stone-gray truncate">
@@ -234,7 +251,7 @@ export default function CharacterRollPicker({
 
       {/* Roll Mode Selector (d20 systems only) */}
       {hasAdvantage && !loading && hasAnyRolls && (
-        <div className="px-3 py-2 border-b border-moss-green/10 bg-parchment/30">
+        <div className="flex-shrink-0 px-3 py-2 border-b border-moss-green/10 bg-parchment/30">
           <div className="text-xs text-warm-gray mb-1">{t('rollPicker.rollMode')}</div>
           <div className="relative">
             <button
@@ -266,7 +283,7 @@ export default function CharacterRollPicker({
       )}
 
       {/* Content */}
-      <div className="overflow-y-auto" style={{ maxHeight: 400 }}>
+      <div className="flex-1 min-h-0 overflow-y-auto">
         {loading && (
           <div className="flex items-center justify-center py-8 text-warm-gray text-sm">
             {t('rollPicker.loadingRolls')}
@@ -321,9 +338,22 @@ export default function CharacterRollPicker({
               <Section title={t('character:sheet.savingThrows')} rolls={rolls.savingThrows} mode={mode} onRoll={handleRollOption} />
             )}
             <Section title={t('character:sheet.combat')} rolls={rolls.combat} mode={mode} onRoll={handleRollOption} />
+            <Section title={t('character:sheet.hitDice')} rolls={rolls.hitDice} mode={mode} onRoll={handleRollOption} />
           </div>
         )}
       </div>
+
+      {/* Not everything a character rolls comes off the sheet. Pinned below the
+          list rather than inside it, so it is reachable without scrolling past
+          a long skill list — the same place the creature picker keeps it.
+
+          Only shown once the character has loaded: the roll is filed under
+          their name, and there is nothing to file it under until then. */}
+      {!loading && !error && character && (
+        <CustomRollFooter
+          onRoll={(expression, purpose) => { onRoll(expression, purpose, character.name); onClose(); }}
+        />
+      )}
     </div>
   );
 }

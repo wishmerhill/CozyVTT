@@ -375,11 +375,17 @@ export interface AdminActivityData {
 // ============================================
 
 /** Upload limits in bytes, keyed by asset type — served by GET /api/config. */
+/**
+ * The limits a self-hoster can set, one per MAX_<TYPE>_SIZE_MB variable. The
+ * same shape comes back from GET /api/config and GET /api/admin/config, so it
+ * is declared once here. OTHER is not uploadable and is never reported.
+ */
 export interface ServerUploadLimits {
   MAP: number;
   TOKEN: number;
   AUDIO: number;
   AVATAR: number;
+  DOCUMENT: number;
 }
 
 export interface ServerConfig {
@@ -404,12 +410,7 @@ export interface ServerConfig {
 // ============================================
 
 export interface AdminServerConfig {
-  uploadLimits: {
-    MAP: number;
-    TOKEN: number;
-    AUDIO: number;
-    AVATAR: number;
-  };
+  uploadLimits: ServerUploadLimits;
   sessionTimeoutMs: number;
   rememberMeTimeoutMs: number;
   smtp: {
@@ -569,6 +570,51 @@ export interface Session {
 export interface PersonalNoteSummary {
   id: string;
   title: string;
+  createdAt: string;
+  updatedAt: string;
+}
+
+/**
+ * A document as it appears in a campaign's shared list.
+ *
+ * `id` is the asset id, used with the document serving route. A document is
+ * private to whoever uploaded it until a DM shares it with a campaign; this is
+ * the shape the list of shared documents comes back in.
+ */
+export interface CampaignDocument {
+  id: string;
+  name: string;
+  description: string | null;
+  originalName: string;
+  /** As declared at upload. Not what the file is served as. */
+  mimeType: string;
+  fileSize: number;
+  createdAt: string;
+  uploadedBy: { id: string; displayName: string };
+  linkedAt: string;
+  linkedBy: { id: string; displayName: string };
+  /**
+   * True when shared into the campaign by link, which the DM can undo. False
+   * when it is the campaign's own document, created or uploaded at CAMPAIGN
+   * scope, where there is no link to remove.
+   */
+  shared: boolean;
+}
+
+/**
+ * A saved dice roll, shown as a button in the dice panel.
+ *
+ * Private to whoever saved it and scoped to one campaign, so a table's homebrew
+ * rolls do not follow you into an unrelated game. The expression is checked when
+ * it is saved against the code that rolls it, so a stored macro can always be
+ * rolled.
+ */
+export interface DiceMacro {
+  id: string;
+  userId: string;
+  campaignId: string;
+  name: string;
+  expression: string;
   createdAt: string;
   updatedAt: string;
 }
@@ -1110,6 +1156,18 @@ export interface ChatMessageEvent {
   type: MessageType;
 }
 
+/**
+ * A system notice. The server sends the row's real id, which is what lets a
+ * notice received live be recognised as the same message when history replays
+ * it — see ChatPanel's merge.
+ */
+export interface ChatSystemBroadcast {
+  id: string;
+  content: string;
+  metadata?: MessageMetadata;
+  timestamp: string;
+}
+
 export interface ChatMessageBroadcast {
   id: string;
   userId: string;
@@ -1208,6 +1266,25 @@ export interface SpiritLayerTokenToggledBroadcast {
 // Character HP Events
 // ============================================
 
+/** Where a page of chat history stopped, and whether there is more behind it. */
+export interface MessagePageInfo {
+  limit: number;
+  hasMore: boolean;
+  /** Send back as `cursor` for the page before this one. Opaque — do not build one. */
+  nextCursor: string | null;
+}
+
+export interface MessageHistoryPage {
+  messages: Message[];
+  pagination: MessagePageInfo;
+}
+
+export interface HitDiceSpendEvent {
+  characterId: string;
+  /** Which pool it comes out of — a multiclass character has several. */
+  index: number;
+}
+
 export interface CharacterHpUpdateEvent {
   characterId: string;
   delta: number;
@@ -1216,6 +1293,17 @@ export interface CharacterHpUpdateEvent {
 export interface CharacterHpUpdatedBroadcast {
   characterId: string;
   hp: { current: number; max: number; temp: number };
+}
+
+/**
+ * The DM seat moved to another member. Campaign ownership is a separate thing
+ * and does not move with it.
+ */
+export interface DmTransferredBroadcast {
+  campaignId: string;
+  /** Null only if the campaign somehow had no DM to demote. */
+  previousDmId: string | null;
+  newDmId: string;
 }
 
 // ============================================

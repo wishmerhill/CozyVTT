@@ -193,19 +193,27 @@ assume `req.session` knows about them.
 
 ## Reading an asset: access follows use
 
-The four asset-serving routes (`/api/assets/maps/:id`, `/tokens/:id`,
-`/audio/:id`, `/avatars/:userId`) decide read access from the asset's **scope**.
-`GLOBAL` is readable by anyone signed in, `CAMPAIGN` by that campaign's members,
-and `USER` by its uploader.
+The five asset-serving routes (`/api/assets/maps/:id`, `/tokens/:id`,
+`/documents/:id`, `/audio/:id`, `/avatars/:userId`) decide read access from the
+asset's **scope**. `GLOBAL` is readable by anyone signed in, `CAMPAIGN` by that
+campaign's members, and `USER` by its uploader.
 
 Scope alone is not enough for maps and tokens, because an asset can be *used*
 somewhere its scope does not describe. A DM picking a map out of their own
 library — which the picker offers, listing personal assets with no campaign
 filter — leaves every player at that table 403ing on the battlemap. So
-`routes/assets.ts` funnels both image routes through one `canReadAssetFile`,
-which falls back to `assetUsedInUserCampaign(assetId, userId)`: true when a map
-layer, a token placed on a map, a character, a creature template or a token
-template in one of the caller's campaigns points at that asset.
+`routes/assets.ts` funnels the two image routes, the audio route, the document
+route and `/:id/download` through one `canReadAssetFile`, which is
+`canReadAsset` in `services/permissions.ts`. Beyond scope it asks two more
+questions: `assetUsedInUserCampaign(assetId, userId)`, true when a map layer, a
+token placed on a map, a character, a creature template, a token template, or
+the track recorded in a campaign's `atmosphereAudio` setting, in one of the
+caller's campaigns, points at that asset; and `documentSharedWithUser`, true
+when a DM has linked the document to a campaign the caller belongs to
+(`CampaignDocument`). The linking route runs the same `canReadAsset` against
+the DM first, so a link can only ever grant what the DM could already read,
+and then requires the document to be the DM's own or `GLOBAL`, so a document
+shared into one campaign cannot be passed on by a member who runs another.
 
 Three things this deliberately does **not** do:
 
@@ -214,8 +222,48 @@ Three things this deliberately does **not** do:
   promoting it on use would break the others.
 - **It grants read only.** Deleting and editing are decided by their own routes
   and are unchanged — seeing the battlemap must not mean being able to delete it.
-- **It does not cover audio or avatars.** Those have their own reference paths
-  and were left alone.
+- **It does not cover avatars.** Those have their own reference path and were
+  left alone.
+
+### Atmosphere audio
+
+The DM picks a track and the server broadcasts its URL; it does not relay the
+sound. Every player's browser then fetches
+`GET /api/assets/audio/:id` with that player's own session, so the read rule is
+what decides whether the table hears anything, and a personal track was silent
+for everyone but the DM until `assetUsedInUserCampaign` learned about it.
+
+Two consequences to keep in mind when touching this:
+
+- **Setting a track is an act of sharing, not of reading.** It makes the file
+  readable by every member of the campaign for as long as it is set, so the
+  socket handler (`websocket/handlers/atmosphere.ts`) checks `canReadAsset` for
+  the DM before storing it, and deliberately passes `isAdmin` as `false`: a
+  platform admin may read any file, but opening one to a table is a different
+  act, and a track meant for a table belongs in the global library.
+- **The grant is exactly one track, and it ends when the track does.** Nothing
+  lets a member list or browse the DM's audio, and clearing the setting makes
+  the file private again.
+
+### Documents
+
+Documents are assets of type `DOCUMENT`, so everything above applies, plus:
+
+- **Where one may be placed is one decision.** `canPlaceAssetAtScope(userId,
+  type, scope, campaignId)` answers for both the multipart upload and
+  `POST /api/assets/documents`: `GLOBAL` needs a platform admin or
+  `globalAssetManager`, `CAMPAIGN` needs that campaign's DM, `USER` needs
+  nothing. It returns `{ allowed, status, message }` so both routes refuse
+  with the same wording.
+- **Editing is the uploader's or an admin's.** `PUT /documents/:id/content`
+  checks `uploadedById` against the session, not `canReadAsset`; being able to
+  read a shared rulebook must not mean being able to rewrite it for the table.
+- **Sharing and unsharing are the DM's** (`campaignDM` on the link routes),
+  and sharing is limited to the DM's own documents and global ones. A DM may
+  read a document shared with a table they play at; they may not re-share it.
+  Unlinking revokes read for the whole campaign at once.
+- **Refusals are `404`, not `403`**, on the serving, edit and link routes, so
+  no reply confirms that a private id exists.
 
 Two things to get right when adding a check of this kind:
 
@@ -239,6 +287,49 @@ req.campaignMembership = {
   campaignId: string
 }
 ```
+
+---
+
+## Ownership is not the DM role
+
+Two separate facts, and they are only the same person by default:
+
+| Fact | Where it lives | Moves? |
+| --- | --- | --- |
+| Campaign owner | `Campaign.ownerId` | No — a DM transfer leaves it alone |
+| DM | `CampaignMembership.role === 'DM'` | Yes — see below |
+
+Decide **"is this user the DM?"** from the membership, never from `ownerId`.
+Reading ownership works right up until the seat moves, and then it refuses the
+actual DM and keeps privileges with someone who no longer runs the game. In
+socket handlers that means `socket.role`; in routes, `req.campaignMembership`
+or the `campaignDM` middleware.
+
+`ownerId` gates exactly one thing — deleting the campaign (`canDeleteCampaign`),
+which is deliberate: the destructive power stays with whoever created it.
+
+### Transferring the DM role
+
+`PUT /api/campaigns/:campaignId/dm` with `{ userId }` promotes a member and
+demotes the sitting DM in one transaction, so the one-DM rule is never caught
+half-applied. Allowed for the sitting DM, the campaign owner, or a platform
+admin — `canTransferDM` in `services/permissions.ts`.
+
+It does **not** use the `campaignDM` middleware, which loads the caller's
+membership first and refuses a non-member, shutting out an admin who is not at
+the table.
+
+The generic role route still refuses to touch a DM or mint a second one. That is
+intentional: transferring is the only supported way to move the seat, so there is
+one atomic path rather than two.
+
+### Roles change under open sockets
+
+`socket.role` is read once, when the socket authenticates, and trusted by every
+gated handler after that. A transfer therefore has to update live connections or
+the outgoing DM keeps DM powers until they reload — use
+`applyRoleToLiveSockets(userId, campaignId, role)` from `websocket/utils.ts`.
+REST needs no equivalent; its middleware reads the membership per request.
 
 ---
 

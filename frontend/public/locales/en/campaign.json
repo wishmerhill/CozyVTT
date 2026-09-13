@@ -40,6 +40,7 @@
   "info": {
     "title": "Campaign Info",
     "dm": "DM:",
+    "owner": "Owner:",
     "members": "Members:",
     "lastPlayed": "Last played:",
     "yourRole": "Your role:"
@@ -363,6 +364,9 @@
     "critical": "Critical!",
     "fumble": "Fumble!",
     "you": "(You)",
+    "youRolled": "(you rolled)",
+    "dmRolled": "(DM rolled)",
+    "rolledBy": "(rolled by {{name}})",
     "secretDmView": "Secret (DM view)",
     "secretOwnBadge": "Secret",
     "secretHiddenFromPlayersTitle": "Hidden from the other players — your DM can still see it",

@@ -12,19 +12,13 @@
 // ============================================
 
 import { useEffect, useState, type ReactNode } from 'react';
+import { assetDirectory } from '@/utils/assetUrl';
 import { Check, Loader2 } from 'lucide-react';
 import { api } from '@/services/api';
 import type { Asset } from '@/types';
 import { AssetType } from '@/types';
 
 /** Serving sub-route for each asset type — see GET /api/assets/{dir}/:id. */
-const ASSET_DIR: Record<string, 'maps' | 'tokens' | 'audio' | 'avatars'> = {
-  [AssetType.MAP]: 'maps',
-  [AssetType.TOKEN]: 'tokens',
-  [AssetType.AUDIO]: 'audio',
-  [AssetType.AVATAR]: 'avatars',
-};
-
 export interface AssetGridProps {
   type: AssetType;
   /** Currently selected asset id, or null. */
@@ -151,7 +145,7 @@ export default function AssetGrid({
     );
   }
 
-  const dir = ASSET_DIR[type] ?? 'tokens';
+  const dir = assetDirectory(type);
   // Smaller tick on the tighter embedded grids.
   const checkSize = columns >= 5 ? 'w-3 h-3' : columns === 4 ? 'w-4 h-4' : 'w-6 h-6';
 

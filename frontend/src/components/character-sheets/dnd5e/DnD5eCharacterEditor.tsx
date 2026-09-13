@@ -6,7 +6,8 @@
  */
 
 import React, { useState, useEffect, useMemo, useRef } from 'react';
-import { useTranslation } from 'react-i18next';
+import { Trans, useTranslation } from 'react-i18next';
+import { hitDieExpression, hitDiceMaximum } from '@/utils/hitDice';
 import {
   Swords,
   Package,
@@ -1586,7 +1587,7 @@ min={0}
             onClick={() => {
               const newHitDice = [
                 ...(formData.hitDice || []),
-                { class: '', total: '1d6', remaining: 1 },
+                { class: '', die: 'd6', maximum: 1, remaining: 1 },
               ];
               updateField('hitDice', newHitDice);
             }}
@@ -1595,37 +1596,61 @@ min={0}
             {t('sheet.addHitDie')}
           </button>
         </div>
+        <div className="grid grid-cols-[minmax(0,1fr)_5.5rem_3.5rem_0.75rem_3.5rem_1.75rem] gap-2 items-center mb-1">
+          <label className="text-xs font-semibold text-stone-600">{t('sheet.class')}</label>
+          <label className="text-xs font-semibold text-stone-600 text-center">{t('sheet.die')}</label>
+          <label className="text-xs font-semibold text-stone-600 text-center">{t('sheet.left')}</label>
+          <span aria-hidden="true" />
+          <label className="text-xs font-semibold text-stone-600 text-center">{t('sheet.max')}</label>
+          <span aria-hidden="true" />
+        </div>
         <div className="space-y-2">
           {(formData.hitDice || []).map((die, index) => (
-            <div key={index} className="flex items-center space-x-2">
+            <div key={index} className="grid grid-cols-[minmax(0,1fr)_5.5rem_3.5rem_0.75rem_3.5rem_1.75rem] gap-2 items-center">
               <input
                 type="text"
                 value={die.class || ''}
                 onChange={(e) => updateField(`hitDice.${index}.class`, e.target.value)}
-                placeholder={t('sheet.class')}
-                className="flex-1 px-2 py-1 border border-stone-300 rounded focus:outline-none focus:ring-2 focus:ring-red-500"
+                placeholder={t('sheet.classPlaceholder')}
+                aria-label="Class"
+                className="min-w-0 px-2 py-1 border border-stone-300 rounded focus:outline-none focus:ring-2 focus:ring-red-500"
               />
               <input
                 type="text"
-                value={die.total || ''}
-                onChange={(e) => updateField(`hitDice.${index}.total`, e.target.value)}
-                placeholder="e.g., 5d8"
-                className="w-24 px-2 py-1 border border-stone-300 rounded text-center focus:outline-none focus:ring-2 focus:ring-red-500"
+                value={die.die ?? (die.total ? hitDieExpression(die) ?? '' : '')}
+                onChange={(e) => updateField(`hitDice.${index}.die`, e.target.value)}
+                placeholder="d10"
+                aria-label="Hit die"
+                title="One hit die — d10 for a fighter. Something like 2d6 works too if your game uses it."
+                className="min-w-0 px-2 py-1 border border-stone-300 rounded text-center focus:outline-none focus:ring-2 focus:ring-red-500"
               />
               <NumberField
-min={0}
+                min={0}
                 value={die.remaining}
                 onChange={(v: number) => updateField(`hitDice.${index}.remaining`, v)}
-                placeholder={t('sheet.remaining')}
-                className="w-20 px-2 py-1 border border-stone-300 rounded text-center focus:outline-none focus:ring-2 focus:ring-red-500"
-              fallback={0}
+                aria-label="Hit dice left"
+                title="How many are unspent right now"
+                className="min-w-0 px-1 py-1 border border-stone-300 rounded text-center focus:outline-none focus:ring-2 focus:ring-red-500"
+                fallback={0}
+              />
+              <span className="text-stone-400 select-none" aria-hidden="true">/</span>
+              <NumberField
+                min={0}
+                value={die.maximum ?? hitDiceMaximum(die) ?? 0}
+                onChange={(v: number) => updateField(`hitDice.${index}.maximum`, v)}
+                aria-label="Hit dice at full"
+                title="How many this pool holds when nothing is spent"
+                className="min-w-0 px-1 py-1 border border-stone-300 rounded text-center focus:outline-none focus:ring-2 focus:ring-red-500"
+                fallback={0}
               />
               <button
                 onClick={() => {
                   const newHitDice = formData.hitDice!.filter((_, i) => i !== index);
                   updateField('hitDice', newHitDice);
                 }}
-                className="px-2 py-1 text-red-600 hover:text-red-800 font-bold"
+                aria-label={`Remove ${die.class || 'this'} hit dice`}
+                title="Remove"
+                className="text-red-600 hover:text-red-800 font-bold leading-none"
               >
                 ×
               </button>
@@ -1635,6 +1660,12 @@ min={0}
             <div className="text-sm text-stone-500 italic">{t('sheet.noHitDice')}</div>
           )}
         </div>
+        <p className="mt-2 text-xs text-stone-500">
+          <Trans
+            i18nKey="character:sheet.hitDiceHint"
+            components={{ strong: <strong /> }}
+          />
+        </p>
       </div>
 
       {/* Death Saves */}

@@ -9,6 +9,7 @@
 // ============================================
 
 import { useState } from 'react';
+import { assetDirectory } from '@/utils/assetUrl';
 import { motion, AnimatePresence } from 'framer-motion';
 import { Check, Search, Upload } from 'lucide-react';
 import { api } from '@/services/api';
@@ -17,13 +18,6 @@ import { AssetType, AssetScope } from '@/types';
 import AssetUploadModal from '@/components/assets/AssetUploadModal';
 import AssetGrid from '@/components/assets/AssetGrid';
 import { Button } from '@/components/ui';
-
-const ASSET_DIR: Record<string, 'maps' | 'tokens' | 'audio' | 'avatars'> = {
-  [AssetType.MAP]: 'maps',
-  [AssetType.TOKEN]: 'tokens',
-  [AssetType.AUDIO]: 'audio',
-  [AssetType.AVATAR]: 'avatars',
-};
 
 export interface AssetPickerProps {
   label: string;
@@ -66,7 +60,7 @@ export default function AssetPicker({
   };
 
   const selectedAsset = selectedAssetId ? assets.find((a) => a.id === selectedAssetId) : null;
-  const dir = ASSET_DIR[type] ?? 'tokens';
+  const dir = assetDirectory(type);
 
   return (
     <div className="space-y-2">

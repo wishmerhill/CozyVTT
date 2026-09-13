@@ -105,4 +105,57 @@ describe('DiceResult', () => {
       expect(screen.getByText('24')).toBeInTheDocument();
     });
   });
+
+  /**
+   * Who a roll is *for* versus who pressed the button.
+   *
+   * The panel used to head every entry with the roller's display name, so a DM
+   * rolling for an NPC or covering for an absent player produced a list of
+   * rolls that all read as the DM's own. The character or token is the subject
+   * of the roll; the person is context.
+   */
+  describe('attribution', () => {
+    it('heads the entry with the character rather than the person', () => {
+      render(<DiceResult roll={wellFormed()} isCurrentUser={false} />);
+      expect(screen.getByText('Bramble Nettlefoot')).toBeInTheDocument();
+      // The person is named only inside the attribution, never as the heading —
+      // this is the half that was wrong, so assert it rather than the presence
+      // of the character name, which the old "as {name}" line also satisfied.
+      expect(screen.queryByText('Mara Voss')).not.toBeInTheDocument();
+    });
+
+    it('says the DM rolled it when the DM rolled for someone else', () => {
+      render(<DiceResult roll={wellFormed()} isCurrentUser={false} rollerIsDM />);
+      expect(screen.getByText('Bramble Nettlefoot')).toBeInTheDocument();
+      // The test i18n setup loads the Italian resources (src/test/setup.ts).
+      expect(screen.getByText('(tirato dal DM)')).toBeInTheDocument();
+    });
+
+    it('says you rolled it, not that you are the character', () => {
+      // A DM rolling for a player sees this on their own screen. "(Tu)" beside
+      // a character name would claim they are that character.
+      render(<DiceResult roll={wellFormed()} isCurrentUser rollerIsDM />);
+      expect(screen.getByText('(hai tirato tu)')).toBeInTheDocument();
+      expect(screen.queryByText('(Tu)')).not.toBeInTheDocument();
+      expect(screen.queryByText('(tirato dal DM)')).not.toBeInTheDocument();
+    });
+
+    it('still says (Tu) on a plain roll with no character', () => {
+      const bare = { ...wellFormed(), characterName: null } as unknown as DiceRolledEvent;
+      render(<DiceResult roll={bare} isCurrentUser />);
+      expect(screen.getByText('(Tu)')).toBeInTheDocument();
+    });
+
+    it('names the roller when another player rolled the character', () => {
+      render(<DiceResult roll={wellFormed()} isCurrentUser={false} />);
+      expect(screen.getByText('(tirato da Mara Voss)')).toBeInTheDocument();
+    });
+
+    it('falls back to the person when the roll has no character', () => {
+      const bare = { ...wellFormed(), characterName: null } as unknown as DiceRolledEvent;
+      render(<DiceResult roll={bare} isCurrentUser={false} />);
+      expect(screen.getByText('Mara Voss')).toBeInTheDocument();
+      expect(screen.queryByText('(tirato da Mara Voss)')).not.toBeInTheDocument();
+    });
+  });
 });

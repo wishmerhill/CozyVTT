@@ -32,6 +32,8 @@ import assetRoutes from '../../routes/assets';
 import creatureRoutes from '../../routes/creatures';
 import userRoutes from '../../routes/users';
 import mapRoutes from '../../routes/maps';
+import configRoutes from '../../routes/config';
+import adminRoutes from '../../routes/admin';
 
 export function createTestApp(): express.Express {
   const app = express();
@@ -54,7 +56,9 @@ export function createTestApp(): express.Express {
   });
 
   // Routes (no requireSetupComplete wrapping)
+  app.use('/api/config', configRoutes);
   app.use('/api/auth', authRoutes);
+  app.use('/api/admin', adminRoutes);
   app.use('/api/campaigns', campaignRoutes);
   // Mounted separately in server.ts too — the creature routes hang off a
   // campaign path rather than the campaigns router, so they need their own line.

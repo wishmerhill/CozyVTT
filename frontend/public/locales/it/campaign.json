@@ -40,6 +40,7 @@
   "info": {
     "title": "Informazioni Campagna",
     "dm": "DM:",
+    "owner": "Proprietario:",
     "members": "Membri:",
     "lastPlayed": "Ultima sessione:",
     "yourRole": "Il tuo ruolo:"
@@ -363,6 +364,9 @@
     "critical": "Critico!",
     "fumble": "Fallimento!",
     "you": "(Tu)",
+    "youRolled": "(hai tirato tu)",
+    "dmRolled": "(tirato dal DM)",
+    "rolledBy": "(tirato da {{name}})",
     "secretDmView": "Segreto (vista DM)",
     "secretOwnBadge": "Segreto",
     "secretHiddenFromPlayersTitle": "Nascosto agli altri giocatori — il tuo DM può comunque vederlo",
