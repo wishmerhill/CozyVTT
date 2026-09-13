@@ -22,7 +22,7 @@ import {
   PanelLeftClose,
   PanelLeftOpen,
   PanelRightClose,
-  PanelRightOpen, Settings } from 'lucide-react';
+  PanelRightOpen, Settings, BookOpen } from 'lucide-react';
 import {
   Group,
   Panel,
@@ -49,6 +49,7 @@ import CreatureLibrary from '@/components/campaign/CreatureLibrary';
 import TokenTemplateLibrary from '@/components/campaign/TokenTemplateLibrary';
 import TokenRoster from '@/components/campaign/TokenRoster';
 import CampaignSettingsModal from '@/components/campaign/CampaignSettingsModal';
+import CampaignDocumentsModal from '@/components/documents/CampaignDocumentsModal';
 import SessionSidebar from '@/components/campaign/SessionSidebar';
 import SessionToolbar, { type SessionToolKey } from '@/components/campaign/SessionToolbar';
 import ConnectionStatus from '@/components/ConnectionStatus';
@@ -123,6 +124,7 @@ function CampaignPageContent() {
   const [isSpiritLayerOpen, setIsSpiritLayerOpen] = useState(false);
   const [isAtmospherePanelOpen, setIsAtmospherePanelOpen] = useState(false);
   const [isSettingsOpen, setIsSettingsOpen] = useState(false);
+  const [isDocumentsOpen, setIsDocumentsOpen] = useState(false);
   const [isCreatureLibraryOpen, setIsCreatureLibraryOpen] = useState(false);
   const [isTokenTemplateLibraryOpen, setIsTokenTemplateLibraryOpen] = useState(false);
   const [quickEditToken, setQuickEditToken] = useState<Token | null>(null);
@@ -350,6 +352,20 @@ function CampaignPageContent() {
             </>
           )}
 
+          {/* Documents shared with the campaign. Every member, not just the
+              DM: a rulebook the table is meant to read has to be reachable by
+              the people reading it. */}
+          <div className="h-6 w-px bg-moss-green/20" />
+          <Tooltip content="Campaign documents" side="bottom">
+            <Button
+              variant="ghost"
+              iconOnly
+              icon={BookOpen}
+              aria-label="Campaign documents"
+              onClick={() => setIsDocumentsOpen(true)}
+            />
+          </Tooltip>
+
           {/* Sidebar collapse toggles (all roles) */}
           <div className="h-6 w-px bg-moss-green/20" />
           <div className="flex items-center gap-1">
@@ -529,6 +545,15 @@ function CampaignPageContent() {
         <CampaignSettingsModal
           isOpen={isSettingsOpen}
           onClose={() => setIsSettingsOpen(false)}
+        />
+      )}
+
+      {campaign?.id && (
+        <CampaignDocumentsModal
+          isOpen={isDocumentsOpen}
+          onClose={() => setIsDocumentsOpen(false)}
+          campaignId={campaign.id}
+          isDM={userRole === 'DM'}
         />
       )}
 

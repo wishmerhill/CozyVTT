@@ -29,6 +29,7 @@ _Nothing in progress._
 - **Merge the hardcoded starter templates into the character template library** — `backend/src/utils/character-templates/` holds four presets per system as source constants, served by `GET /api/characters/templates/:system/:name`, while user-published templates now live in the database. Two systems for one idea. Folding the presets in as seeded, admin-owned rows would leave one browsable list and one endpoint. Note `getTemplatesForGameSystem`, `getAllTemplates` and `getBlankTemplate` in that directory are already dead code with no callers; `getBlankCharacterTemplate` in `validators/game-systems/index.ts` is the one still in use.
 - **Shadowrun 6E character sheet** — the backend (types, validation, templates) is complete, but the frontend sheet is still a placeholder and the system is hidden from the creation dropdown until it's finished. See `docs/GAME_SYSTEMS.md`.
 - **NPC chatbot / asset generation (AI)** — No code yet. The `@anthropic-ai/sdk` dependency was removed before v1.0.0 launch (it was installed but unused, and shipping it left an open `npm audit` finding). When this feature work begins, re-add the current major of the SDK and introduce `ANTHROPIC_API_KEY` / `OPENAI_API_KEY` env vars at the same time so they enter the codebase together rather than sitting around as dead config.
+- **EPUB and other document formats in the library** — #39 asked for "PDF and standard e-reader formats"; the library shipped with PDF, plain text and Markdown, which a browser can show on its own. EPUB cannot: it is a zip of XHTML that needs a reader library (`epub.js` or similar), and every one of them renders the book's own HTML inside an iframe through `blob:` URLs, which means loosening the Content-Security-Policy the whole instance runs under, and trusting a third party to sanitise a file an anonymous user uploaded. That is the one genuinely risky part of the original request, and it is separable, so it waits. **Revisit if** people ask for it with real books in hand; the answer will hinge on finding a reader that renders into a sandboxed frame without `allow-same-origin`, and on measuring what the CSP change exposes.
 - **Admin upload UI for instance branding (logo / favicon / mascot)** — backend already accepts `customLogoUrl` / `customFaviconUrl` / `customMascotUrl` on `SystemSettings`, and `ThemeContext` reads them and dynamically swaps the favicon when set. What's missing is a file-upload form on the Admin → Appearance tab so an instance operator can swap branding at runtime without redeploy. Until then, operators replace the defaults at `frontend/public/default-logo.png` and `frontend/public/default-mascot.png` and rebuild.
 
 ### DM tools
@@ -49,6 +50,33 @@ _Nothing in progress._
   both sides import, which today means introducing a shared package where none
   exists — the reason it has not been done yet. **Revisit** when a second thing
   needs shared logic, or if the checks disagree in a way a user notices.
+
+- **The app page ships with no Content-Security-Policy in production.** The
+  CSP in `backend/src/server.ts` (helmet) applies to responses the backend
+  sends, which in the production stack is `/api/` and `/socket.io/` only. The
+  page itself, `index.html`, is served by the frontend's nginx through the
+  outer nginx, and neither adds a CSP, `X-Frame-Options` or the other helmet
+  headers. So `imgSrc`, `scriptSrc` and `frameAncestors` protect the JSON, not
+  the app. The dev stack (Vite) is the same. Found while reviewing the document
+  library, where it decides whether a Markdown image can point at an outside
+  host. The fix is a matching `add_header Content-Security-Policy` in
+  `frontend/nginx.conf`, written once and kept in step with `server.ts`, or a
+  build step that emits the header from one definition. Confirmed by serving
+  a page through `frontend/nginx.conf` in a stock nginx container: the page
+  arrives with no security headers at all, while `/api/config` from the
+  backend carries the full helmet set.
+
+- **`file-type` has no automated coverage.** The upload validator's first line
+  of defence is what that library says a file is, and it is ESM-only, which the
+  Jest setup here cannot load; every test that reaches it swaps in a stub
+  (`backend/src/__tests__/helpers/file-type-mock.ts`, or a per-suite mock). The
+  stubs were written to match what the real library was observed to do for the
+  same bytes, and the real library was exercised by hand against a running
+  instance, but nothing in CI would notice if an upgrade changed a verdict. The
+  fix is either a Jest ESM configuration that can load it, or one small
+  integration test that runs under `node --test` outside Jest. **Revisit** when
+  `file-type` is next upgraded, and before adding any format whose acceptance
+  depends on it.
 
 - **Dice macros shared by the DM.** #47 asked for personal saved rolls and got
   them. A DM may well want a table-wide one — "Wild Magic Surge, d100" — that
@@ -176,7 +204,7 @@ _Nothing in progress._
   sorcerer. Only affects sheets that never set it, and the DM can correct it by
   hand, so it is a default worth improving rather than a miscalculation.
 
-- **`docs/API_REFERENCE.md` covers 75 of 141 routes.** Deliberate after the
+- **`docs/API_REFERENCE.md` covers 80 of 153 routes.** Deliberate after the
   2026-09-01 documentation pass: it is a hand-written guide to the endpoints
   people ask about, and `backend/docs/API_DOCUMENTATION.yaml` is the complete
   list. `scripts/spec-coverage.py` enforces the split — the spec must be

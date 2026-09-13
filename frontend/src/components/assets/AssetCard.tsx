@@ -11,6 +11,7 @@ import {
   Tag,
   Globe,
   Users,
+  FileText,
 } from 'lucide-react';
 import { Asset, AssetType, AssetScope } from '../../types';
 import { useAuth } from '../../contexts/AuthContext';
@@ -45,6 +46,15 @@ function AssetCardInner({ asset, viewMode, onView, onDelete }: AssetCardProps) {
     return `${(bytes / (1024 * 1024)).toFixed(1)} MB`;
   };
 
+  /**
+   * Whether this type is shown as a picture. Audio and documents are shown as
+   * an icon instead. This used to be an `=== AUDIO` check written twice, so a
+   * document fell through to an <img> with no source and rendered as a broken
+   * picture.
+   */
+  const showsPicture =
+    asset.type === AssetType.MAP || asset.type === AssetType.TOKEN || asset.type === AssetType.AVATAR;
+
   // Get asset thumbnail URL
   const getThumbnailUrl = (): string => {
     if (asset.type === AssetType.MAP) {
@@ -71,6 +81,8 @@ function AssetCardInner({ asset, viewMode, onView, onDelete }: AssetCardProps) {
         return <FileAudio className="w-8 h-8 text-spirit-purple" />;
       case AssetType.AVATAR:
         return <User className="w-8 h-8 text-sunset-orange" />;
+      case AssetType.DOCUMENT:
+        return <FileText className="w-8 h-8 text-moss-green" />;
       default:
         return <FileImage className="w-8 h-8 text-stone-gray" />;
     }
@@ -125,7 +137,7 @@ function AssetCardInner({ asset, viewMode, onView, onDelete }: AssetCardProps) {
         <div className="flex items-center gap-4">
           {/* Thumbnail */}
           <div className="flex-shrink-0 w-20 h-20 bg-moss-green/10 rounded-lg overflow-hidden flex items-center justify-center">
-            {asset.type === AssetType.AUDIO ? (
+            {!showsPicture ? (
               getAssetIcon()
             ) : (
               <img
@@ -229,7 +241,7 @@ function AssetCardInner({ asset, viewMode, onView, onDelete }: AssetCardProps) {
     >
       {/* Thumbnail */}
       <div className="relative w-full h-48 bg-moss-green/10 overflow-hidden">
-        {asset.type === AssetType.AUDIO ? (
+        {!showsPicture ? (
           <div className="flex items-center justify-center w-full h-full">
             {getAssetIcon()}
           </div>

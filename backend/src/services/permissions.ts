@@ -1,4 +1,4 @@
-import { CampaignRole, PlatformRole } from '@prisma/client';
+import { CampaignRole, PlatformRole, AssetType, AssetScope } from '@prisma/client';
 import { prisma } from '../config/database';
 import { readTokens } from '../utils/prisma-json';
 
@@ -314,6 +314,70 @@ export async function canExportCampaign(
 }
 
 /**
+ * Whether a user may place a new asset at a scope.
+ *
+ * The single rule for anything that creates an asset row, whether by uploading
+ * a file or by typing a document. It used to live inline in the upload route,
+ * and the document-creation route would have needed a copy.
+ *
+ * - USER: anyone signed in, into their own library.
+ * - GLOBAL: an admin, or a user granted globalAssetManager.
+ * - CAMPAIGN: the campaign's DM. Tokens are the one exception, because a player
+ *   uploads their own character's token art.
+ *
+ * Returns the refusal's status and message so a caller can answer exactly as
+ * the upload route always has.
+ */
+export type ScopeDecision =
+  | { allowed: true }
+  | { allowed: false; status: 400 | 403; message: string };
+
+export async function canPlaceAssetAtScope(
+  userId: string,
+  type: AssetType,
+  scope: AssetScope,
+  campaignId: string | undefined
+): Promise<ScopeDecision> {
+  if (scope === 'USER') {
+    return { allowed: true };
+  }
+
+  if (scope === 'GLOBAL') {
+    const user = await prisma.user.findUnique({
+      where: { id: userId },
+      select: { platformRole: true, globalAssetManager: true },
+    });
+    if (user?.platformRole !== 'ADMIN' && !user?.globalAssetManager) {
+      return {
+        allowed: false,
+        status: 403,
+        message: 'Only administrators or global asset managers can upload GLOBAL assets',
+      };
+    }
+    return { allowed: true };
+  }
+
+  // CAMPAIGN
+  if (!campaignId) {
+    return { allowed: false, status: 400, message: 'Campaign ID is required for CAMPAIGN scope' };
+  }
+  const membership = await prisma.campaignMembership.findUnique({
+    where: { userId_campaignId: { userId, campaignId } },
+  });
+  if (!membership) {
+    return { allowed: false, status: 403, message: 'You do not have access to this campaign' };
+  }
+  if (membership.role !== 'DM' && type !== 'TOKEN') {
+    return {
+      allowed: false,
+      status: 403,
+      message: 'Only the Dungeon Master can upload campaign assets',
+    };
+  }
+  return { allowed: true };
+}
+
+/**
  * Check whether something in a campaign this user belongs to uses an asset.
  *
  * Access to an image follows its **use**, not only its upload. A DM may pick a
@@ -433,7 +497,8 @@ export async function canReadAsset(
 
   if (asset.scope === 'USER') {
     if (asset.uploadedById === userId) return true;
-    return assetUsedInUserCampaign(asset.id, userId, asset.uploadedById);
+    if (await assetUsedInUserCampaign(asset.id, userId, asset.uploadedById)) return true;
+    return documentSharedWithUser(asset.id, userId);
   }
 
   if (asset.scope === 'CAMPAIGN' && asset.campaignId) {
@@ -442,11 +507,31 @@ export async function canReadAsset(
     });
     if (membership) return true;
     // Scoped to one campaign, but a map in another may point at it.
-    return assetUsedInUserCampaign(asset.id, userId, asset.uploadedById);
+    if (await assetUsedInUserCampaign(asset.id, userId, asset.uploadedById)) return true;
+    return documentSharedWithUser(asset.id, userId);
   }
 
   // GLOBAL, or a campaign asset with no campaign recorded.
   return true;
+}
+
+/**
+ * Whether a document has been shared with a campaign this user belongs to.
+ *
+ * A document is private to its uploader until a DM links it to a campaign, and
+ * the link is the only thing that opens it to that campaign's members. Checked
+ * last, after the cheaper questions, and only for the scopes where privacy is
+ * in question at all.
+ */
+async function documentSharedWithUser(assetId: string, userId: string): Promise<boolean> {
+  const link = await prisma.campaignDocument.findFirst({
+    where: {
+      assetId,
+      campaign: { memberships: { some: { userId } } },
+    },
+    select: { id: true },
+  });
+  return link !== null;
 }
 
 /**

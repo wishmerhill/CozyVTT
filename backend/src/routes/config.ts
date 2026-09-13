@@ -1,5 +1,5 @@
 import { Router, Request, Response } from 'express';
-import { FILE_SIZE_LIMITS, MAX_UPLOAD_BYTES } from '../utils/fileUtils';
+import { UPLOAD_LIMITS, MAX_UPLOAD_BYTES } from '../utils/fileUtils';
 import { isSmtpConfigured } from '../services/email';
 
 const router = Router();
@@ -25,7 +25,7 @@ const router = Router();
  */
 router.get('/', (_req: Request, res: Response) => {
   res.json({
-    uploadLimits: { ...FILE_SIZE_LIMITS },
+    uploadLimits: { ...UPLOAD_LIMITS },
     maxUploadBytes: MAX_UPLOAD_BYTES,
     smtp: { configured: isSmtpConfigured() },
   });

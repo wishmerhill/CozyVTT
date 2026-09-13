@@ -150,9 +150,18 @@ You can also drag the divider to resize the sidebar, or collapse it to give the 
 The top bar shows:
 - Campaign name and session status (Live / Paused / Inactive)
 - Connection indicator — a dot that goes green when you're connected
+- A **book icon** — the rulebooks and handouts your DM has shared with this campaign
 - Navigation controls
 
 *Screenshot pending — Campaign header with status indicators.*
+
+### Rulebooks and Handouts
+
+Press the **book icon** in the header to see what your DM has shared with the campaign: a rulebook, a page of house rules, a handout for the scene. **Read** opens it in a full-screen reader over the map, and the arrow beside it opens it in a new browser tab, handy for keeping the rules up on a second screen while you play.
+
+You can read everything on that list and nothing that is not on it. Sharing is the DM's to do, so if a rulebook you expected is missing, ask them. If your DM edits a shared document, you see the new text the next time you open it.
+
+You can keep documents of your own too, from **Documents** on your dashboard: upload a PDF, or write text or Markdown notes and edit them later. Those are yours alone unless a DM shares one with a campaign.
 
 ### Connection Status
 

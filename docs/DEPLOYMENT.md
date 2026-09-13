@@ -594,6 +594,7 @@ MAX_MAP_SIZE_MB=50
 MAX_TOKEN_SIZE_MB=5
 MAX_AUDIO_SIZE_MB=20
 MAX_AVATAR_SIZE_MB=2
+MAX_DOCUMENT_SIZE_MB=50
 
 # Request body cap for the bundled Nginx — must be >= the largest limit above
 # plus ~5 MB of multipart overhead
@@ -601,6 +602,8 @@ NGINX_MAX_BODY_SIZE=55M
 ```
 
 These take effect on `docker compose up -d` (no image rebuild needed): the backend enforces them, and the app fetches them at runtime for the admin panel and the upload dialog. Values that aren't a positive number are ignored, with a warning in the backend log.
+
+`MAX_DOCUMENT_SIZE_MB` covers the PDF, text and Markdown files in the document library. Core rulebooks often run past 50 MB; if your group's do, raise this one and `NGINX_MAX_BODY_SIZE` together.
 
 **If you raise a limit, raise the proxy limit too.** A file larger than the proxy's body cap is rejected with an HTTP 413 before it ever reaches CozyVTT:
 
@@ -615,7 +618,7 @@ These take effect on `docker compose up -d` (no image rebuild needed): the backe
 The backend logs its effective limits at startup and warns when they exceed the configured proxy cap:
 
 ```
-Upload limits: MAP 50MB, TOKEN 5MB, AUDIO 250MB, AVATAR 2MB
+Upload limits: MAP 50MB, TOKEN 5MB, AUDIO 250MB, AVATAR 2MB, DOCUMENT 50MB
 NGINX_MAX_BODY_SIZE=55M is smaller than the largest upload limit AUDIO (250 MB). ...
 ```
 

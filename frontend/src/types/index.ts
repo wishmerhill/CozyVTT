@@ -372,11 +372,17 @@ export interface AdminActivityData {
 // ============================================
 
 /** Upload limits in bytes, keyed by asset type — served by GET /api/config. */
+/**
+ * The limits a self-hoster can set, one per MAX_<TYPE>_SIZE_MB variable. The
+ * same shape comes back from GET /api/config and GET /api/admin/config, so it
+ * is declared once here. OTHER is not uploadable and is never reported.
+ */
 export interface ServerUploadLimits {
   MAP: number;
   TOKEN: number;
   AUDIO: number;
   AVATAR: number;
+  DOCUMENT: number;
 }
 
 export interface ServerConfig {
@@ -396,12 +402,7 @@ export interface ServerConfig {
 // ============================================
 
 export interface AdminServerConfig {
-  uploadLimits: {
-    MAP: number;
-    TOKEN: number;
-    AUDIO: number;
-    AVATAR: number;
-  };
+  uploadLimits: ServerUploadLimits;
   sessionTimeoutMs: number;
   rememberMeTimeoutMs: number;
   smtp: {
@@ -563,6 +564,33 @@ export interface PersonalNoteSummary {
   title: string;
   createdAt: string;
   updatedAt: string;
+}
+
+/**
+ * A document as it appears in a campaign's shared list.
+ *
+ * `id` is the asset id, used with the document serving route. A document is
+ * private to whoever uploaded it until a DM shares it with a campaign; this is
+ * the shape the list of shared documents comes back in.
+ */
+export interface CampaignDocument {
+  id: string;
+  name: string;
+  description: string | null;
+  originalName: string;
+  /** As declared at upload. Not what the file is served as. */
+  mimeType: string;
+  fileSize: number;
+  createdAt: string;
+  uploadedBy: { id: string; displayName: string };
+  linkedAt: string;
+  linkedBy: { id: string; displayName: string };
+  /**
+   * True when shared into the campaign by link, which the DM can undo. False
+   * when it is the campaign's own document, created or uploaded at CAMPAIGN
+   * scope, where there is no link to remove.
+   */
+  shared: boolean;
 }
 
 /**

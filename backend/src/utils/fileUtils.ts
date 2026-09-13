@@ -1,13 +1,34 @@
 import { randomUUID } from 'crypto';
+import type { AssetType as PrismaAssetType } from '@prisma/client';
 import path from 'path';
 import fs from 'fs/promises';
 import logger from './logger';
 import { errorCode } from './errors';
 
 /**
- * Asset types supported by the application
+ * Asset types, as the database declares them.
+ *
+ * This used to be a second, four-value declaration of the same enum. It had
+ * drifted: the schema also had DOCUMENT and OTHER, and nothing here knew. Taking
+ * the type from Prisma means every table below must name every value, so a new
+ * enum member fails to compile until it has a size, an extension list and a MIME
+ * list, instead of being silently unsupported.
  */
-export type AssetType = 'MAP' | 'TOKEN' | 'AUDIO' | 'AVATAR';
+export type AssetType = PrismaAssetType;
+
+/**
+ * The types a self-hoster can size with a MAX_<TYPE>_SIZE_MB variable.
+ *
+ * OTHER is in the enum but has no upload path, so it has no variable and no
+ * limit. Listing it here would invite a setting that does nothing.
+ */
+export const CONFIGURABLE_ASSET_TYPES = ['MAP', 'TOKEN', 'AUDIO', 'AVATAR', 'DOCUMENT'] as const satisfies readonly AssetType[];
+
+export type ConfigurableAssetType = (typeof CONFIGURABLE_ASSET_TYPES)[number];
+
+export function isConfigurableAssetType(value: string): value is ConfigurableAssetType {
+  return (CONFIGURABLE_ASSET_TYPES as readonly string[]).includes(value);
+}
 
 /**
  * Asset scope - global (platform-wide), user (personal), or campaign-specific
@@ -23,9 +44,10 @@ export const DEFAULT_FILE_SIZE_LIMITS_MB: Record<AssetType, number> = {
   TOKEN: 5,
   AUDIO: 20,
   AVATAR: 2,
+  DOCUMENT: 50,
+  // Not uploadable. Zero so nothing can slip through a limit check by accident.
+  OTHER: 0,
 };
-
-const ASSET_TYPES: AssetType[] = ['MAP', 'TOKEN', 'AUDIO', 'AVATAR'];
 
 /**
  * Resolve per-type upload limits (in bytes) from MAX_<TYPE>_SIZE_MB environment
@@ -40,9 +62,9 @@ const ASSET_TYPES: AssetType[] = ['MAP', 'TOKEN', 'AUDIO', 'AVATAR'];
 export function resolveFileSizeLimits(
   env: NodeJS.ProcessEnv = process.env
 ): Record<AssetType, number> {
-  const limits = {} as Record<AssetType, number>;
+  const limits = { OTHER: 0 } as Record<AssetType, number>;
 
-  for (const assetType of ASSET_TYPES) {
+  for (const assetType of CONFIGURABLE_ASSET_TYPES) {
     const varName = `MAX_${assetType}_SIZE_MB`;
     const raw = env[varName];
     const fallbackMB = DEFAULT_FILE_SIZE_LIMITS_MB[assetType];
@@ -76,10 +98,22 @@ export function resolveFileSizeLimits(
 export const FILE_SIZE_LIMITS: Record<AssetType, number> = resolveFileSizeLimits();
 
 /**
+ * The limits a self-hoster can set, for everything that reports them: the
+ * startup log, GET /api/config and the admin panel. Derived from
+ * FILE_SIZE_LIMITS so a type cannot be enforced without being shown. The admin
+ * route once listed four types by hand, and the fifth was invisible.
+ */
+export const UPLOAD_LIMITS: Readonly<Record<ConfigurableAssetType, number>> = Object.freeze(
+  Object.fromEntries(
+    CONFIGURABLE_ASSET_TYPES.map((type) => [type, FILE_SIZE_LIMITS[type]])
+  ) as Record<ConfigurableAssetType, number>
+);
+
+/**
  * The largest configured limit — the cap for the generic multer instance that
  * parses uploads before the asset type is known (see middleware/upload.ts).
  */
-export const MAX_UPLOAD_BYTES: number = Math.max(...Object.values(FILE_SIZE_LIMITS));
+export const MAX_UPLOAD_BYTES: number = Math.max(...Object.values(UPLOAD_LIMITS));
 
 /**
  * Allowed MIME types for each asset type
@@ -89,7 +123,9 @@ export const ALLOWED_MIME_TYPES = {
   TOKEN: ['image/png', 'image/jpeg', 'image/webp', 'image/gif'],
   AUDIO: ['audio/mpeg', 'audio/ogg', 'audio/wav'],
   AVATAR: ['image/png', 'image/jpeg', 'image/webp'],
-} as const;
+  DOCUMENT: ['application/pdf', 'text/plain', 'text/markdown'],
+  OTHER: [],
+} as const satisfies Record<AssetType, readonly string[]>;
 
 /**
  * Allowed file extensions for each asset type
@@ -99,7 +135,9 @@ export const ALLOWED_EXTENSIONS = {
   TOKEN: ['.png', '.jpg', '.jpeg', '.webp', '.gif'],
   AUDIO: ['.mp3', '.ogg', '.wav'],
   AVATAR: ['.png', '.jpg', '.jpeg', '.webp'],
-} as const;
+  DOCUMENT: ['.pdf', '.txt', '.md'],
+  OTHER: [],
+} as const satisfies Record<AssetType, readonly string[]>;
 
 /**
  * Generate a unique filename with UUID and preserve extension
@@ -160,7 +198,19 @@ export function getFilePath(
     case 'AVATAR':
       return path.join(baseDir, 'avatars');
 
+    case 'DOCUMENT':
+      if (scope === 'GLOBAL') {
+        return path.join(baseDir, 'documents', 'global');
+      } else {
+        if (!campaignId) {
+          throw new Error('campaignId is required for CAMPAIGN scope');
+        }
+        return path.join(baseDir, 'documents', 'campaigns', campaignId);
+      }
+
     default:
+      // OTHER has no upload path. relocateUpload swallows this and leaves the
+      // file in temp, which is why the route must never let OTHER reach here.
       throw new Error(`Unknown asset type: ${assetType}`);
   }
 }

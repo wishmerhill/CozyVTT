@@ -530,15 +530,74 @@ class ApiClient {
   // ============================================
 
   // ============================================
-  // Personal notes
+  // Documents
+  //
+  // Shared, not private: a campaign's members read what its DM shares. The
+  // server decides who may read, edit or share each one; these calls only ask.
+  // ============================================
+
+  /**
+   * The documents a campaign's members may read: shared in by the DM, or
+   * created for the campaign. Any member can list.
+   */
+  async listCampaignDocuments(
+    campaignId: string,
+  ): Promise<{ documents: import('@/types').CampaignDocument[] }> {
+    const response = await this.client.get(`/api/campaigns/${campaignId}/documents`);
+    return response.data;
+  }
+
+  /** Share a document with a campaign. DM only; the DM must already be able to read it. */
+  async linkCampaignDocument(campaignId: string, assetId: string): Promise<{ link: { id: string } }> {
+    const response = await this.client.post(`/api/campaigns/${campaignId}/documents`, { assetId });
+    return response.data;
+  }
+
+  /** Stop sharing a document with a campaign. The document itself is untouched. */
+  async unlinkCampaignDocument(campaignId: string, assetId: string): Promise<{ message: string }> {
+    const response = await this.client.delete(`/api/campaigns/${campaignId}/documents/${assetId}`);
+    return response.data;
+  }
+
+  /**
+   * Create a text or Markdown document from typed content. The same scope rules
+   * as an upload apply; the content is stored as typed and never interpreted.
+   */
+  async createDocument(body: {
+    name: string;
+    format: 'txt' | 'md';
+    content: string;
+    description?: string;
+    scope?: 'USER' | 'CAMPAIGN' | 'GLOBAL';
+    campaignId?: string;
+  }): Promise<{ asset: import('@/types').Asset }> {
+    const response = await this.client.post('/api/assets/documents', body);
+    return response.data;
+  }
+
+  /** Replace a text or Markdown document's content. Uploader or admin only. */
+  async updateDocumentContent(assetId: string, content: string): Promise<{ asset: import('@/types').Asset }> {
+    const response = await this.client.put(`/api/assets/documents/${assetId}/content`, { content });
+    return response.data;
+  }
+
+  /**
+   * The URL a document is read from. Same-origin, so a browser can show it in
+   * an iframe under the current Content Security Policy.
+   */
+  getDocumentUrl(assetId: string): string {
+    return this.getAssetUrl(assetId, 'documents');
+  }
+
+  // ============================================
+  // Personal notes and dice macros
   //
   // Private to the signed-in user; the server scopes every one of these by the
   // session's own id, so there is no user parameter to pass or to get wrong.
   // ============================================
 
-  /** The caller's notes for a campaign, newest first. Titles only, no bodies. */
   /**
-   * Your own saved dice macros for this campaign, oldest first — the order they
+   * Your own saved dice macros for this campaign, oldest first, the order they
    * appear as buttons, which stays put when one is edited.
    */
   async listDiceMacros(campaignId: string): Promise<{ macros: import('@/types').DiceMacro[] }> {
@@ -568,6 +627,7 @@ class ApiClient {
     return response.data;
   }
 
+  /** The caller's notes for a campaign, newest first. Titles only, no bodies. */
   async listNotes(campaignId: string): Promise<{ notes: PersonalNoteSummary[] }> {
     const response = await this.client.get(`/api/campaigns/${campaignId}/notes`);
     return response.data;
@@ -734,7 +794,7 @@ class ApiClient {
     return response.data;
   }
 
-  getAssetUrl(id: string, type: 'maps' | 'tokens' | 'audio' | 'avatars'): string {
+  getAssetUrl(id: string, type: import('@/utils/assetUrl').AssetDirectory): string {
     return `${API_BASE_URL}/api/assets/${type}/${id}`;
   }
 

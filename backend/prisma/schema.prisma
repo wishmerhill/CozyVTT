@@ -133,6 +133,7 @@ model User {
   characterTemplates  CharacterTemplate[]    @relation("CharacterTemplateAuthor")
   personalNotes       PersonalNote[]
   diceMacros          DiceMacro[]
+  documentLinks       CampaignDocument[]
 
   @@index([email])
 }
@@ -215,6 +216,7 @@ model Campaign {
   tokenTemplates     TokenTemplate[]
   personalNotes      PersonalNote[]
   diceMacros         DiceMacro[]
+  documentLinks      CampaignDocument[]
 
   @@index([ownerId])
   @@index([status])
@@ -323,6 +325,31 @@ model DiceMacro {
   /// notes do would move one to the front every time it was edited.
   @@index([userId, campaignId, createdAt])
 }
+
+model CampaignDocument {
+  id String @id @default(uuid())
+
+  /// The campaign the document is shared with. Deleting the campaign removes
+  /// the link and leaves the document itself alone.
+  campaignId String
+  campaign   Campaign @relation(fields: [campaignId], references: [id], onDelete: Cascade)
+
+  /// The document. Deleting the asset removes every link to it.
+  assetId String
+  asset   Asset  @relation(fields: [assetId], references: [id], onDelete: Cascade)
+
+  /// Who shared it, for the audit trail. Cascades with the user like the rest.
+  linkedById String
+  linkedBy   User   @relation(fields: [linkedById], references: [id], onDelete: Cascade)
+
+  createdAt DateTime @default(now())
+
+  /// A document is shared with a campaign once or not at all.
+  @@unique([campaignId, assetId])
+  @@index([campaignId])
+  @@index([assetId])
+}
+
 
 
 model Session {
@@ -493,6 +520,11 @@ model Asset {
   thumbnailPath String?
 
   createdAt DateTime @default(now())
+
+  /// Campaigns this document has been shared with. Only meaningful for
+  /// DOCUMENT assets; the link is what grants a campaign's members the right
+  /// to read a document that is otherwise private to its uploader.
+  campaignLinks CampaignDocument[]
 
   @@index([campaignId])
   @@index([type])

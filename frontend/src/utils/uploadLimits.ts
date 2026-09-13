@@ -13,13 +13,13 @@ import type { ServerConfig, ServerUploadLimits } from '@/types';
 
 const MB = 1024 * 1024;
 
-/** Fallback limits in bytes. DOCUMENT/OTHER are not modelled server-side. */
+/** Fallback limits in bytes. OTHER is not uploadable; its entry only completes the record. */
 export const DEFAULT_UPLOAD_LIMITS: Record<AssetType, number> = {
   [AssetType.MAP]: 50 * MB,
   [AssetType.TOKEN]: 5 * MB,
   [AssetType.AUDIO]: 20 * MB,
   [AssetType.AVATAR]: 2 * MB,
-  [AssetType.DOCUMENT]: 10 * MB,
+  [AssetType.DOCUMENT]: 50 * MB,
   [AssetType.OTHER]: 10 * MB,
 };
 

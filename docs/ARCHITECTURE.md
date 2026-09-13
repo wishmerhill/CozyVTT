@@ -359,6 +359,14 @@ erDiagram
         datetime createdAt
     }
 
+    CampaignDocument {
+        string id PK
+        string campaignId FK
+        string assetId FK
+        string linkedById FK
+        datetime createdAt
+    }
+
     User ||--o{ CampaignMembership : "belongs to"
     Campaign ||--o{ CampaignMembership : "has"
     User ||--o{ Character : "owns"
@@ -379,6 +387,9 @@ erDiagram
     CreatureTemplate ||--o{ CreatureFavorite : "favorited as"
     User ||--o{ CreatureFavorite : "has favorites"
     Campaign ||--o{ CreatureFavorite : "scoped to"
+    Campaign ||--o{ CampaignDocument : "shares"
+    Asset ||--o{ CampaignDocument : "shared as"
+    User ||--o{ CampaignDocument : "linked by"
 ```
 
 ### Key Schema Notes
@@ -390,6 +401,7 @@ erDiagram
 - **`DiceMacro` is private to whoever saved it**, on the same terms as `PersonalNote` and enforced the same way. Its `expression` is validated when written by rolling it and discarding the result, so a stored macro is always one the roller accepts — ordered by `createdAt` rather than `updatedAt` because these are buttons, and editing one must not move it.
 - **`PersonalNote` is private to its author** — every query is scoped by both `campaignId` and the signed-in `userId`, and a note belonging to someone else answers 404 rather than 403 so the response cannot confirm that it exists. Nobody reads these but the person who wrote them, the DM included.
 - **`CreatureFavorite` is a per-campaign, per-user join table** — with a unique constraint on `(campaignId, userId, creatureId)` to prevent duplicate favorites. Cascade deletes ensure cleanup when creatures, users, or campaigns are removed.
+- **`CampaignDocument` shares a document with a campaign without copying it.** A document is an ordinary `Asset` of type `DOCUMENT`; the join row, unique on `(campaignId, assetId)`, is what lets a `USER`-scoped rulebook be read by the members of every campaign it is linked to. It is the one place the asset read rule looks beyond scope: `canReadAsset` is the single function both the serving route and the linking route consult, so a DM cannot link a file they could not read themselves; and linking further requires the document to be the DM's own or `GLOBAL`, so a share into one campaign cannot be forwarded by a member of it who runs another. Unlinking revokes access; deleting the asset removes its links, and deleting the campaign leaves the document intact.
 
 ---
 
@@ -528,16 +540,22 @@ uploads/
                 {id}_thumb.webp
   audio/        {id}.{ext}
   avatars/       {userId}_avatar.{ext}
+  documents/    global/{id}.{ext}             Global and personal documents
+                campaigns/{campaignId}/{id}.{ext}
   backups/      cozyvtt_{timestamp}.sql.gz
 ```
 
 ### Upload Pipeline
 
 1. **Multer** receives the multipart upload and streams to a temp file
-2. **Magic byte validation** (`file-type` library) — verifies the actual file type matches the declared MIME type
+2. **Magic byte validation** (`file-type` library) — verifies the actual file type matches the declared MIME type. Anything `file-type` can identify must match; only a file it cannot identify falls through to a per-format check, and that check is positive rather than by extension: a PDF or MP3 must start with its header bytes, and a `.txt` or `.md` must decode as UTF-8 with no NUL or control bytes. An executable renamed `.md` fails here.
 3. **Size limit check** — configurable per asset type via environment variables
 4. **Sharp** generates a WebP thumbnail (for maps and tokens)
 5. File is moved to its final location; the `Asset` record is created in the database
+
+### Serving Documents
+
+The server never parses a document; the defence is in how it is served. `GET /api/assets/documents/:id` chooses the `Content-Type` from the validated extension, never from the stored `mimeType` the uploader supplied, and sends Markdown and text as `text/plain` so a browser never renders a document as HTML. The response carries `X-Content-Type-Options: nosniff` and a `default-src 'none'; sandbox` Content-Security-Policy. The reader renders Markdown with `react-markdown` (raw HTML disabled, `javascript:` and `data:` links stripped, images from any origin but this instance replaced by their alt text so a shared document cannot make readers' browsers call out to another host) and shows PDFs in an `<iframe sandbox="allow-scripts">`, which gives the frame a null origin: it cannot reach the session cookie or call the API. "Open in a new tab" shows a PDF in the browser's own viewer at the app's origin, with the isolation that viewer provides and nothing more; that is the same trust every site with a PDF link extends, and the reason the in-app reader uses a sandboxed frame instead. A read the caller is not allowed answers 404, not 403, so the response cannot confirm the document exists. Text documents are served `Cache-Control: private, no-cache` with an ETag taken from the file, because they can be edited in place; the immutable caching the other asset routes use would hand a reader the old text.
 
 ### Asset Scoping
 
@@ -546,7 +564,7 @@ Assets have three scopes:
 | Scope | Who can see/use it | Who can upload |
 |-------|--------------------|----------------|
 | `GLOBAL` | All users on the platform | Admins and Global Asset Managers |
-| `USER` | The uploading user only | Any user |
+| `USER` | The uploading user only, plus members of any campaign a document is shared with | Any user |
 | `CAMPAIGN` | All campaign members | Campaign DM, players (tokens only) |
 
 ---

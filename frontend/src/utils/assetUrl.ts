@@ -13,6 +13,8 @@
 // extraction lives here rather than being re-derived per component.
 // ============================================
 
+import { AssetType } from '@/types';
+
 /**
  * Pull the asset id out of a stored reference, whichever shape it is in.
  * Returns null for empty/missing values.
@@ -21,4 +23,29 @@ export function extractAssetId(url: string | null | undefined): string | null {
   if (!url) return null;
   const parts = url.split('/');
   return parts[parts.length - 1] || null;
+}
+
+/**
+ * The serving directory for each asset type, matching the backend's routes
+ * under /api/assets/. This was copied into two components and had already
+ * drifted from the enum: a DOCUMENT fell through a `?? 'tokens'` fallback and
+ * was requested from the wrong route. One table, every value named, so a new
+ * type fails to compile until it has a directory.
+ */
+export type AssetDirectory = 'maps' | 'tokens' | 'audio' | 'avatars' | 'documents';
+
+export const ASSET_DIRECTORY: Record<AssetType, AssetDirectory> = {
+  [AssetType.MAP]: 'maps',
+  [AssetType.TOKEN]: 'tokens',
+  [AssetType.AUDIO]: 'audio',
+  [AssetType.AVATAR]: 'avatars',
+  [AssetType.DOCUMENT]: 'documents',
+  // Not uploadable. There is no route for it and never a stored asset of this
+  // type, so any lookup here is a bug worth seeing rather than a silent fallback.
+  [AssetType.OTHER]: 'documents',
+};
+
+/** The directory an asset of this type is served from. */
+export function assetDirectory(type: AssetType): AssetDirectory {
+  return ASSET_DIRECTORY[type];
 }

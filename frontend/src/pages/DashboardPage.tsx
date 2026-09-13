@@ -9,7 +9,7 @@ import { useNavigate } from 'react-router-dom';
 import { useQueryClient } from '@tanstack/react-query';
 import { useAuth } from '@/contexts/AuthContext';
 import { useToast } from '@/contexts/ToastContext';
-import { Plus, LogOut, RefreshCw, User, ArrowRight, Mail, FolderOpen, Shield, AlertCircle, Upload, FileText } from 'lucide-react';
+import { Plus, LogOut, RefreshCw, User, ArrowRight, Mail, FolderOpen, Shield, AlertCircle, Upload, FileText, BookOpen } from 'lucide-react';
 import { useTheme } from '@/contexts/ThemeContext';
 import { useCampaignsQuery, useCharactersQuery, usePendingInvitationsQuery, queryKeys } from '@/hooks/queries';
 import CampaignCard from '@/components/CampaignCard';
@@ -285,6 +285,48 @@ export default function DashboardPage() {
                   </p>
                   <p className="text-xs text-warm-gray">
                     Upload and organize maps, tokens, audio, and avatar images
+                  </p>
+                </div>
+              </div>
+            </section>
+
+            {/* Documents Section */}
+            <section className="glass-panel p-6">
+              <div className="flex items-center justify-between mb-4">
+                <div className="flex items-center gap-3">
+                  <div className="p-2 rounded-lg bg-moss-green/10">
+                    <BookOpen className="w-6 h-6 text-moss-green" />
+                  </div>
+                  <div>
+                    <h2 className="text-xl font-semibold text-brand-ink font-heading">
+                      Documents
+                    </h2>
+                    <p className="text-sm text-warm-gray">
+                      Rulebooks and handouts
+                    </p>
+                  </div>
+                </div>
+                <Button
+                  onClick={() => navigate('/documents')}
+                  className="flex items-center gap-2"
+                >
+                  <span className="hidden sm:inline">View Documents</span>
+                  <ArrowRight className="w-4 h-4" />
+                </Button>
+              </div>
+
+              <div className="space-y-3 mt-4">
+                <div
+                  className="p-4 rounded-lg bg-parchment/50 border border-moss-green/20
+                           hover:border-moss-green/40 transition-colors cursor-pointer text-center"
+                  onClick={() => navigate('/documents')}
+                >
+                  <BookOpen className="w-8 h-8 mx-auto mb-2 text-moss-green/60" />
+                  <p className="text-sm font-medium text-brand-ink mb-1">
+                    Read Without Leaving the Table
+                  </p>
+                  <p className="text-xs text-warm-gray">
+                    Upload a PDF, text or Markdown file and read it here or in any campaign a DM shares it with
                   </p>
                 </div>
               </div>
