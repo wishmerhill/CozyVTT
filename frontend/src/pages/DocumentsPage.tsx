@@ -18,7 +18,7 @@ import { ArrowLeft, BookOpen, ExternalLink, FilePlus, FileText, Loader2, Trash2,
 import { Button } from '@/components/ui';
 import ConfirmDialog from '@/components/common/ConfirmDialog';
 import AssetUploadModal from '@/components/assets/AssetUploadModal';
-import DocumentReader, { documentFormat } from '@/components/documents/DocumentReader';
+import DocumentReader, { documentFormat, FORMAT_LABEL } from '@/components/documents/DocumentReader';
 import NewDocumentDialog from '@/components/documents/NewDocumentDialog';
 import { useAssetsQuery } from '@/hooks/queries';
 import { useAuth } from '@/contexts/AuthContext';
@@ -26,12 +26,6 @@ import { useToast } from '@/contexts/ToastContext';
 import api from '@/services/api';
 import { apiErrorMessage } from '@/utils/errors';
 import { AssetType, AssetScope, PlatformRole, type Asset } from '@/types';
-
-const FORMAT_LABEL: Record<ReturnType<typeof documentFormat>, string> = {
-  pdf: 'PDF',
-  markdown: 'Markdown',
-  text: 'Text',
-};
 
 function formatSize(bytes: number): string {
   if (bytes < 1024) return `${bytes} B`;

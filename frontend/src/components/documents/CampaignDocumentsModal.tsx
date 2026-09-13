@@ -16,7 +16,7 @@ import { useCallback, useEffect, useState } from 'react';
 import { BookOpen, ExternalLink, FilePlus, Link2, Loader2, Unlink, Upload } from 'lucide-react';
 import { Modal, Button } from '@/components/ui';
 import ConfirmDialog from '@/components/common/ConfirmDialog';
-import DocumentReader, { documentFormat } from './DocumentReader';
+import DocumentReader, { documentFormat, FORMAT_LABEL } from './DocumentReader';
 import NewDocumentDialog from './NewDocumentDialog';
 import AssetUploadModal from '@/components/assets/AssetUploadModal';
 import { useAuth } from '@/contexts/AuthContext';
@@ -31,8 +31,6 @@ interface CampaignDocumentsModalProps {
   /** Whether the viewer may share and unshare. The server decides for real. */
   isDM: boolean;
 }
-
-const FORMAT_LABEL = { pdf: 'PDF', markdown: 'Markdown', text: 'Text' } as const;
 
 export default function CampaignDocumentsModal({ isOpen, onClose, campaignId, isDM }: CampaignDocumentsModalProps) {
   const [shared, setShared] = useState<CampaignDocument[]>([]);

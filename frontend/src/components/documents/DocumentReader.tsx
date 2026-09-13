@@ -41,6 +41,13 @@ export function documentFormat(originalName: string): DocumentFormat {
   return 'text';
 }
 
+/** What each format is called wherever a document is listed. */
+export const FORMAT_LABEL: Record<DocumentFormat, string> = {
+  pdf: 'PDF',
+  markdown: 'Markdown',
+  text: 'Text',
+};
+
 interface DocumentReaderProps {
   isOpen: boolean;
   onClose: () => void;

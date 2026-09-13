@@ -530,20 +530,15 @@ class ApiClient {
   // ============================================
 
   // ============================================
-  // Personal notes
+  // Documents
   //
-  // Private to the signed-in user; the server scopes every one of these by the
-  // session's own id, so there is no user parameter to pass or to get wrong.
+  // Shared, not private: a campaign's members read what its DM shares. The
+  // server decides who may read, edit or share each one; these calls only ask.
   // ============================================
 
-  /** The caller's notes for a campaign, newest first. Titles only, no bodies. */
   /**
-   * Your own saved dice macros for this campaign, oldest first — the order they
-   * appear as buttons, which stays put when one is edited.
-   */
-  /**
-   * Documents the DM has shared with this campaign. Any member can list; the
-   * list is also what grants the right to read each one.
+   * The documents a campaign's members may read: shared in by the DM, or
+   * created for the campaign. Any member can list.
    */
   async listCampaignDocuments(
     campaignId: string,
@@ -594,6 +589,17 @@ class ApiClient {
     return this.getAssetUrl(assetId, 'documents');
   }
 
+  // ============================================
+  // Personal notes and dice macros
+  //
+  // Private to the signed-in user; the server scopes every one of these by the
+  // session's own id, so there is no user parameter to pass or to get wrong.
+  // ============================================
+
+  /**
+   * Your own saved dice macros for this campaign, oldest first, the order they
+   * appear as buttons, which stays put when one is edited.
+   */
   async listDiceMacros(campaignId: string): Promise<{ macros: import('@/types').DiceMacro[] }> {
     const response = await this.client.get(`/api/campaigns/${campaignId}/macros`);
     return response.data;
@@ -621,6 +627,7 @@ class ApiClient {
     return response.data;
   }
 
+  /** The caller's notes for a campaign, newest first. Titles only, no bodies. */
   async listNotes(campaignId: string): Promise<{ notes: PersonalNoteSummary[] }> {
     const response = await this.client.get(`/api/campaigns/${campaignId}/notes`);
     return response.data;
