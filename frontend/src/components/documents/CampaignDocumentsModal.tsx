@@ -75,8 +75,14 @@ export default function CampaignDocumentsModal({ isOpen, onClose, campaignId, is
     setPickerOpen(false);
   }, [isOpen, load]);
 
+  // The asset list includes documents from other campaigns the DM belongs to
+  // and documents other people uploaded. The server only lets a DM share their
+  // own or a global one, so only those are offered.
+  const ownOrGlobal = mine.filter(
+    (a) => isAdmin || a.scope === AssetScope.GLOBAL || a.uploadedById === user?.id
+  );
   const sharedIds = new Set(shared.map((d) => d.id));
-  const shareable = mine.filter((a) => !sharedIds.has(a.id));
+  const shareable = ownOrGlobal.filter((a) => !sharedIds.has(a.id));
 
   const handleShare = async (asset: Asset) => {
     setBusyId(asset.id);
@@ -227,7 +233,7 @@ export default function CampaignDocumentsModal({ isOpen, onClose, campaignId, is
               {pickerOpen &&
                 (shareable.length === 0 ? (
                   <p className="text-xs text-ink-secondary italic">
-                    {mine.length === 0
+                    {ownOrGlobal.length === 0
                       ? 'You have no documents yet. Upload one from Documents on your dashboard.'
                       : 'Everything you can share is already shared.'}
                   </p>

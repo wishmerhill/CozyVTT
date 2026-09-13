@@ -365,11 +365,14 @@ item carries the asset fields plus `linkedAt`, `linkedBy` and a `shared`
 boolean, which is what tells the two apart, so the client knows whether
 "unshare" is a thing it can offer.
 
-`POST` takes `{ assetId }` and shares an existing document. The asset must be of
-type `DOCUMENT` **and readable by the DM making the request**, or the answer is
-`404`. That check is what stops sharing from becoming a way to hand a campaign
-somebody else's private file by guessing an id. Sharing the same document twice
-is a no-op, not an error.
+`POST` takes `{ assetId }` and shares an existing document. Two checks, in
+order. The asset must be of type `DOCUMENT` **and readable by the DM making the
+request**, or the answer is `404`; that stops sharing from becoming a way to
+hand a campaign somebody else's private file by guessing an id. Then it must be
+**the DM's own upload, or `GLOBAL`**, or the answer is `403` with a message
+saying so; that stops a document shared into one campaign from being passed on
+by a member of it who runs another. An admin may share anything. Sharing the
+same document twice is a no-op, not an error.
 
 ### `DELETE /api/campaigns/:campaignId/documents/:assetId`
 

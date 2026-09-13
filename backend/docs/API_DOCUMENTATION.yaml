@@ -1973,10 +1973,13 @@ paths:
         - Documents
       summary: Share a document with a campaign
       description: >-
-        DM only. The DM must already be able to read the document; a document
-        the caller cannot read answers 404, so sharing cannot be used to grant a
-        table access to a stranger's private file from nothing but its id.
-        Sharing a document twice is not an error.
+        DM only, and only for a document the DM uploaded or wrote themselves,
+        or a global one. A document the caller cannot read answers 404, so
+        sharing cannot be used to grant a table access to a stranger's private
+        file from nothing but its id. A document the caller can read but did
+        not upload answers 403: being shared into one campaign does not let a
+        member who runs another pass it on. Admins may share anything. Sharing
+        a document twice is not an error.
       operationId: linkCampaignDocument
       security:
         - cookieAuth: []

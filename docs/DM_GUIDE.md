@@ -558,7 +558,7 @@ The **book icon** in the campaign header opens the documents shared with this ca
 
 **Three ways to put a document in front of the table:**
 
-- **Share existing** — pick one of your own documents, or a global one, from the list. It stays yours; sharing does not copy it, and if you edit it later the table reads the new version.
+- **Share existing** — pick one of your own documents, or a global one, from the list. It stays yours; sharing does not copy it, and if you edit it later the table reads the new version. Documents other people have shared with campaigns you play in are not on this list: reading one there does not make it yours to pass on.
 - **Upload** — upload a PDF, text or Markdown file straight into the campaign. It belongs to the campaign from the start, so members can read it at once with no share step.
 - **Write** — write a text or Markdown document on the spot, for a handout or the session's notes. Same as Upload: the campaign's own, readable immediately.
 

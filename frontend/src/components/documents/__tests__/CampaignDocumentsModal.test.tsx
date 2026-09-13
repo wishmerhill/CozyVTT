@@ -119,6 +119,25 @@ describe('CampaignDocumentsModal', () => {
       expect(shareButtons).toHaveLength(1);
     });
 
+    it('offers only what the DM may share: their own documents and global ones', async () => {
+      // The asset list also returns documents from other campaigns the DM is a
+      // member of, and documents other people uploaded. The server refuses to
+      // pass those on, so the picker must not offer them.
+      const theirs = { ...mine('d3', 'Someone Else\'s Handout', 'handout.md'), uploadedById: 'other', scope: AssetScope.CAMPAIGN } as Asset;
+      const global = { ...mine('d4', 'System Reference', 'srd.pdf'), uploadedById: 'admin', scope: AssetScope.GLOBAL } as Asset;
+      listAssets.mockResolvedValue({
+        assets: [mine('d2', 'House Rules', 'house.md'), theirs, global],
+        pagination: { page: 1, limit: 100, total: 3 },
+      });
+      render(<CampaignDocumentsModal isOpen onClose={vi.fn()} campaignId="c1" isDM />);
+      await screen.findByText('Core Rules');
+      fireEvent.click(screen.getByRole('button', { name: /share existing/i }));
+
+      expect(screen.getByText('House Rules')).toBeInTheDocument();
+      expect(screen.getByText('System Reference')).toBeInTheDocument();
+      expect(screen.queryByText("Someone Else's Handout")).toBeNull();
+    });
+
     it('shares and refreshes the list', async () => {
       linkCampaignDocument.mockResolvedValue({ link: { id: 'l1' } });
       listCampaignDocuments

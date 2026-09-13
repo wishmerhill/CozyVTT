@@ -1829,9 +1829,12 @@ router.get('/:campaignId/documents', campaignMember, async (req: AuthenticatedRe
  * POST /api/campaigns/:campaignId/documents
  * Share a document with this campaign. Requires: Campaign DM role
  *
- * The DM must already be able to read the asset. Without that check, linking
- * would be a way to grant a whole table access to a stranger's private file
- * from nothing but its id.
+ * Two checks. The DM must be able to read the asset, or linking would be a way
+ * to grant a whole table access to a stranger's private file from nothing but
+ * its id. And reading is not enough: the document must be the DM's own, or
+ * global. A document shared into a campaign is readable by its members, and a
+ * member who runs another campaign could otherwise pass it on to a table the
+ * uploader never chose.
  */
 router.post('/:campaignId/documents', campaignDM, async (req: AuthenticatedRequest, res: Response) => {
   try {
@@ -1857,8 +1860,17 @@ router.post('/:campaignId/documents', campaignDM, async (req: AuthenticatedReque
     if (!asset || asset.type !== 'DOCUMENT') {
       return res.status(404).json({ error: 'Not Found', message: 'Document not found' });
     }
-    if (!(await canReadAsset(asset, userId, req.session.platformRole === 'ADMIN'))) {
+    const isAdmin = req.session.platformRole === 'ADMIN';
+    if (!(await canReadAsset(asset, userId, isAdmin))) {
       return res.status(404).json({ error: 'Not Found', message: 'Document not found' });
+    }
+    // 403 here, not 404: the caller can already read this one, so the id is no
+    // secret from them, and the refusal should say what would be allowed.
+    if (asset.scope !== 'GLOBAL' && asset.uploadedById !== userId && !isAdmin) {
+      return res.status(403).json({
+        error: 'Forbidden',
+        message: 'Only the person who uploaded a document, or an admin, can share it with a campaign',
+      });
     }
 
     const link = await prisma.campaignDocument.upsert({

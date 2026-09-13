@@ -174,6 +174,37 @@ describe('campaign documents', () => {
       expect(await prisma.campaignDocument.count({ where: { assetId: pdfId } })).toBe(0);
     });
 
+    it('a DM cannot pass on a document that was merely shared with them', async () => {
+      // The owner shares with campaign A. The stranger sits in A as a player
+      // and runs campaign B. Reading it in A must not let them share it into
+      // B: the owner chose one table, not every table a member of it runs.
+      await link(owner, campaignA, pdfId);
+      const seat = await prisma.campaignMembership.create({
+        data: { userId: strangerId, campaignId: campaignA, role: 'PLAYER', characterIds: [] },
+      });
+      try {
+        expect((await serve(stranger, pdfId)).status).toBe(200);
+        const res = await link(stranger, campaignB, pdfId);
+        expect(res.status).toBe(403);
+        expect(res.body.message).toMatch(/uploaded/i);
+        expect(await prisma.campaignDocument.count({ where: { campaignId: campaignB } })).toBe(0);
+      } finally {
+        await prisma.campaignMembership.delete({ where: { id: seat.id } });
+      }
+    });
+
+    it('a DM can share a global document they did not upload', async () => {
+      const global = await prisma.asset.create({
+        data: {
+          type: 'DOCUMENT', scope: 'GLOBAL', uploadedById: ownerId,
+          filename: 'srd.pdf', originalName: 'srd.pdf', mimeType: 'application/pdf', fileSize: 1,
+          filePath: '/nonexistent/srd.pdf', name: 'Everyone\'s rules',
+        },
+      });
+      assetIds.push(global.id);
+      expect((await link(stranger, campaignB, global.id)).status).toBe(201);
+    });
+
     it('refuses an asset that is not a document', async () => {
       const png = await prisma.asset.create({
         data: {

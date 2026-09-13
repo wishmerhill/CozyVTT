@@ -399,7 +399,7 @@ This is decided by where you put it when you upload or write it:
 | **Campaign** | Every member of that campaign, immediately. Only the campaign's DM can put a document here. |
 | **Global** | Everyone on the instance. Only an administrator or a global asset manager can put a document here. |
 
-A DM can share a Personal or Global document with their campaign from inside it, and stop sharing it later. Sharing does not copy the file; the campaign's members read the same document you have, and if you edit it they see the new text next time they open it.
+A DM can share their own documents, and Global ones, with their campaign from inside it, and stop sharing later. A document someone else shared with a table you play at is yours to read there, not to share on. Sharing does not copy the file; the campaign's members read the same document you have, and if you edit it they see the new text next time they open it.
 
 ### Reading
 

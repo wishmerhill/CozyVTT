@@ -210,7 +210,9 @@ placed on a map, a character, a creature template or a token template in one
 of the caller's campaigns points at that asset; and `documentSharedWithUser`,
 true when a DM has linked the document to a campaign the caller belongs to
 (`CampaignDocument`). The linking route runs the same `canReadAsset` against
-the DM first, so a link can only ever grant what the DM could already read.
+the DM first, so a link can only ever grant what the DM could already read,
+and then requires the document to be the DM's own or `GLOBAL`, so a document
+shared into one campaign cannot be passed on by a member who runs another.
 
 Three things this deliberately does **not** do:
 
@@ -237,7 +239,9 @@ Documents are assets of type `DOCUMENT`, so everything above applies, plus:
 - **Editing is the uploader's or an admin's.** `PUT /documents/:id/content`
   checks `uploadedById` against the session, not `canReadAsset`; being able to
   read a shared rulebook must not mean being able to rewrite it for the table.
-- **Sharing and unsharing are the DM's** (`campaignDM` on the link routes).
+- **Sharing and unsharing are the DM's** (`campaignDM` on the link routes),
+  and sharing is limited to the DM's own documents and global ones. A DM may
+  read a document shared with a table they play at; they may not re-share it.
   Unlinking revokes read for the whole campaign at once.
 - **Refusals are `404`, not `403`**, on the serving, edit and link routes, so
   no reply confirms that a private id exists.
