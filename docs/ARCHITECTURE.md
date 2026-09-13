@@ -553,6 +553,18 @@ uploads/
 4. **Sharp** generates a WebP thumbnail (for maps and tokens)
 5. File is moved to its final location; the `Asset` record is created in the database
 
+### Serving Audio
+
+Ambient audio is not relayed through the server. The DM's choice is broadcast as
+a URL and each player's browser fetches the file itself, so a track must be
+readable by every member while it plays. `canReadAsset` grants exactly that: the
+asset id recorded in the campaign's `vibeSettings.atmosphereAudio` is readable by
+that campaign's members for as long as it is recorded. Because setting a track is
+therefore an act of sharing, the socket handler checks the DM can read it first,
+and never as an admin. The route sends the `Content-Type` from the file's
+validated extension, never the uploader-supplied `mimeType`, with `nosniff` on
+both whole-file and range responses.
+
 ### Serving Documents
 
 The server never parses a document; the defence is in how it is served. `GET /api/assets/documents/:id` chooses the `Content-Type` from the validated extension, never from the stored `mimeType` the uploader supplied, and sends Markdown and text as `text/plain` so a browser never renders a document as HTML. The response carries `X-Content-Type-Options: nosniff` and a `default-src 'none'; sandbox` Content-Security-Policy. The reader renders Markdown with `react-markdown` (raw HTML disabled, `javascript:` and `data:` links stripped, images from any origin but this instance replaced by their alt text so a shared document cannot make readers' browsers call out to another host) and shows PDFs in an `<iframe sandbox="allow-scripts">`, which gives the frame a null origin: it cannot reach the session cookie or call the API. "Open in a new tab" shows a PDF in the browser's own viewer at the app's origin, with the isolation that viewer provides and nothing more; that is the same trust every site with a PDF link extends, and the reason the in-app reader uses a sandboxed frame instead. A read the caller is not allowed answers 404, not 403, so the response cannot confirm the document exists. Text documents are served `Cache-Control: private, no-cache` with an ETag taken from the file, because they can be edited in place; the immutable caching the other asset routes use would hand a reader the old text.
@@ -564,7 +576,7 @@ Assets have three scopes:
 | Scope | Who can see/use it | Who can upload |
 |-------|--------------------|----------------|
 | `GLOBAL` | All users on the platform | Admins and Global Asset Managers |
-| `USER` | The uploading user only, plus members of any campaign a document is shared with | Any user |
+| `USER` | The uploading user only, plus members of any campaign that is *using* the asset: a map on the table, token art, or the track it is currently playing, and for a document, one shared with it | Any user |
 | `CAMPAIGN` | All campaign members | Campaign DM, players (tokens only) |
 
 ---

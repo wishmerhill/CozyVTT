@@ -316,6 +316,12 @@ Two things worth knowing:
 - **Creatures standing in hidden areas are invisible to you** — including their tokens, and including their turn marker during combat. If the initiative tracker shows a creature you can't find on the map, that's deliberate. Something is out there.
 - **You can't reveal fog yourself.** Only the DM can, so there's nothing you can accidentally break by moving around.
 
+### Sound and weather on the map
+
+Your DM can start an ambient track and lay weather over the map: rain, mist, drifting leaves, sparkles, snow or wind. Both arrive on their own when your DM sets them, and stop when your DM stops them; there is nothing for you to turn on.
+
+If you hear nothing, check your browser has not blocked sound for the tab. Most browsers refuse to play audio until you have clicked something on the page, so clicking anywhere in the campaign usually starts it.
+
 ---
 
 ## Measuring and Spell Areas

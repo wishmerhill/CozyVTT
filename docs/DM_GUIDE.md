@@ -1044,6 +1044,10 @@ Upload audio files to your Asset Library (type: **Audio**), then select them in 
 - Audio loops automatically until you change or stop it
 - Use ambient sounds (rain, tavern chatter, dungeon drips) to set the scene without narrating it
 
+**Which tracks you can play.** The panel lists your own audio, anything in the global library, and audio uploaded to this campaign. Audio belonging to a *different* campaign is not offered, even one you play in, because it belongs to that table.
+
+**What your players can hear.** The sound is not relayed from your computer; each player's browser fetches the track from your CozyVTT instance. So while a track is playing, everyone in the campaign can fetch that one track, including a track from your personal library. Stop it, and it is private to you again. Nothing else in your library is exposed, and no one can browse or list your audio.
+
 *GIF pending — Setting ambient audio and the player hearing it start.*
 
 ### Atmosphere Effects
