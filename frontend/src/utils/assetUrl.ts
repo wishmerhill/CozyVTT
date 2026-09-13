@@ -13,7 +13,7 @@
 // extraction lives here rather than being re-derived per component.
 // ============================================
 
-import { AssetType } from '@/types';
+import { AssetType, AssetScope } from '@/types';
 
 /**
  * Pull the asset id out of a stored reference, whichever shape it is in.
@@ -48,4 +48,23 @@ export const ASSET_DIRECTORY: Record<AssetType, AssetDirectory> = {
 /** The directory an asset of this type is served from. */
 export function assetDirectory(type: AssetType): AssetDirectory {
   return ASSET_DIRECTORY[type];
+}
+
+/**
+ * What each scope is called in the interface.
+ *
+ * Written by hand in five components before this, which is how one of them
+ * came to print the raw enum: a two-way check that named USER "Personal" and
+ * fell through to `asset.scope` for the rest, so a campaign asset was labelled
+ * CAMPAIGN where the rest of the app says Campaign.
+ */
+export const ASSET_SCOPE_LABEL: Record<AssetScope, string> = {
+  [AssetScope.USER]: 'Personal',
+  [AssetScope.CAMPAIGN]: 'Campaign',
+  [AssetScope.GLOBAL]: 'Global',
+};
+
+/** The label for a scope, falling back to the raw value for an unknown one. */
+export function assetScopeLabel(scope: AssetScope): string {
+  return ASSET_SCOPE_LABEL[scope] ?? scope;
 }
