@@ -71,7 +71,7 @@ import DmWallControls, { type WallToolMode } from '@/components/campaign/DmWallC
 import DmLightControls, { type LightToolMode, type LightPlacementDefaults } from '@/components/campaign/DmLightControls';
 import DmAmbientControls from '@/components/campaign/DmAmbientControls';
 import DmToolPanelContainer from '@/components/campaign/DmToolPanelContainer';
-import { AMBIENT_PRESET_DEFAULTS, DEFAULT_WINDOW_LIGHT_RADIUS_CELLS, type EnvironmentType, type AmbientLightPreset } from '@/types/ambientLighting';
+import { AMBIENT_PRESET_DEFAULTS, DEFAULT_WINDOW_LIGHT_RADIUS_CELLS, DEFAULT_DARKVISION_OPACITY, type EnvironmentType, type AmbientLightPreset } from '@/types/ambientLighting';
 import { useWallHistory } from '@/hooks/useWallHistory';
 import Toast, { useToast } from '@/components/Toast';
 import Button from '@/components/ui/Button';
@@ -113,7 +113,7 @@ interface MapCanvasProps {
 
 export default function MapCanvas({ onEditToken }: MapCanvasProps) {
   const { t } = useTranslation('campaign');
-  const { currentMap, setCurrentMap, userRole, campaign, updateCampaignSpiritLayer, dmViewBothPlanes, playerSpiritVisible, setPlayerSpiritVisible, activeVibeEffect, updateVibe, activeAtmosphereEffect, characterHpCache } = useCampaign();
+  const { currentMap, setCurrentMap, userRole, campaign, updateCampaignSpiritLayer, dmViewBothPlanes, dmPreviewPlayerView, setDmPreviewPlayerView, playerSpiritVisible, setPlayerSpiritVisible, activeVibeEffect, updateVibe, activeAtmosphereEffect, characterHpCache } = useCampaign();
   // Live token state comes from the game store, not the campaign context —
   // socket handlers write there directly (outside React), and this
   // subscription is what re-renders the canvas per token change.
@@ -271,8 +271,9 @@ export default function MapCanvas({ onEditToken }: MapCanvasProps) {
   const [nearEndpoint, setNearEndpoint] = useState(false);
   const [selectedEndpoint, setSelectedEndpoint] = useState<{ x: number; y: number } | null>(null);
   const { toast, showToast, hideToast } = useToast();
-  /** DM "Preview player view" toggle — when true, DM sees lighting as players do. */
-  const [dmPreviewPlayerView, setDmPreviewPlayerView] = useState(false);
+  // dmPreviewPlayerView/setDmPreviewPlayerView come from CampaignContext (see
+  // useCampaign() above) — shared with SceneLightingPanel/DmAmbientControls
+  // so the DM can flip the same toggle from either place.
 
   // Light source state
   const [lightSources, setLightSources] = useState<LightSource[]>([]);
@@ -1151,6 +1152,7 @@ export default function MapCanvas({ onEditToken }: MapCanvasProps) {
       ambientLightPreset: AmbientLightPreset;
       ambientColor: string | null;
       ambientOpacity: number;
+      darkvisionOpacity: number;
     }) => {
       if (!currentMap || data.mapId !== currentMap.id) return;
       setCurrentMap({
@@ -1159,6 +1161,7 @@ export default function MapCanvas({ onEditToken }: MapCanvasProps) {
         ambientLightPreset: data.ambientLightPreset,
         ambientColor: data.ambientColor,
         ambientOpacity: data.ambientOpacity,
+        darkvisionOpacity: data.darkvisionOpacity,
       });
     };
 
@@ -1634,6 +1637,7 @@ export default function MapCanvas({ onEditToken }: MapCanvasProps) {
           tokenSight: vision.tokenSight,
           lightVision: vision.lightVision,
           darkvision: vision.darkvision,
+          darkvisionOpacity: currentMap.darkvisionOpacity ?? DEFAULT_DARKVISION_OPACITY,
           windowLight: vision.windowLight,
           lightingCanvas: lightingOffscreenRef,
           coverageCanvas: lightCoverageOffscreenRef,
@@ -1818,7 +1822,7 @@ export default function MapCanvas({ onEditToken }: MapCanvasProps) {
   // Overlay content — walls, lights, DM tools, measurement, pings, fog cursor.
   useEffect(() => {
     markDirty('overlay');
-  }, [markDirty, wallSegments, wallMode, wallInProgress, hoveredWallId, selectedWallId, hoveredDoorId, splitHoverPoint, selectedEndpoint, wallType, snapToGrid, brushSize, lightSources, selectedLightId, lightMode, dmPreviewPlayerView, showRuler, rulerOrigin, rulerColor, effectiveRulerOrigin, showAoE, aoeConfig, aoeAnchor, fogMode, fogDragCurrent, fogState, pings, currentMap?.environmentType, currentMap?.ambientLightPreset, currentMap?.ambientColor, currentMap?.ambientOpacity]);
+  }, [markDirty, wallSegments, wallMode, wallInProgress, hoveredWallId, selectedWallId, hoveredDoorId, splitHoverPoint, selectedEndpoint, wallType, snapToGrid, brushSize, lightSources, selectedLightId, lightMode, dmPreviewPlayerView, showRuler, rulerOrigin, rulerColor, effectiveRulerOrigin, showAoE, aoeConfig, aoeAnchor, fogMode, fogDragCurrent, fogState, pings, currentMap?.environmentType, currentMap?.ambientLightPreset, currentMap?.ambientColor, currentMap?.ambientOpacity, currentMap?.darkvisionOpacity]);
 
   // ============================================
   // Token Hit Testing
@@ -3366,7 +3370,10 @@ export default function MapCanvas({ onEditToken }: MapCanvasProps) {
             ambientLightPreset={currentMap.ambientLightPreset ?? 'pitch_black'}
             ambientColor={currentMap.ambientColor ?? '#000000'}
             ambientOpacity={currentMap.ambientOpacity ?? 1}
+            darkvisionOpacity={currentMap.darkvisionOpacity ?? DEFAULT_DARKVISION_OPACITY}
             lightingEnabled={currentMap.lightingEnabled ?? false}
+            previewPlayerView={dmPreviewPlayerView}
+            onTogglePreviewPlayerView={() => setDmPreviewPlayerView(!dmPreviewPlayerView)}
             onChange={(changes) => {
               if (!campaign) return;
               const updatedMap = { ...currentMap, ...changes };
@@ -3383,7 +3390,7 @@ export default function MapCanvas({ onEditToken }: MapCanvasProps) {
       {userRole === 'DM' && currentMap?.lightingEnabled && (
         <div className="absolute bottom-20 right-2 z-30">
           <button
-            onClick={() => setDmPreviewPlayerView((prev) => !prev)}
+            onClick={() => setDmPreviewPlayerView(!dmPreviewPlayerView)}
             className={`px-3 py-1.5 rounded text-xs font-medium transition-colors border ${
               dmPreviewPlayerView
                 ? 'bg-info/30 text-info-ink border-info/50'

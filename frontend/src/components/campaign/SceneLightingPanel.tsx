@@ -18,6 +18,7 @@ import { X, SunMoon } from 'lucide-react';
 import { useCampaign } from '@/contexts/CampaignContext';
 import api from '@/services/api';
 import DmAmbientControls from '@/components/campaign/DmAmbientControls';
+import { DEFAULT_DARKVISION_OPACITY } from '@/types/ambientLighting';
 
 interface SceneLightingPanelProps {
   isOpen: boolean;
@@ -26,7 +27,7 @@ interface SceneLightingPanelProps {
 
 export default function SceneLightingPanel({ isOpen, onClose }: SceneLightingPanelProps) {
   const { t } = useTranslation(['campaign', 'common']);
-  const { campaign, currentMap, setCurrentMap } = useCampaign();
+  const { campaign, currentMap, setCurrentMap, dmPreviewPlayerView, setDmPreviewPlayerView } = useCampaign();
 
   return (
     <AnimatePresence>
@@ -39,7 +40,7 @@ export default function SceneLightingPanel({ isOpen, onClose }: SceneLightingPan
             animate={{ opacity: 1 }}
             exit={{ opacity: 0 }}
             transition={{ duration: 0.2 }}
-            className="fixed inset-0 z-40 bg-black/50 backdrop-blur-sm"
+            className="fixed inset-0 z-40 bg-black/50"
             onClick={onClose}
           />
 
@@ -79,7 +80,10 @@ export default function SceneLightingPanel({ isOpen, onClose }: SceneLightingPan
                   ambientLightPreset={currentMap.ambientLightPreset ?? 'pitch_black'}
                   ambientColor={currentMap.ambientColor ?? '#000000'}
                   ambientOpacity={currentMap.ambientOpacity ?? 1}
+                  darkvisionOpacity={currentMap.darkvisionOpacity ?? DEFAULT_DARKVISION_OPACITY}
                   lightingEnabled={currentMap.lightingEnabled ?? false}
+                  previewPlayerView={dmPreviewPlayerView}
+                  onTogglePreviewPlayerView={() => setDmPreviewPlayerView(!dmPreviewPlayerView)}
                   onChange={(changes) => {
                     const updatedMap = { ...currentMap, ...changes };
                     setCurrentMap(updatedMap); // optimistic — the DM's own view updates immediately

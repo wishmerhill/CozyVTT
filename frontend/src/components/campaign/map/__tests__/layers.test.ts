@@ -8,7 +8,7 @@
  * cells) without being brittle about styling.
  */
 
-import { describe, it, expect } from 'vitest';
+import { describe, it, expect, vi } from 'vitest';
 import { drawGrid } from '../layers/drawGrid';
 import { drawFog } from '../layers/drawFog';
 import { drawTokens, type TokenDrawState } from '../layers/drawTokens';
@@ -22,7 +22,7 @@ import type { Viewport } from '../layers/types';
 import type { Token } from '@/types';
 import { TokenLayer, TokenType } from '@/types';
 import type { FogState, WallSegment } from '@/types/walls';
-import { OUTDOOR_HAZE_MIN_OPACITY } from '@/types/ambientLighting';
+import { OUTDOOR_HAZE_MIN_OPACITY, DEFAULT_DARKVISION_OPACITY, DARKVISION_OVERLAY_MAX_OPACITY } from '@/types/ambientLighting';
 
 // ── Recording mock 2D context ────────────────────────────────────────────────
 
@@ -929,6 +929,162 @@ describe('drawDynamicLighting', () => {
         const dayNoGap = runWindow({ environmentType: 'outdoor', color: '#ffffff', opacity: 0 }, false);
         expect(destinationOutDrawImages(day.lightOnly)).toBe(destinationOutDrawImages(dayNoGap.lightOnly));
       });
+    });
+  });
+
+  /**
+   * Darkvision-only overlay: ground revealed by a token's darkvisionRadius
+   * but not by any real light is fully cleared (crisp, full detail — no
+   * radial glow, darkvision is a sense not a light source) and then
+   * covered by a flat gray wash, with `darkvisionOpacity` as the single
+   * dial for how strong that wash reads. The mask this pass uses is
+   * allocated internally via `document.createElement('canvas')` rather
+   * than an injected holder, so it's intercepted here the same way the
+   * other layers inject theirs.
+   */
+  describe('darkvision-only overlay', () => {
+    interface AlphaCall extends OpCall { alpha: number }
+
+    /** Same as makeOpRecorder, plus the globalAlpha in force at each call. */
+    function makeAlphaRecorder(): { ctx: CanvasRenderingContext2D; ops: AlphaCall[] } {
+      const ops: AlphaCall[] = [];
+      const gradient = { addColorStop: () => {} };
+      const ctx = {
+        globalCompositeOperation: 'source-over',
+        fillStyle: '', filter: 'none', globalAlpha: 1,
+        createRadialGradient: () => gradient,
+        createLinearGradient: () => gradient,
+      } as unknown as CanvasRenderingContext2D & { globalCompositeOperation: string; globalAlpha: number };
+      for (const m of ['save', 'restore', 'beginPath', 'closePath', 'moveTo', 'lineTo',
+        'arc', 'fill', 'clip', 'fillRect', 'clearRect', 'drawImage']) {
+        (ctx as unknown as Record<string, unknown>)[m] = () =>
+          ops.push({
+            method: m,
+            op: ctx.globalCompositeOperation,
+            fillStyle: m === 'fillRect' ? String(ctx.fillStyle) : undefined,
+            alpha: ctx.globalAlpha,
+          });
+      }
+      return { ctx, ops };
+    }
+
+    function runDarkvision(darkvisionOpacity: number | undefined) {
+      const main = makeOpRecorder();
+      const lighting = makeAlphaRecorder();
+      const coverage = makeOpRecorder();
+      const lightOnly = makeOpRecorder();
+      const masks: ReturnType<typeof makeAlphaRecorder>[] = [];
+
+      const realCreateElement = document.createElement.bind(document);
+      const spy = vi.spyOn(document, 'createElement').mockImplementation(((tag: string) => {
+        if (tag !== 'canvas') return realCreateElement(tag);
+        const rec = makeAlphaRecorder();
+        masks.push(rec);
+        return { getContext: () => rec.ctx } as unknown as HTMLCanvasElement;
+      }) as typeof document.createElement);
+
+      try {
+        const token = makeToken('a', { sightRadius: 0, darkvisionRadius: 3 } as Partial<Token>);
+        const vision = computeVisionState([token], [], [], viewport);
+
+        drawDynamicLighting(main.ctx, {
+          myTokens: [token],
+          enabledLights: [],
+          tokenVision: vision.tokenVision,
+          tokenSight: vision.tokenSight,
+          lightVision: vision.lightVision,
+          darkvision: vision.darkvision,
+          darkvisionOpacity,
+          lightingCanvas: holderFor(lighting.ctx, W, H),
+          coverageCanvas: holderFor(coverage.ctx, W, H),
+          lightCanvas: holderFor(lightOnly.ctx, W, H),
+        }, viewport);
+      } finally {
+        spy.mockRestore();
+      }
+
+      // The only canvas this scenario allocates ad hoc is the darkvision mask
+      // (indoor, no window-light, sightMaskCanvas untouched) — one recorder.
+      return { lighting, mask: masks[0] };
+    }
+
+    it('fully clears the fog within the darkvision mask, regardless of darkvisionOpacity', () => {
+      const low = runDarkvision(0.1);
+      const high = runDarkvision(0.9);
+      const destinationOutDraws = (rec: { ops: AlphaCall[] }) =>
+        rec.ops.filter((c) => c.method === 'drawImage' && c.op === 'destination-out');
+
+      // Two destination-out draws on the fog: the always-present crisp-zone
+      // punch (coverage) plus the darkvision mask itself — both at full
+      // alpha now that darkvision reveals the ground crisply and leaves all
+      // the dimming to the gray wash below, independent of the opacity dial.
+      for (const rec of [low.lighting, high.lighting]) {
+        const draws = destinationOutDraws(rec);
+        expect(draws).toHaveLength(2);
+        expect(draws.every((c) => c.alpha === 1)).toBe(true);
+      }
+    });
+
+    it('recolors the mask with a gray wash rescaled onto 0..DARKVISION_OVERLAY_MAX_OPACITY', () => {
+      const { mask } = runDarkvision(0.5);
+      const fill = mask.ops.find((c) => c.method === 'fillRect');
+      expect(fill?.fillStyle).toBe(`rgba(140, 140, 150, ${0.5 * DARKVISION_OVERLAY_MAX_OPACITY})`);
+    });
+
+    it('never exceeds DARKVISION_OVERLAY_MAX_OPACITY even at a maxed-out slider', () => {
+      const { mask } = runDarkvision(1);
+      const fill = mask.ops.find((c) => c.method === 'fillRect');
+      expect(fill?.fillStyle).toBe(`rgba(140, 140, 150, ${DARKVISION_OVERLAY_MAX_OPACITY})`);
+    });
+
+    it('recolors the mask with source-in, after erasing light-covered ground with destination-out', () => {
+      const { mask } = runDarkvision(0.5);
+      const eraseIndex = mask.ops.findIndex((c) => c.method === 'drawImage' && c.op === 'destination-out');
+      const recolorIndex = mask.ops.findIndex((c) => c.method === 'fillRect' && c.op === 'source-in');
+      // source-in keeps the new gray fill only where the mask already has
+      // alpha (the darkvision-but-unlit polygon) — anything else would leak
+      // the tint outside the mask's own shape.
+      expect(eraseIndex).toBeGreaterThanOrEqual(0);
+      expect(recolorIndex).toBeGreaterThan(eraseIndex);
+    });
+
+    it('falls back to DEFAULT_DARKVISION_OPACITY (rescaled) when the caller omits it', () => {
+      const { mask } = runDarkvision(undefined);
+      const fill = mask.ops.find((c) => c.method === 'fillRect');
+      expect(fill?.fillStyle).toBe(`rgba(140, 140, 150, ${DEFAULT_DARKVISION_OPACITY * DARKVISION_OVERLAY_MAX_OPACITY})`);
+    });
+
+    it('does not add a darkvision punch to the fog when no token has darkvisionRadius set', () => {
+      const main = makeOpRecorder();
+      const lighting = makeAlphaRecorder();
+      const coverage = makeOpRecorder();
+      const lightOnly = makeOpRecorder();
+      const spy = vi.spyOn(document, 'createElement');
+
+      try {
+        const token = makeToken('a', { sightRadius: 0 } as Partial<Token>);
+        const vision = computeVisionState([token], [], [], viewport);
+
+        drawDynamicLighting(main.ctx, {
+          myTokens: [token],
+          enabledLights: [],
+          tokenVision: vision.tokenVision,
+          tokenSight: vision.tokenSight,
+          lightVision: vision.lightVision,
+          darkvision: vision.darkvision,
+          darkvisionOpacity: 0.9,
+          lightingCanvas: holderFor(lighting.ctx, W, H),
+          coverageCanvas: holderFor(coverage.ctx, W, H),
+          lightCanvas: holderFor(lightOnly.ctx, W, H),
+        }, viewport);
+      } finally {
+        spy.mockRestore();
+      }
+
+      // Only the always-present crisp-zone punch (coverage) remains — no
+      // second destination-out draw for a darkvision mask that was never built.
+      const destinationOutDraws = lighting.ops.filter((c) => c.method === 'drawImage' && c.op === 'destination-out');
+      expect(destinationOutDraws).toHaveLength(1);
     });
   });
 });

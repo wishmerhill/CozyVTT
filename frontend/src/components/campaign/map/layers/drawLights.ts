@@ -11,7 +11,7 @@
 import type { Token } from '@/types';
 import type { LightSource } from '@/types/walls';
 import type { EnvironmentType } from '@/types/ambientLighting';
-import { DEFAULT_WINDOW_LIGHT_RADIUS_CELLS, OUTDOOR_HAZE_MIN_OPACITY, NIGHT_LIGHT_SPILL_RADIUS_CELLS } from '@/types/ambientLighting';
+import { DEFAULT_WINDOW_LIGHT_RADIUS_CELLS, OUTDOOR_HAZE_MIN_OPACITY, NIGHT_LIGHT_SPILL_RADIUS_CELLS, DEFAULT_DARKVISION_OPACITY, DARKVISION_OVERLAY_MAX_OPACITY } from '@/types/ambientLighting';
 import { gridYToCentrePx } from '../coords';
 import type { LightToolMode } from '@/components/campaign/DmLightControls';
 import { mapSizePx, type Viewport } from './types';
@@ -59,8 +59,20 @@ export interface LightingDrawState {
   tokenSight: readonly VisionSource[];
   lightVision: readonly VisionSource[];
   /** Darkvision polygons for tokens that have darkvisionRadius set.
-   *  These reveal the area in grayscale when no light source covers it. */
+   *  These reveal the area dim/desaturated when no light source covers it —
+   *  see `darkvisionOpacity` below and the "Darkvision-only overlay" pass. */
   darkvision: readonly VisionSource[];
+  /**
+   * Global dial (0.0–1.0) for the flat gray wash painted over ground a token
+   * can only make out via its own darkvisionRadius (no real light covering
+   * it) — the map itself is always fully revealed there; this only controls
+   * how strongly it reads as desaturated/dim rather than lit. Rescaled onto
+   * 0..DARKVISION_OVERLAY_MAX_OPACITY for the actual alpha used, so even a
+   * DM-set 100% keeps the map legible. Defaults to DEFAULT_DARKVISION_OPACITY
+   * when omitted. Applies uniformly to every token in `darkvision` — the DM
+   * sets one value for the whole map, not per-token.
+   */
+  darkvisionOpacity?: number;
   /**
    * Window/open-door ambient light sources (see VisionState.windowLight).
    * Only drawn outdoors — empty (or omitted) elsewhere.
@@ -126,6 +138,9 @@ export function drawDynamicLighting(
 
   const ambient = state.ambient ?? DEFAULT_AMBIENT;
   const isOutdoor = ambient.environmentType === 'outdoor';
+  // Slider is 0..1; rescale onto 0..DARKVISION_OVERLAY_MAX_OPACITY so even a
+  // DM-set 100% never paints the wash opaque enough to hide map detail.
+  const darkvisionOpacity = (state.darkvisionOpacity ?? DEFAULT_DARKVISION_OPACITY) * DARKVISION_OVERLAY_MAX_OPACITY;
 
   const offscreen = ensureCanvas(state.lightingCanvas, mapWidthPx, mapHeightPx);
   const offCtx = offscreen.getContext('2d')!;
@@ -270,8 +285,16 @@ export function drawDynamicLighting(
   covCtx.globalCompositeOperation = 'lighter';
 
   // Token vision → bright (alpha 1.0) within the visibility polygon. This is
-  // what a token makes out unaided, so it is not gated on light.
-  for (const { poly } of state.tokenVision) {
+  // what a token makes out unaided, so it is not gated on light — EXCEPT for
+  // a token with darkvisionRadius set: darkvision ground is a subset of this
+  // same polygon (see vision.ts's clamp), so including it here would always
+  // fully reveal it before the "Darkvision-only overlay" pass below ever got
+  // a non-lit pixel to work with. Such a token's unconditional reveal comes
+  // from real light only (`lightLayer`, added below); its darkvisionRadius
+  // reach is handled dim/desaturated instead.
+  for (let i = 0; i < state.tokenVision.length; i++) {
+    if ((state.myTokens[i]?.darkvisionRadius ?? 0) > 0) continue;
+    const { poly } = state.tokenVision[i];
     if (poly.points.length >= 3) {
       tracePoly(covCtx, poly);
       covCtx.fill();
@@ -434,13 +457,18 @@ export function drawDynamicLighting(
   offCtx.drawImage(coverage, 0, 0);
   offCtx.globalCompositeOperation = 'source-over';
 
-  // ── Darkvision-only overlay (grayscale) ────────────────────────
-  // Areas revealed by darkvision but NOT covered by any light source
-  // should appear desaturated (black & white). We compute a mask of
-  // "darkvision polygon minus light coverage", then use that mask to
-  // overlay a desaturated copy of the fog onto the normal fog.
+  // ── Darkvision-only overlay (flat desaturation, no glow) ─────────
+  // Ground revealed by darkvision but NOT covered by any real light source
+  // is fully cleared (crisp, full detail — darkvision is a sense, not an
+  // emitted light, so it never renders as a radial glow/gradient around the
+  // token) and then covered by a flat, uniform gray wash. `darkvisionOpacity`
+  // here is already rescaled onto 0..DARKVISION_OVERLAY_MAX_OPACITY (see
+  // above), so even the DM's slider maxed out at 100% only ever paints a
+  // light desaturating tint — the underlying map detail is always there,
+  // never re-darkened by fog.
   if (state.darkvision.length > 0) {
-    // Build mask: darkvision polygon minus light-covered area
+    // Build mask: darkvision polygon(s) minus light-covered area (the
+    // latter already reads full color from the crisp-zone punch above).
     const mask = document.createElement('canvas');
     mask.width = mapWidthPx;
     mask.height = mapHeightPx;
@@ -449,44 +477,30 @@ export function drawDynamicLighting(
     maskCtx.fillStyle = 'rgba(255, 255, 255, 1)';
     for (const { poly } of state.darkvision) {
       if (poly.points.length >= 3) {
-        maskCtx.beginPath();
-        maskCtx.moveTo(poly.points[0].x, poly.points[0].y);
-        for (let i = 1; i < poly.points.length; i++) {
-          maskCtx.lineTo(poly.points[i].x, poly.points[i].y);
-        }
-        maskCtx.closePath();
+        tracePoly(maskCtx, poly);
         maskCtx.fill();
       }
     }
-    // Erase light-covered area from mask
     maskCtx.globalCompositeOperation = 'destination-out';
     maskCtx.drawImage(coverage, 0, 0);
     maskCtx.globalCompositeOperation = 'source-over';
 
-    // Make a desaturated copy of the fog
-    const fogSnapshot = document.createElement('canvas');
-    fogSnapshot.width = mapWidthPx;
-    fogSnapshot.height = mapHeightPx;
-    const snapCtx = fogSnapshot.getContext('2d')!;
-    snapCtx.drawImage(offscreen, 0, 0);
-    // Desaturate via grayscale filter
-    const imageData = snapCtx.getImageData(0, 0, mapWidthPx, mapHeightPx);
-    const data = imageData.data;
-    for (let i = 0; i < data.length; i += 4) {
-      const gray = 0.299 * data[i] + 0.587 * data[i + 1] + 0.114 * data[i + 2];
-      data[i]     = gray;
-      data[i + 1] = gray;
-      data[i + 2] = gray;
-    }
-    snapCtx.putImageData(imageData, 0, 0);
+    // Fully clear the fog within the mask — darkvision reveals the ground
+    // itself (crisp, full detail), it does not merely dim the dark over it.
+    // The obscured *reading* comes entirely from the flat gray wash below.
+    offCtx.globalCompositeOperation = 'destination-out';
+    offCtx.drawImage(mask, 0, 0);
+    offCtx.globalCompositeOperation = 'source-over';
 
-    // Clip desaturated copy to the darkvision-only mask
-    snapCtx.globalCompositeOperation = 'destination-in';
-    snapCtx.drawImage(mask, 0, 0);
-    snapCtx.globalCompositeOperation = 'source-over';
-
-    // Composite the desaturated darkvision-only fog over the normal fog
-    offCtx.drawImage(fogSnapshot, 0, 0);
+    // Recolor the same mask into a flat gray wash (alpha scaling with the
+    // same dial) and lay it over the now-crisp ground, so it reads as
+    // desaturated rather than fully lit — no radial falloff, uniform alpha
+    // across the whole revealed area regardless of distance from the token.
+    maskCtx.globalCompositeOperation = 'source-in';
+    maskCtx.fillStyle = `rgba(140, 140, 150, ${darkvisionOpacity})`;
+    maskCtx.fillRect(0, 0, mapWidthPx, mapHeightPx);
+    maskCtx.globalCompositeOperation = 'source-over';
+    offCtx.drawImage(mask, 0, 0);
   }
 
   // Composite onto main canvas with soft blur edge

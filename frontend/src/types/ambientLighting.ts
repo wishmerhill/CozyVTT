@@ -53,3 +53,25 @@ export const OUTDOOR_HAZE_MIN_OPACITY = 0.35;
  * is already fully lit, so there is nothing to cap.
  */
 export const NIGHT_LIGHT_SPILL_RADIUS_CELLS = 3;
+
+/**
+ * Default global darkvision overlay opacity (0.0–1.0) — alpha of the flat
+ * gray wash painted over ground a token can only make out via
+ * darkvisionRadius (no real light covering it). The ground itself is always
+ * fully revealed there (crisp, full detail, wall-limited by the same
+ * raycasting as any other vision source); this dial only controls how
+ * strongly it reads as desaturated: low = a faint monochrome wash, high = a
+ * heavy gray tint. Applies uniformly to every token with darkvisionRadius >
+ * 0 on the map — see DmAmbientControls' "Darkvision Brightness" slider.
+ */
+export const DEFAULT_DARKVISION_OPACITY = 0.2;
+
+/**
+ * Ceiling for the actual gray-wash alpha painted onto the canvas, regardless
+ * of how high the DM pushes the 0.0–1.0 `darkvisionOpacity` slider. Past
+ * ~0.5 raw alpha the wash reads as an opaque fog again — the exact "obscured"
+ * look darkvision is supposed to avoid — so the slider's 0..1 range is
+ * rescaled linearly onto 0..this cap instead of being used as raw alpha. Even
+ * a DM-set 100% keeps the map legible under a light desaturating tint.
+ */
+export const DARKVISION_OVERLAY_MAX_OPACITY = 0.35;

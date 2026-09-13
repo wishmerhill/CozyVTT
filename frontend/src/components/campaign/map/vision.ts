@@ -181,12 +181,15 @@ export function computeVisionState(
   });
 
   // Darkvision polygons — use the darkvision radius from the token, clipped
-  // by walls. Darkvision does not extend beyond sightRadius, so clamp it.
+  // by walls only (unbounded by sightRadius: darkvision is a distinct sense
+  // that typically reaches FARTHER than unaided sight — e.g. 60ft vs 30ft in
+  // D&D 5e — so capping it to sightRadius would make the slider a no-op
+  // whenever darkvisionRadius exceeds the token's normal sight).
   const darkvision: VisionSource[] = myTokens
     .filter((t) => (t.darkvisionRadius ?? 0) > 0)
     .map((token) => {
-      const { cx, cy, r } = tokenSource(token, viewport);
-      const dvr = Math.min(token.darkvisionRadius! * viewport.gridSize, r > 0 ? r : Infinity);
+      const { cx, cy } = tokenSource(token, viewport);
+      const dvr = token.darkvisionRadius! * viewport.gridSize;
       const poly = computeVisibility({ x: cx, y: cy }, wallSegments as WallSegment[], mapWidthPx, mapHeightPx, dvr);
       return { poly, cx, cy };
     });
@@ -306,13 +309,14 @@ export function createVisionCache(): VisionCache {
       });
       for (const id of lightCache.keys()) if (!seenLights.has(id)) lightCache.delete(id);
 
-      // Darkvision polygons — cached per token id.
+      // Darkvision polygons — cached per token id. Unbounded by sightRadius,
+      // same reasoning as computeVisionState above.
       const seenDv = new Set<string>();
       const darkvision: VisionSource[] = myTokens
         .filter((t) => (t.darkvisionRadius ?? 0) > 0)
         .map((token) => {
-          const { cx, cy, r } = tokenSource(token, viewport);
-          const dvr = Math.min(token.darkvisionRadius! * viewport.gridSize, r > 0 ? r : Infinity);
+          const { cx, cy } = tokenSource(token, viewport);
+          const dvr = token.darkvisionRadius! * viewport.gridSize;
           seenDv.add(token.id);
           const hit = darkvisionCache.get(token.id);
           if (hit && hit.x === cx && hit.y === cy && hit.r === dvr) return hit.src;

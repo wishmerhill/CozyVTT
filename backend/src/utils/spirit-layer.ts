@@ -289,12 +289,18 @@ export function filterTokensByLighting(
     // Y=0 at top. Apply the Y-flip so both are in the same pixel space.
     const cx = (t.position.x + (t.size?.width ?? 1) / 2) * gridSize;
     const cy = (mapHeight - 1 - t.position.y + (t.size?.height ?? 1) / 2) * gridSize;
+    const sightRadius = t.sightRadius ?? 0;
+    // 0 means unlimited, which is what a token with no sight radius set has —
+    // darkvision can't un-limit an already-unlimited sight, so it only takes
+    // over when sightRadius is a real, smaller cap. A token that can only make
+    // out 0.5 squares unaided but has darkvisionRadius=5 must still be sent
+    // anything within 5 squares and in LOS, not filtered out at 0.5.
+    const radius = sightRadius <= 0 ? 0 : Math.max(sightRadius, t.darkvisionRadius ?? 0);
     return {
       poly: computeVisibility({ x: cx, y: cy }, wallSegs, mapWidthPx, mapHeightPx, 0),
       cx,
       cy,
-      // 0 means unlimited, which is what a token with no sight radius set has.
-      radiusPx: (t.sightRadius ?? 0) * gridSize,
+      radiusPx: radius * gridSize,
     };
   });
 

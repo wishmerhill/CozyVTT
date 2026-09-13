@@ -59,6 +59,9 @@ interface CampaignContextState {
   /** DM-only local preference: show both planes simultaneously or only the active one */
   dmViewBothPlanes: boolean;
   setDmViewBothPlanes: (val: boolean) => void;
+  /** DM-only local toggle: render the canvas as a player would (fog/darkvision applied) instead of the omniscient DM view. Not persisted — resets each session. */
+  dmPreviewPlayerView: boolean;
+  setDmPreviewPlayerView: (val: boolean) => void;
   /** Whether this player personally has spirit layer visibility (individual crossover, not global toggle) */
   playerSpiritVisible: boolean;
   setPlayerSpiritVisible: (val: boolean) => void;
@@ -132,6 +135,8 @@ export function CampaignProvider({ children }: CampaignProviderProps) {
   const [error, setError] = useState<string | null>(null);
   // DM local view preference — not persisted, resets each session
   const [dmViewBothPlanes, setDmViewBothPlanes] = useState(true);
+  // DM "Preview player view" toggle — not persisted, resets each session
+  const [dmPreviewPlayerView, setDmPreviewPlayerView] = useState(false);
   // Per-player spirit visibility — set from REST on load, updated by WebSocket events
   const [playerSpiritVisible, setPlayerSpiritVisible] = useState(false);
   // Vibe tracker — cached visual effect for the current period
@@ -346,6 +351,8 @@ export function CampaignProvider({ children }: CampaignProviderProps) {
     updateCampaignSpiritLayer,
     dmViewBothPlanes,
     setDmViewBothPlanes,
+    dmPreviewPlayerView,
+    setDmPreviewPlayerView,
     playerSpiritVisible,
     setPlayerSpiritVisible,
     currentVibe,
@@ -372,6 +379,7 @@ export function CampaignProvider({ children }: CampaignProviderProps) {
     refreshCurrentMap,
     updateCampaignSpiritLayer,
     dmViewBothPlanes,
+    dmPreviewPlayerView,
     playerSpiritVisible,
     currentVibe,
     activeVibeEffect,

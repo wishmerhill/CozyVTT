@@ -308,6 +308,56 @@ describe('filterTokensByLighting', () => {
     });
   });
 
+  describe('darkvision extends the unaided-sight radius', () => {
+    it('sends an unlit token within darkvisionRadius but beyond the smaller sightRadius', () => {
+      // Player has near-zero unaided sight (0.5 squares) but darkvisionRadius 5.
+      const player = { ...makeToken('player', 1, 5, 'user1', 0.5), darkvisionRadius: 5 };
+      // Target is 3 squares away, in the open (in LOS, unlit).
+      const target = makeToken('target', 4, 5);
+
+      const result = filterTokensByLighting(
+        [player, target], 'user1', NO_WALLS, MAP_WIDTH, MAP_HEIGHT, GRID_SIZE, true
+      );
+
+      expect(result.some((t) => t.id === 'target')).toBe(true);
+    });
+
+    it('still excludes an unlit token beyond darkvisionRadius', () => {
+      const player = { ...makeToken('player', 1, 5, 'user1', 0.5), darkvisionRadius: 5 };
+      // Target is 8 squares away — outside both sightRadius and darkvisionRadius.
+      const target = makeToken('target', 9, 5);
+
+      const result = filterTokensByLighting(
+        [player, target], 'user1', NO_WALLS, MAP_WIDTH, MAP_HEIGHT, GRID_SIZE, true
+      );
+
+      expect(result.some((t) => t.id === 'target')).toBe(false);
+    });
+
+    it('does not let darkvision see past a wall', () => {
+      const wall = makeWall('wall1', 500, 0, 500, 1000);
+      const player = { ...makeToken('player', 2, 5, 'user1', 0.5), darkvisionRadius: 5 };
+      const target = makeToken('target', 7, 5);
+
+      const result = filterTokensByLighting(
+        [player, target], 'user1', [wall], MAP_WIDTH, MAP_HEIGHT, GRID_SIZE, true
+      );
+
+      expect(result.some((t) => t.id === 'target')).toBe(false);
+    });
+
+    it('an unlimited sightRadius (0) is not narrowed by a smaller darkvisionRadius', () => {
+      const player = { ...makeToken('player', 1, 5, 'user1', 0), darkvisionRadius: 2 };
+      const target = makeToken('target', 8, 5);
+
+      const result = filterTokensByLighting(
+        [player, target], 'user1', NO_WALLS, MAP_WIDTH, MAP_HEIGHT, GRID_SIZE, true
+      );
+
+      expect(result.some((t) => t.id === 'target')).toBe(true);
+    });
+  });
+
   it('multiple controlled tokens combine sight areas', () => {
     // Two player tokens at opposite ends of map, each seeing their half
     const leftToken = makeToken('left', 1, 5, 'user1', 0);

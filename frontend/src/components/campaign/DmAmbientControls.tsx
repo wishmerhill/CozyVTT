@@ -28,11 +28,14 @@ interface DmAmbientControlsProps {
   ambientLightPreset: AmbientLightPreset;
   ambientColor: string;
   ambientOpacity: number;
+  /** Global darkvision overlay opacity (0.0-1.0) — see DEFAULT_DARKVISION_OPACITY. */
+  darkvisionOpacity: number;
   onChange: (changes: {
     environmentType?: EnvironmentType;
     ambientLightPreset?: AmbientLightPreset;
     ambientColor?: string;
     ambientOpacity?: number;
+    darkvisionOpacity?: number;
   }) => void;
   onCollapse?: () => void;
   /** The overlay only renders under dynamic lighting — same raycasting engine that resolves it. */
@@ -44,6 +47,13 @@ interface DmAmbientControlsProps {
    * as opposed to the default floating-widget-on-the-map presentation.
    */
   embedded?: boolean;
+  /**
+   * DM "Preview player view" toggle — shared session-wide state (not a map
+   * field), so both this panel and the in-canvas button flip the same
+   * value. Omit both props to hide the toggle (e.g. dynamic lighting off).
+   */
+  previewPlayerView?: boolean;
+  onTogglePreviewPlayerView?: () => void;
 }
 
 export default function DmAmbientControls({
@@ -51,10 +61,13 @@ export default function DmAmbientControls({
   ambientLightPreset,
   ambientColor,
   ambientOpacity,
+  darkvisionOpacity,
   onChange,
   onCollapse,
   lightingEnabled = false,
   embedded = false,
+  previewPlayerView,
+  onTogglePreviewPlayerView,
 }: DmAmbientControlsProps) {
   const { t } = useTranslation('campaign');
   const [collapsed, setCollapsed] = useState(true);
@@ -137,6 +150,49 @@ export default function DmAmbientControls({
                 />
               </div>
             </div>
+          )}
+
+          {/* Darkvision brightness — global, applies to every token with darkvisionRadius > 0 */}
+          <div className="flex flex-col gap-1.5 bg-stone-700/40 rounded p-2 border border-stone-600/40">
+            <div className="flex justify-between mb-0.5">
+              <span className="text-[10px] text-stone-400">{t('lighting.darkvisionOpacityLabel')}</span>
+              <span className="text-[10px] text-stone-300">{Math.round(darkvisionOpacity * 100)}%</span>
+            </div>
+            <input
+              type="range"
+              min={0}
+              max={1}
+              step={0.05}
+              value={darkvisionOpacity}
+              onChange={(e) => onChange({ darkvisionOpacity: parseFloat(e.target.value) })}
+              className="w-full h-1 accent-amber-400"
+            />
+          </div>
+
+          {/* DM Preview Player View — shared toggle with the in-canvas button */}
+          {onTogglePreviewPlayerView && (
+            <button
+              type="button"
+              onClick={onTogglePreviewPlayerView}
+              className={`flex items-center justify-between text-[11px] py-1.5 px-2 rounded transition-colors border ${
+                previewPlayerView
+                  ? 'bg-info/25 text-info-ink border-info/50'
+                  : 'bg-stone-700/60 text-stone-300 border-stone-600/50 hover:bg-stone-700'
+              }`}
+            >
+              <span>{t('lighting.previewPlayerViewLabel')}</span>
+              <span
+                className={`w-8 h-4 rounded-full relative transition-colors ${
+                  previewPlayerView ? 'bg-info' : 'bg-stone-500/60'
+                }`}
+              >
+                <span
+                  className={`absolute top-0.5 w-3 h-3 rounded-full bg-white transition-transform ${
+                    previewPlayerView ? 'translate-x-4' : 'translate-x-0.5'
+                  }`}
+                />
+              </span>
+            </button>
           )}
     </div>
   );

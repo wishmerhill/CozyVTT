@@ -961,7 +961,9 @@
     "squaresUnit": "caselle",
     "sceneLightingTitle": "Illuminazione Scena",
     "sceneLightingSubtitle": "Tipo di ambiente e luce ambientale della mappa corrente",
-    "sceneLightingNoMap": "Carica una mappa per configurarne l'illuminazione di scena."
+    "sceneLightingNoMap": "Carica una mappa per configurarne l'illuminazione di scena.",
+    "darkvisionOpacityLabel": "Luminosità Scurovisione",
+    "previewPlayerViewLabel": "👁️ Anteprima Vista Giocatore"
   },
   "tools": {
     "dmTools": "Strumenti DM",

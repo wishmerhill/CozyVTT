@@ -961,7 +961,9 @@
     "squaresUnit": "sq",
     "sceneLightingTitle": "Scene Lighting",
     "sceneLightingSubtitle": "Environment type and ambient light for the current map",
-    "sceneLightingNoMap": "Load a map to configure its scene lighting."
+    "sceneLightingNoMap": "Load a map to configure its scene lighting.",
+    "darkvisionOpacityLabel": "Darkvision Brightness",
+    "previewPlayerViewLabel": "👁️ Preview Player View"
   },
   "tools": {
     "dmTools": "DM Tools",

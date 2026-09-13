@@ -64,7 +64,7 @@ const HEX_COLOR_RE = /^#[0-9a-fA-F]{6}$/;
 router.post('/', campaignDM, async (req: AuthenticatedRequest, res: Response) => {
   try {
     const { campaignId } = req.params;
-    const { name, imageUrl, width, height, gridSize, spiritLayerUrl, feetPerSquare, distancePerSquare, distanceUnit, diagonalRule, environmentType, ambientLightPreset, ambientColor, ambientOpacity } = req.body;
+    const { name, imageUrl, width, height, gridSize, spiritLayerUrl, feetPerSquare, distancePerSquare, distanceUnit, diagonalRule, environmentType, ambientLightPreset, ambientColor, ambientOpacity, darkvisionOpacity } = req.body;
 
     // Validation
     if (!name || typeof name !== 'string' || name.trim().length === 0) {
@@ -159,6 +159,15 @@ router.post('/', campaignDM, async (req: AuthenticatedRequest, res: Response) =>
     }
     const mapAmbientOpacity = ambientOpacity !== undefined ? ambientOpacity : 1.0;
 
+    // darkvisionOpacity: number between 0.0 and 1.0, defaults to 0.2
+    if (darkvisionOpacity !== undefined && (typeof darkvisionOpacity !== 'number' || !Number.isFinite(darkvisionOpacity) || darkvisionOpacity < 0 || darkvisionOpacity > 1)) {
+      return res.status(400).json({
+        error: 'Validation Error',
+        message: 'darkvisionOpacity must be a number between 0.0 and 1.0',
+      });
+    }
+    const mapDarkvisionOpacity = darkvisionOpacity !== undefined ? darkvisionOpacity : 0.2;
+
     // Normalize asset URLs to full paths
     const normalizedImageUrl = normalizeAssetUrl(imageUrl, 'maps');
     const normalizedSpiritLayerUrl = spiritLayerUrl ? normalizeAssetUrl(spiritLayerUrl, 'maps') : null;
@@ -212,6 +221,7 @@ router.post('/', campaignDM, async (req: AuthenticatedRequest, res: Response) =>
         ambientLightPreset: mapAmbientLightPreset,
         ambientColor: mapAmbientColor,
         ambientOpacity: mapAmbientOpacity,
+        darkvisionOpacity: mapDarkvisionOpacity,
         spiritLayerUrl: normalizedSpiritLayerUrl,
         tokens: [], // Initialize empty tokens array
         annotations: [], // Initialize empty annotations array
@@ -254,6 +264,7 @@ router.get('/', campaignMember, async (req: AuthenticatedRequest, res: Response)
         ambientLightPreset: true,
         ambientColor: true,
         ambientOpacity: true,
+        darkvisionOpacity: true,
         lightingEnabled: true,
         createdAt: true,
         updatedAt: true,
@@ -535,7 +546,7 @@ router.get('/:id', campaignMember, async (req: AuthenticatedRequest, res: Respon
 router.put('/:id', campaignDM, async (req: AuthenticatedRequest, res: Response) => {
   try {
     const { campaignId, id } = req.params;
-    const { name, width, height, gridSize, imageUrl, spiritLayerUrl, feetPerSquare, distancePerSquare, distanceUnit, diagonalRule, lightingEnabled, environmentType, ambientLightPreset, ambientColor, ambientOpacity } = req.body;
+    const { name, width, height, gridSize, imageUrl, spiritLayerUrl, feetPerSquare, distancePerSquare, distanceUnit, diagonalRule, lightingEnabled, environmentType, ambientLightPreset, ambientColor, ambientOpacity, darkvisionOpacity } = req.body;
 
     // Fetch the map to verify it exists and belongs to campaign
     const existingMap = await prisma.map.findUnique({
@@ -722,6 +733,16 @@ router.put('/:id', campaignDM, async (req: AuthenticatedRequest, res: Response) 
       updateData.ambientOpacity = ambientOpacity;
     }
 
+    if (darkvisionOpacity !== undefined) {
+      if (typeof darkvisionOpacity !== 'number' || !Number.isFinite(darkvisionOpacity) || darkvisionOpacity < 0 || darkvisionOpacity > 1) {
+        return res.status(400).json({
+          error: 'Validation Error',
+          message: 'darkvisionOpacity must be a number between 0.0 and 1.0',
+        });
+      }
+      updateData.darkvisionOpacity = darkvisionOpacity;
+    }
+
     // Update the map
     const updatedMap = await prisma.map.update({
       where: { id },
@@ -744,7 +765,8 @@ router.put('/:id', campaignDM, async (req: AuthenticatedRequest, res: Response) 
       updateData.environmentType !== undefined ||
       updateData.ambientLightPreset !== undefined ||
       updateData.ambientColor !== undefined ||
-      updateData.ambientOpacity !== undefined
+      updateData.ambientOpacity !== undefined ||
+      updateData.darkvisionOpacity !== undefined
     ) {
       try {
         broadcastToCampaign(campaignId, 'map:ambient:updated', {
@@ -753,6 +775,7 @@ router.put('/:id', campaignDM, async (req: AuthenticatedRequest, res: Response) 
           ambientLightPreset: updatedMap.ambientLightPreset,
           ambientColor: updatedMap.ambientColor,
           ambientOpacity: updatedMap.ambientOpacity,
+          darkvisionOpacity: updatedMap.darkvisionOpacity,
         });
       } catch { /* non-fatal */ }
     }

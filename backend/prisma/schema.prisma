@@ -412,6 +412,7 @@ model Map {
   ambientLightPreset String  @default("pitch_black")  // "day" | "dusk" | "night" | "pitch_black" | "custom"
   ambientColor       String? // Hex tint color, meaningful for "custom"/"night" presets
   ambientOpacity     Float   @default(1.0) // 0.0-1.0, opacity of the ambient darkness/tint overlay
+  darkvisionOpacity  Float   @default(0.2) // 0.0-1.0, opacity of the darkvision-only overlay (global, applies to every token with darkvisionRadius > 0)
 
   // Layers
   baseLayerUrl   String // Main map image

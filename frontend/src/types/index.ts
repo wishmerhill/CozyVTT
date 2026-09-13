@@ -655,6 +655,8 @@ export interface Map {
   ambientLightPreset: import('./ambientLighting').AmbientLightPreset;
   ambientColor: string | null;
   ambientOpacity: number;
+  /** 0.0-1.0, opacity of the darkvision-only overlay (see DEFAULT_DARKVISION_OPACITY) */
+  darkvisionOpacity: number;
   tokens: Token[];
   annotations: Annotation[];
   wallSegments?: import('./walls').WallSegment[];
@@ -970,6 +972,7 @@ export interface CreateMapRequest {
   ambientLightPreset?: import('./ambientLighting').AmbientLightPreset;
   ambientColor?: string | null;
   ambientOpacity?: number;
+  darkvisionOpacity?: number;
 }
 
 export interface UpdateMapRequest {
@@ -988,6 +991,7 @@ export interface UpdateMapRequest {
   ambientLightPreset?: import('./ambientLighting').AmbientLightPreset;
   ambientColor?: string | null;
   ambientOpacity?: number;
+  darkvisionOpacity?: number;
 }
 
 // Token
