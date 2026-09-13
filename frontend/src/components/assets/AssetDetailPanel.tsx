@@ -26,6 +26,7 @@ import { api } from '../../services/api';
 import campaignService from '../../services/campaign.service';
 import Button from '@/components/ui/Button';
 import { apiErrorText } from '@/utils/errors';
+import { assetScopeLabel } from '@/utils/assetUrl';
 
 interface AssetDetailPanelProps {
   asset: Asset;
@@ -140,12 +141,6 @@ export default function AssetDetailPanel({ asset, onClose, onDelete, onUpdate }:
     }
   };
 
-  const scopeLabel = (scope: AssetScope) => {
-    if (scope === AssetScope.GLOBAL) return 'Global';
-    if (scope === AssetScope.USER) return 'Personal';
-    return 'Campaign';
-  };
-
   const scopeIcon = (scope: AssetScope) => {
     if (scope === AssetScope.GLOBAL) return <Globe className="w-4 h-4" />;
     if (scope === AssetScope.USER) return <User className="w-4 h-4" />;
@@ -241,7 +236,7 @@ export default function AssetDetailPanel({ asset, onClose, onDelete, onUpdate }:
                     </span>
                     <span className="flex items-center gap-1 px-2 py-1 bg-parchment/50 border border-moss-green/20 rounded-md text-sm text-stone-gray">
                       {scopeIcon(currentAsset.scope)}
-                      {scopeLabel(currentAsset.scope)}
+                      {assetScopeLabel(currentAsset.scope)}
                     </span>
                   </div>
                 </div>
@@ -362,7 +357,7 @@ export default function AssetDetailPanel({ asset, onClose, onDelete, onUpdate }:
                           }`}
                         >
                           {scopeIcon(scope)}
-                          {scopeLabel(scope)}
+                          {assetScopeLabel(scope)}
                         </button>
                       ))}
                     </div>
@@ -411,7 +406,7 @@ export default function AssetDetailPanel({ asset, onClose, onDelete, onUpdate }:
                         ) : (
                           <ArrowRightLeft className="w-4 h-4" />
                         )}
-                        {moving ? 'Moving…' : `Move to ${scopeLabel(moveScope)}`}
+                        {moving ? 'Moving…' : `Move to ${assetScopeLabel(moveScope)}`}
                       </Button>
                     )}
                   </div>

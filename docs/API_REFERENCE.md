@@ -988,6 +988,24 @@ Get a single asset's metadata.
 
 ---
 
+### `GET /api/assets/audio/:id`
+
+Stream an audio file, with HTTP range requests supported so a browser can seek.
+
+Read access is the shared `canReadAsset` rule: `GLOBAL` for anyone signed in,
+`CAMPAIGN` for that campaign's members, `USER` for its uploader, **plus anyone
+in a campaign that is currently playing this track** as its atmosphere. That
+last clause is what lets a DM play a track from their personal library, since
+the sound is fetched by each player's browser rather than relayed by the server.
+It covers that one track and lasts only while it is set. Anyone else gets `404`,
+not `403`.
+
+The `Content-Type` comes from the file's validated extension, never from the
+type declared at upload, and the response carries `X-Content-Type-Options:
+nosniff`.
+
+---
+
 ### `GET /api/assets/avatars/:userId`
 
 Get the current avatar for a user. Returns the image file directly.

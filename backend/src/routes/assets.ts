@@ -832,6 +832,20 @@ router.put('/documents/:id/content', authenticated, async (req: AuthenticatedReq
  * purpose. The reader fetches it and renders it itself with raw HTML disabled;
  * the browser is never asked to treat the file as a document in its own right.
  */
+/**
+ * The content type an audio file is served with, decided from its validated
+ * extension, never from the stored `mimeType`. That field is whatever the
+ * uploading browser declared, and validation checks the bytes rather than it,
+ * so it can say `text/html`; echoing it would let an uploaded file be rendered
+ * as a page on this instance's own origin. The three keys are the audio
+ * extensions the upload allowlist accepts.
+ */
+const AUDIO_CONTENT_TYPES: Record<string, string> = {
+  '.mp3': 'audio/mpeg',
+  '.ogg': 'audio/ogg',
+  '.wav': 'audio/wav',
+};
+
 const DOCUMENT_CONTENT_TYPES: Record<string, string> = {
   '.pdf': 'application/pdf',
   '.txt': 'text/plain; charset=utf-8',
@@ -1024,7 +1038,6 @@ router.get('/tokens/:id', authenticated, async (req: AuthenticatedRequest, res: 
 router.get('/audio/:id', authenticated, async (req: AuthenticatedRequest, res: Response) => {
   try {
     const { id } = req.params;
-    const userId = req.session.userId!;
 
     const asset = await prisma.asset.findUnique({
       where: { id, type: 'AUDIO' },
@@ -1037,23 +1050,11 @@ router.get('/audio/:id', authenticated, async (req: AuthenticatedRequest, res: R
       });
     }
 
-    // Check access permissions
-    // TODO(permissions): this is a hand copy of canReadAsset, the same drift
-    // /:id/download had. It answers 403 where the shared rule answers 404 and
-    // ignores use-in-campaign. Switch to canReadAssetFile in its own commit,
-    // with a test that a member of a campaign whose ambience uses this track
-    // can fetch it.
-    const isAdminAudio = req.session.platformRole === 'ADMIN';
-    if (asset.scope === 'USER' && asset.uploadedById !== userId && !isAdminAudio) {
-      return res.status(403).json({ error: 'Forbidden', message: 'You do not have access to this asset' });
-    }
-    if (asset.scope === 'CAMPAIGN' && asset.campaignId && !isAdminAudio) {
-      const membership = await prisma.campaignMembership.findUnique({
-        where: { userId_campaignId: { userId, campaignId: asset.campaignId } },
-      });
-      if (!membership) {
-        return res.status(403).json({ error: 'Forbidden', message: 'You do not have access to this asset' });
-      }
+    // The one read rule, as maps and tokens use it. Beyond scope it knows a
+    // track the campaign is playing, which is how a personal track reaches the
+    // players. 404 rather than 403, so the reply does not confirm the id.
+    if (!(await canReadAssetFile(asset, req))) {
+      return res.status(404).json({ error: 'Not Found', message: 'Audio asset not found' });
     }
 
     // Check if file exists (normalize path for cross-platform compatibility)
@@ -1063,6 +1064,14 @@ router.get('/audio/:id', authenticated, async (req: AuthenticatedRequest, res: R
         error: 'Not Found',
         message: 'Asset file not found on server',
       });
+    }
+
+    const audioContentType = AUDIO_CONTENT_TYPES[path.extname(audioPath).toLowerCase()];
+    if (!audioContentType) {
+      // Only the three validated extensions are ever stored as AUDIO. Anything
+      // else means the row and the file disagree, and it is not served.
+      logger.error('Audio asset has an unexpected extension', { assetId: id, filePath: asset.filePath });
+      return res.status(404).json({ error: 'Not Found', message: 'Audio asset not found' });
     }
 
     // Stream audio file
@@ -1081,7 +1090,8 @@ router.get('/audio/:id', authenticated, async (req: AuthenticatedRequest, res: R
         'Content-Range': `bytes ${start}-${end}/${fileSize}`,
         'Accept-Ranges': 'bytes',
         'Content-Length': chunksize,
-        'Content-Type': asset.mimeType,
+        'Content-Type': audioContentType,
+        'X-Content-Type-Options': 'nosniff',
       };
       res.writeHead(206, head);
       return file.pipe(res);
@@ -1089,7 +1099,8 @@ router.get('/audio/:id', authenticated, async (req: AuthenticatedRequest, res: R
       // No range, send entire file
       const head = {
         'Content-Length': fileSize,
-        'Content-Type': asset.mimeType,
+        'Content-Type': audioContentType,
+        'X-Content-Type-Options': 'nosniff',
       };
       res.writeHead(200, head);
       return fs.createReadStream(audioPath).pipe(res);

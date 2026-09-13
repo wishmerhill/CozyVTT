@@ -384,7 +384,10 @@ export async function canPlaceAssetAtScope(
  * map out of their own asset library — the picker lists personal assets with no
  * campaign filter — and that map then *is* the campaign's battlemap. Until this
  * existed, every player got 403 on it and saw "Failed to load map image", and
- * token art fell back to plain initial circles for the same reason.
+ * token art fell back to plain initial circles for the same reason. The
+ * campaign's atmosphere track is the same story in sound: the DM picks it, each
+ * player's browser fetches it, and a personal track was silent for everyone
+ * but the DM.
  *
  * Deliberately not solved by re-scoping the asset to the campaign on use:
  * `Asset.scope` carries a single campaignId, and one map is commonly shared by
@@ -459,6 +462,18 @@ export async function assetUsedInUserCampaign(
     }),
   ]);
   if (character || creature || tokenTemplate) return true;
+
+  // The track a campaign is playing. The DM sets it and every player's browser
+  // fetches it, so it is used by the whole table for as long as it is set.
+  // Stored inside the campaign's vibeSettings JSON.
+  const ambience = await prisma.campaign.findFirst({
+    where: {
+      id: { in: campaignIds },
+      vibeSettings: { path: ['atmosphereAudio', 'assetId'], equals: assetId },
+    },
+    select: { id: true },
+  });
+  if (ambience) return true;
 
   // Tokens live as JSON on the map, so they cannot be matched by column. Only
   // the art URL is read, and only once everything cheaper has missed.

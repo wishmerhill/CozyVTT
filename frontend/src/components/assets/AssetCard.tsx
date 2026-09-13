@@ -17,6 +17,7 @@ import { Asset, AssetType, AssetScope } from '../../types';
 import { useAuth } from '../../contexts/AuthContext';
 import { api } from '../../services/api';
 import ConfirmDialog from '@/components/common/ConfirmDialog';
+import { assetScopeLabel } from '@/utils/assetUrl';
 
 interface AssetCardProps {
   asset: Asset;
@@ -168,7 +169,7 @@ function AssetCardInner({ asset, viewMode, onView, onDelete }: AssetCardProps) {
                 ) : (
                   <Users className="w-4 h-4" />
                 )}
-                {asset.scope === AssetScope.USER ? 'Personal' : asset.scope}
+                {assetScopeLabel(asset.scope)}
               </span>
               <span>{formatFileSize(asset.fileSize)}</span>
               <span>{asset.type}</span>
@@ -265,21 +266,13 @@ function AssetCardInner({ asset, viewMode, onView, onDelete }: AssetCardProps) {
         {/* Scope Badge */}
         <div className="absolute top-2 right-2 px-2 py-1 bg-paper-white backdrop-blur-sm rounded-md text-xs font-medium text-stone-gray flex items-center gap-1">
           {asset.scope === AssetScope.GLOBAL ? (
-            <>
-              <Globe className="w-3 h-3" />
-              Global
-            </>
+            <Globe className="w-3 h-3" />
           ) : asset.scope === AssetScope.USER ? (
-            <>
-              <User className="w-3 h-3" />
-              Personal
-            </>
+            <User className="w-3 h-3" />
           ) : (
-            <>
-              <Users className="w-3 h-3" />
-              Campaign
-            </>
+            <Users className="w-3 h-3" />
           )}
+          {assetScopeLabel(asset.scope)}
         </div>
 
         {/* Hover Actions */}

@@ -3646,7 +3646,16 @@ paths:
       tags:
         - Assets
       summary: Stream audio file
-      description: Stream audio with HTTP range request support
+      description: >-
+        Stream audio with HTTP range request support. Read access is the shared
+        asset rule: GLOBAL for anyone signed in, CAMPAIGN for that campaign's
+        members, USER for its uploader, and additionally anyone in a campaign
+        whose atmosphere is currently set to this track, since the sound is
+        fetched by each player's browser rather than relayed by the server. That
+        grant covers the one track and lasts only while it is set. Anyone else
+        gets 404, not 403. The Content-Type comes from the file's validated
+        extension, never from the type declared at upload, and the response
+        carries X-Content-Type-Options: nosniff.
       operationId: streamAudio
       security:
         - cookieAuth: []

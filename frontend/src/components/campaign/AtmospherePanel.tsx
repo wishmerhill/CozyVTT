@@ -32,8 +32,11 @@ import {
   StopCircle,
 } from 'lucide-react';
 import { useCampaign } from '@/contexts/CampaignContext';
+import { useAuth } from '@/contexts/AuthContext';
 import { useWebSocket } from '@/contexts/WebSocketContext';
 import api from '@/services/api';
+import { AssetScope } from '@/types';
+import { assetScopeLabel } from '@/utils/assetUrl';
 import type { Asset } from '@/types';
 
 // ============================================
@@ -71,6 +74,7 @@ interface AtmospherePanelProps {
 
 export default function AtmospherePanel({ isOpen, onClose }: AtmospherePanelProps) {
   const { campaign, activeAtmosphereEffect, activeAtmosphereAudio } = useCampaign();
+  const { user } = useAuth();
   const { socket } = useWebSocket();
 
   // Audio asset list
@@ -98,10 +102,24 @@ export default function AtmospherePanel({ isOpen, onClose }: AtmospherePanelProp
     setLoadingAssets(true);
     setAssetError(null);
     api.listAssets({ type: 'AUDIO' })
-      .then((r) => setAudioAssets(r.assets || []))
+      // The list is wider than what can be played here: it also carries audio
+      // belonging to other campaigns this DM is in, which the server refuses
+      // because a campaign's audio belongs to that table, and other people's
+      // personal tracks are not the DM's to open to the room. Offering one
+      // gave a button that did nothing.
+      .then((r) =>
+        setAudioAssets(
+          (r.assets || []).filter(
+            (a) =>
+              a.scope === AssetScope.GLOBAL ||
+              (a.scope === AssetScope.USER && a.uploadedById === user?.id) ||
+              (a.scope === AssetScope.CAMPAIGN && a.campaignId === campaign.id)
+          )
+        )
+      )
       .catch(() => setAssetError('Failed to load audio assets'))
       .finally(() => setLoadingAssets(false));
-  }, [isOpen, campaign]);
+  }, [isOpen, campaign, user?.id]);
 
   // ============================================
   // Handlers
@@ -417,7 +435,8 @@ export default function AtmospherePanel({ isOpen, onClose }: AtmospherePanelProp
                               </p>
                               <p className="text-xs text-warm-gray">
                                 {formatSize(asset.fileSize)}
-                                {asset.scope === 'CAMPAIGN' ? ' · Campaign' : ' · Global'}
+                                {' · '}
+                                {assetScopeLabel(asset.scope)}
                               </p>
                             </div>
                             {isPlaying && (

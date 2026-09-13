@@ -202,13 +202,14 @@ Scope alone is not enough for maps and tokens, because an asset can be *used*
 somewhere its scope does not describe. A DM picking a map out of their own
 library — which the picker offers, listing personal assets with no campaign
 filter — leaves every player at that table 403ing on the battlemap. So
-`routes/assets.ts` funnels the two image routes, the document route and
-`/:id/download` through one `canReadAssetFile`, which is `canReadAsset` in
-`services/permissions.ts`. Beyond scope it asks two more questions:
-`assetUsedInUserCampaign(assetId, userId)`, true when a map layer, a token
-placed on a map, a character, a creature template or a token template in one
-of the caller's campaigns points at that asset; and `documentSharedWithUser`,
-true when a DM has linked the document to a campaign the caller belongs to
+`routes/assets.ts` funnels the two image routes, the audio route, the document
+route and `/:id/download` through one `canReadAssetFile`, which is
+`canReadAsset` in `services/permissions.ts`. Beyond scope it asks two more
+questions: `assetUsedInUserCampaign(assetId, userId)`, true when a map layer, a
+token placed on a map, a character, a creature template, a token template, or
+the track recorded in a campaign's `atmosphereAudio` setting, in one of the
+caller's campaigns, points at that asset; and `documentSharedWithUser`, true
+when a DM has linked the document to a campaign the caller belongs to
 (`CampaignDocument`). The linking route runs the same `canReadAsset` against
 the DM first, so a link can only ever grant what the DM could already read,
 and then requires the document to be the DM's own or `GLOBAL`, so a document
@@ -221,10 +222,28 @@ Three things this deliberately does **not** do:
   promoting it on use would break the others.
 - **It grants read only.** Deleting and editing are decided by their own routes
   and are unchanged — seeing the battlemap must not mean being able to delete it.
-- **It does not cover audio or avatars.** Those have their own reference paths
-  and were left alone. The audio route is a hand copy of the scope half of the
-  rule and carries a `TODO(permissions)`; atmosphere audio picked from a DM's
-  personal library is the case it gets wrong.
+- **It does not cover avatars.** Those have their own reference path and were
+  left alone.
+
+### Atmosphere audio
+
+The DM picks a track and the server broadcasts its URL; it does not relay the
+sound. Every player's browser then fetches
+`GET /api/assets/audio/:id` with that player's own session, so the read rule is
+what decides whether the table hears anything, and a personal track was silent
+for everyone but the DM until `assetUsedInUserCampaign` learned about it.
+
+Two consequences to keep in mind when touching this:
+
+- **Setting a track is an act of sharing, not of reading.** It makes the file
+  readable by every member of the campaign for as long as it is set, so the
+  socket handler (`websocket/handlers/atmosphere.ts`) checks `canReadAsset` for
+  the DM before storing it, and deliberately passes `isAdmin` as `false`: a
+  platform admin may read any file, but opening one to a table is a different
+  act, and a track meant for a table belongs in the global library.
+- **The grant is exactly one track, and it ends when the track does.** Nothing
+  lets a member list or browse the DM's audio, and clearing the setting makes
+  the file private again.
 
 ### Documents
 

@@ -550,6 +550,8 @@ If you are a player and the map has gone dark or your token has vanished, ask yo
 
 DMs can set ambient audio tracks and visual atmosphere effects from the Atmosphere panel. Six visual overlays are available — rain, mist, leaves, sparkles, snow, and wind. Players hear the audio and see the visual effects automatically when connected to an active session.
 
+The track your DM chooses is fetched by your own browser from the instance, which is why you can hear a track that lives in the DM's personal library. That access lasts as long as the track is playing and covers only that one track.
+
 *Screenshot pending — Atmosphere controls panel.*
 
 ### Dynamic Lighting
