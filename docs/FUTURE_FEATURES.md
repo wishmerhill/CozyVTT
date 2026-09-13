@@ -61,8 +61,10 @@ _Nothing in progress._
   library, where it decides whether a Markdown image can point at an outside
   host. The fix is a matching `add_header Content-Security-Policy` in
   `frontend/nginx.conf`, written once and kept in step with `server.ts`, or a
-  build step that emits the header from one definition. **Verify in a running
-  production stack before assuming**; this was read from the two configs.
+  build step that emits the header from one definition. Confirmed by serving
+  a page through `frontend/nginx.conf` in a stock nginx container: the page
+  arrives with no security headers at all, while `/api/config` from the
+  backend carries the full helmet set.
 
 - **`file-type` has no automated coverage.** The upload validator's first line
   of defence is what that library says a file is, and it is ESM-only, which the
