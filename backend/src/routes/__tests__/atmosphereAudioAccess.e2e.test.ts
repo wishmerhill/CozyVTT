@@ -134,6 +134,53 @@ describe('a track from the DM\'s personal library', () => {
     });
   });
 
+  describe('what the serving route puts on the wire', () => {
+    beforeEach(() => playing(trackId));
+
+    it('chooses the content type from the file, never from what the uploader declared', async () => {
+      // The stored mimeType is whatever the uploading browser put in the
+      // multipart part. Validation checks the bytes, not that field, so it
+      // can say anything. A file that begins like an MP3 and continues as
+      // HTML, declared text/html, would be rendered as a page on this
+      // instance's origin by anyone who opened its URL.
+      const filePath = path.join(dir, 'polyglot.mp3');
+      fs.writeFileSync(
+        filePath,
+        Buffer.concat([
+          Buffer.from('ID3\x04\x00\x00\x00\x00\x00\x00'),
+          Buffer.from('<html><script>window.__pwned = true</script></html>'),
+        ])
+      );
+      const polyglot = await prisma.asset.create({
+        data: {
+          type: 'AUDIO', scope: 'USER', uploadedById: dmId,
+          filename: 'polyglot.mp3', originalName: 'polyglot.mp3', mimeType: 'text/html',
+          fileSize: 62, filePath, name: 'Polyglot',
+        },
+      });
+      const res = await fetchTrack(dm, polyglot.id);
+      expect(res.status).toBe(200);
+      expect(res.headers['content-type']).toMatch(/^audio\/mpeg/);
+      expect(res.headers['content-type']).not.toMatch(/html/);
+      expect(res.headers['x-content-type-options']).toBe('nosniff');
+    });
+
+    it('serves each allowed format as itself', async () => {
+      for (const [ext, mime] of [['ogg', 'audio/ogg'], ['wav', 'audio/wav']] as const) {
+        const filePath = path.join(dir, `track.${ext}`);
+        fs.writeFileSync(filePath, Buffer.alloc(16));
+        const asset = await prisma.asset.create({
+          data: {
+            type: 'AUDIO', scope: 'USER', uploadedById: dmId,
+            filename: `track.${ext}`, originalName: `track.${ext}`, mimeType: 'application/octet-stream',
+            fileSize: 16, filePath, name: `Track ${ext}`,
+          },
+        });
+        expect((await fetchTrack(dm, asset.id)).headers['content-type']).toMatch(new RegExp(`^${mime}`));
+      }
+    });
+  });
+
   it('is private again once the DM stops it', async () => {
     await playing(trackId);
     expect((await fetchTrack(player, trackId)).status).toBe(200);

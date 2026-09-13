@@ -832,6 +832,20 @@ router.put('/documents/:id/content', authenticated, async (req: AuthenticatedReq
  * purpose. The reader fetches it and renders it itself with raw HTML disabled;
  * the browser is never asked to treat the file as a document in its own right.
  */
+/**
+ * The content type an audio file is served with, decided from its validated
+ * extension, never from the stored `mimeType`. That field is whatever the
+ * uploading browser declared, and validation checks the bytes rather than it,
+ * so it can say `text/html`; echoing it would let an uploaded file be rendered
+ * as a page on this instance's own origin. The three keys are the audio
+ * extensions the upload allowlist accepts.
+ */
+const AUDIO_CONTENT_TYPES: Record<string, string> = {
+  '.mp3': 'audio/mpeg',
+  '.ogg': 'audio/ogg',
+  '.wav': 'audio/wav',
+};
+
 const DOCUMENT_CONTENT_TYPES: Record<string, string> = {
   '.pdf': 'application/pdf',
   '.txt': 'text/plain; charset=utf-8',
@@ -1052,6 +1066,14 @@ router.get('/audio/:id', authenticated, async (req: AuthenticatedRequest, res: R
       });
     }
 
+    const audioContentType = AUDIO_CONTENT_TYPES[path.extname(audioPath).toLowerCase()];
+    if (!audioContentType) {
+      // Only the three validated extensions are ever stored as AUDIO. Anything
+      // else means the row and the file disagree, and it is not served.
+      logger.error('Audio asset has an unexpected extension', { assetId: id, filePath: asset.filePath });
+      return res.status(404).json({ error: 'Not Found', message: 'Audio asset not found' });
+    }
+
     // Stream audio file
     const stat = fs.statSync(audioPath);
     const fileSize = stat.size;
@@ -1068,7 +1090,8 @@ router.get('/audio/:id', authenticated, async (req: AuthenticatedRequest, res: R
         'Content-Range': `bytes ${start}-${end}/${fileSize}`,
         'Accept-Ranges': 'bytes',
         'Content-Length': chunksize,
-        'Content-Type': asset.mimeType,
+        'Content-Type': audioContentType,
+        'X-Content-Type-Options': 'nosniff',
       };
       res.writeHead(206, head);
       return file.pipe(res);
@@ -1076,7 +1099,8 @@ router.get('/audio/:id', authenticated, async (req: AuthenticatedRequest, res: R
       // No range, send entire file
       const head = {
         'Content-Length': fileSize,
-        'Content-Type': asset.mimeType,
+        'Content-Type': audioContentType,
+        'X-Content-Type-Options': 'nosniff',
       };
       res.writeHead(200, head);
       return fs.createReadStream(audioPath).pipe(res);
