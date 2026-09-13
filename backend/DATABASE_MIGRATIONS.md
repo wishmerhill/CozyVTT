@@ -66,6 +66,13 @@ about; the list is not exhaustive.
   Markdown notes. Purely additive: one `CREATE TABLE` with two foreign keys and
   an index, and no `ALTER` on any existing table, so upgrading cannot touch
   data you already have. New installs and upgrades both start with it empty.
+- `20260910195739_add_dice_macros` - `DiceMacro` table for a player's saved
+  dice rolls in one campaign. Additive in the same way: one `CREATE TABLE`, an
+  index and two foreign keys, with no `ALTER` on anything existing.
+- `20260911215959_add_campaign_documents` - `CampaignDocument` table linking a
+  document asset to a campaign, so a DM can share a rulebook with one table
+  without making it visible to the whole instance. One `CREATE TABLE`, three
+  indexes and three foreign keys. Nothing existing is altered.
 
 ## Data migrations (one-off scripts)
 

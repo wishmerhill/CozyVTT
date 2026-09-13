@@ -5,8 +5,9 @@
 
 import { useState } from 'react';
 import { useTranslation } from 'react-i18next';
+import { campaignDmName, campaignOwnerName, ownerDiffersFromDm } from '@/utils/campaignRoles';
 import { useCampaign } from '@/contexts/CampaignContext';
-import { Info, Users, Crown, Calendar, UserPlus } from 'lucide-react';
+import { Info, Users, Crown, Calendar, UserPlus, KeyRound} from 'lucide-react';
 import type { CampaignStatus } from '@/types';
 import GameSystemBadge from '../common/GameSystemBadge';
 import InvitePlayerModal from './InvitePlayerModal';
@@ -62,9 +63,12 @@ export default function CampaignInfo() {
 
   const statusBadge = getStatusBadge(campaign.status);
   const memberCount = campaign.memberships?.length || 0;
-  const ownerName =
-    campaign.memberships?.find((m) => m.userId === campaign.ownerId)?.user
-      ?.displayName || t('common:unknown');
+  // The person running the game, which is not necessarily the person who
+  // created it — this used to resolve the owner and label them "DM".
+  const unknown = t('common:unknown');
+  const dmName = campaignDmName(campaign, unknown);
+  const showOwner = ownerDiffersFromDm(campaign);
+  const ownerName = campaignOwnerName(campaign, unknown);
 
   return (
     <div className="glass-panel p-4 space-y-4">
@@ -103,8 +107,18 @@ export default function CampaignInfo() {
         <div className="flex items-center gap-2 text-stone-gray">
           <Crown className="w-4 h-4 text-brand-ink" />
           <span className="text-warm-gray">{t('info.dm')}</span>
-          <span className="text-stone-gray font-medium">{ownerName}</span>
+          <span className="text-stone-gray font-medium">{dmName}</span>
         </div>
+
+        {/* Only worth saying once the two have come apart — while the creator
+            still runs the game, naming them twice is noise. */}
+        {showOwner && (
+          <div className="flex items-center gap-2 text-stone-gray">
+            <KeyRound className="w-4 h-4 text-warm-amber" />
+            <span className="text-warm-gray">{t('info.owner')}</span>
+            <span className="text-stone-gray font-medium">{ownerName}</span>
+          </div>
+        )}
 
         <div className="flex items-center gap-2 text-stone-gray">
           <Users className="w-4 h-4 text-spirit-purple" />

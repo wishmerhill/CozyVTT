@@ -29,7 +29,7 @@ import configRoutes from './routes/config';
 import { initializeWebSocket } from './websocket';
 import logger from './utils/logger';
 import { prisma } from './config/database';
-import { FILE_SIZE_LIMITS } from './utils/fileUtils';
+import { UPLOAD_LIMITS } from './utils/fileUtils';
 import { getProxyLimitWarnings } from './utils/proxyLimits';
 
 const app = express();
@@ -207,7 +207,7 @@ httpServer.listen(PORT, () => {
   logger.info(`Environment: ${process.env.NODE_ENV || 'development'}`);
   logger.info(`CORS origin: ${process.env.CORS_ORIGIN || 'http://localhost:3000'}`);
 
-  const uploadLimits = Object.entries(FILE_SIZE_LIMITS)
+  const uploadLimits = Object.entries(UPLOAD_LIMITS)
     .map(([type, bytes]) => `${type} ${Math.round(bytes / (1024 * 1024))}MB`)
     .join(', ');
   logger.info(`Upload limits: ${uploadLimits}`);

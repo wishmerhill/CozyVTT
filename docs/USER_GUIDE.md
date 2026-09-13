@@ -13,10 +13,11 @@ This guide covers everything you need to get started, from the setup wizard to a
 3. [Campaign Management](#campaign-management)
 4. [Character Management](#character-management)
 5. [The Asset Library](#the-asset-library)
-6. [Running Sessions](#running-sessions)
-7. [Advanced Features](#advanced-features)
-8. [Your Profile](#your-profile)
-9. [Troubleshooting & FAQ](#troubleshooting--faq)
+6. [Documents](#documents)
+7. [Running Sessions](#running-sessions)
+8. [Advanced Features](#advanced-features)
+9. [Your Profile](#your-profile)
+10. [Troubleshooting & FAQ](#troubleshooting--faq)
 
 ---
 
@@ -100,7 +101,7 @@ After logging in, the **Dashboard** is your home base. From here you can see eve
 
 *Screenshot pending — Campaign card grid with status indicators.*
 
-**Quick Access** — Cards for your Character Library and Asset Library so you can navigate there in one click.
+**Quick Access** — Cards for your Character Library, Asset Library and Documents so you can navigate there in one click.
 
 ### Creating a New Campaign
 
@@ -161,6 +162,13 @@ To invite someone:
 2. Find the **Invite Players** section
 3. Enter the email address of the user on your platform
 4. They'll see a pending invitation on their dashboard
+
+**Handing the campaign to someone else.** A campaign has one DM, and that seat
+can be passed to another member — useful when you are handing off to a co-DM or
+stepping back from a game that carries on without you. It does not change who
+*owns* the campaign, so if you created it you can still delete it and can take
+the seat back later. See
+[Handing the game to someone else](DM_GUIDE.md#handing-the-game-to-someone-else).
 
 ---
 
@@ -338,6 +346,8 @@ The Asset Library is where all your campaign media lives — maps, token images,
 | **Audio** | Ambient soundscapes, background music |
 | **Avatar** | Your personal profile picture |
 
+Rulebooks and handouts are not here. They have their own **Documents** section, described below, so a PDF never sits among your map thumbnails.
+
 ### Uploading Assets
 
 Click the **Upload** button to add a new asset. You'll choose:
@@ -360,6 +370,50 @@ Use the **search bar** to find assets by name or tag. Filter by scope (Global, P
 Click any asset card to open its **detail panel** on the right. From there you can see full metadata, edit tags, or delete the asset.
 
 *Screenshot pending — Asset detail panel.*
+
+---
+
+## Documents
+
+Rulebooks, house rules, handouts: the things a table reads rather than looks at. **Documents** on your dashboard keeps them apart from maps and tokens, and lets you read them without leaving CozyVTT.
+
+### What you can keep here
+
+| Format | How it gets here | Editable later? |
+|--------|------------------|-----------------|
+| **PDF** | Upload | No, it is a file; upload a new one to replace it |
+| **Plain text** (`.txt`) | Upload, or **Write one** | Yes, by whoever uploaded or wrote it |
+| **Markdown** (`.md`) | Upload, or **Write one** | Yes, by whoever uploaded or wrote it |
+
+Markdown documents render headings, lists, emphasis, tables, task lists and links. A single press of Enter starts a new line, the way it does in a chat message, so notes read the way you typed them.
+
+The size limit is set by whoever runs your instance; the default is 50 MB, enough for most rulebook PDFs. Written documents are limited to about 900 KB of text, which is a very long document, and anything bigger is a file to upload.
+
+### Who can read a document
+
+This is decided by where you put it when you upload or write it:
+
+| Scope | Who can read it |
+|-------|-----------------|
+| **Personal** | You alone, until a DM shares it with a campaign (see below). |
+| **Campaign** | Every member of that campaign, immediately. Only the campaign's DM can put a document here. |
+| **Global** | Everyone on the instance. Only an administrator or a global asset manager can put a document here. |
+
+A DM can share their own documents, and Global ones, with their campaign from inside it, and stop sharing later. A document someone else shared with a table you play at is yours to read there, not to share on. Sharing does not copy the file; the campaign's members read the same document you have, and if you edit it they see the new text next time they open it.
+
+### Reading
+
+Click a document's name or its **Read** button to open it in a full-screen reader over whatever page you are on. **Open in a new tab** does what it says, for reading on a second screen while play continues. A PDF is shown by your browser's own PDF viewer.
+
+### Editing
+
+Open a text or Markdown document you uploaded or wrote and press **Edit**. What you type is saved exactly as typed. If a save is refused, your text stays in the box and the reason is shown.
+
+### Safety
+
+Uploads are checked rather than trusted. A PDF must really be a PDF, and a text or Markdown file must really be text; a program renamed to `.md` is refused. Documents are always shown as text or as a PDF, never as a web page, so a file that contains HTML or a script is displayed as-is and nothing in it can run. There is no need to avoid typing `<` or `>` in a document; they show as typed.
+
+Pictures in a Markdown document or note only load from your own CozyVTT. An image that points at another website would make every reader's browser contact that site, revealing who opened the document; instead its description is shown and nothing is fetched. To show a picture, upload it to your asset library and link to it from there.
 
 ---
 
@@ -387,7 +441,14 @@ Type your message in the input field and press **Enter** to send. Messages show 
 
 The **Dice Roller** is right below chat. Click a die face to roll it, or type a custom expression.
 
-*GIF pending — Rolling dice and seeing result in chat.*
+*GIF pending — Rolling dice and seeing the result in the Dice panel.*
+
+**Saving a roll you use often.** Press **Saved** below the dice buttons to keep a
+named roll — a house rule, a homebrew subsystem, `4d6kh3` for rolling up a
+character. It becomes a one-click button beside the dice. Saved rolls are private
+to you and belong to the one campaign, and the same button is where you rename,
+edit or delete them. See the
+[Player Guide](PLAYER_GUIDE.md#the-dice-roller) for the full description.
 
 **Supported dice notation:**
 - `d20` — Roll a single d20
@@ -396,7 +457,7 @@ The **Dice Roller** is right below chat. Click a die face to roll it, or type a 
 - `1d20+5` — Roll a d20 and add 5
 - `2d6-1` — Roll 2d6 and subtract 1
 
-Dice results are posted to chat so everyone can see them. The Dice panel keeps a
+Dice results go to the **Dice** panel, where everyone can see them. It keeps a
 running list of the rolls, oldest at the top and newest at the bottom, and it
 follows along as they come in unless you have scrolled up to read something
 earlier. The list survives a refresh.
@@ -488,6 +549,8 @@ If you are a player and the map has gone dark or your token has vanished, ask yo
 ### Ambient Atmosphere
 
 DMs can set ambient audio tracks and visual atmosphere effects from the Atmosphere panel. Six visual overlays are available — rain, mist, leaves, sparkles, snow, and wind. Players hear the audio and see the visual effects automatically when connected to an active session.
+
+The track your DM chooses is fetched by your own browser from the instance, which is why you can hear a track that lives in the DM's personal library. That access lasts as long as the track is playing and covers only that one track.
 
 *Screenshot pending — Atmosphere controls panel.*
 
@@ -602,9 +665,9 @@ CozyVTT will automatically try to reconnect if you lose connection briefly. Your
 
 Only you (the character owner) and the DM of an assigned campaign can edit a character. If you think someone else has access they shouldn't, contact your platform administrator.
 
-### My dice rolls aren't showing in chat
+### My dice rolls aren't showing up
 
-Make sure the session is active (you see the "Live" indicator). Dice rolls require an active WebSocket connection to the campaign. If you're not in the campaign page, navigate there first.
+Rolls appear in the **Dice** panel, the tab beside Chat — not in the conversation itself. If the panel is empty, make sure the session is active (you see the "Live" indicator): rolls need a live connection to the campaign. If you're not on the campaign page, navigate there first.
 
 ### How do I change my email address?
 

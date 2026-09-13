@@ -132,6 +132,8 @@ model User {
   tokenTemplates      TokenTemplate[]
   characterTemplates  CharacterTemplate[]    @relation("CharacterTemplateAuthor")
   personalNotes       PersonalNote[]
+  diceMacros          DiceMacro[]
+  documentLinks       CampaignDocument[]
 
   @@index([email])
 }
@@ -213,6 +215,8 @@ model Campaign {
   creatureFavorites  CreatureFavorite[]
   tokenTemplates     TokenTemplate[]
   personalNotes      PersonalNote[]
+  diceMacros         DiceMacro[]
+  documentLinks      CampaignDocument[]
 
   @@index([ownerId])
   @@index([status])
@@ -293,6 +297,60 @@ model PersonalNote {
   /// recently edited first.
   @@index([userId, campaignId, updatedAt])
 }
+
+model DiceMacro {
+  id String @id @default(uuid())
+
+  /// Cascade: a saved roll has no meaning without the player who saved it.
+  userId String
+  user   User   @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  /// Macros belong to the table they were made for. A homebrew subsystem from
+  /// one campaign has no business cluttering an unrelated game.
+  campaignId String
+  campaign   Campaign @relation(fields: [campaignId], references: [id], onDelete: Cascade)
+
+  /// What the button says.
+  name String
+
+  /// A dice expression. Validated against the real parser on save, so a stored
+  /// macro is one that can actually be rolled — see validators/diceMacros.ts.
+  expression String
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  /// Listed oldest first, so a macro keeps its place in the row. These are
+  /// buttons people build muscle memory for; ordering by `updatedAt` the way
+  /// notes do would move one to the front every time it was edited.
+  @@index([userId, campaignId, createdAt])
+}
+
+model CampaignDocument {
+  id String @id @default(uuid())
+
+  /// The campaign the document is shared with. Deleting the campaign removes
+  /// the link and leaves the document itself alone.
+  campaignId String
+  campaign   Campaign @relation(fields: [campaignId], references: [id], onDelete: Cascade)
+
+  /// The document. Deleting the asset removes every link to it.
+  assetId String
+  asset   Asset  @relation(fields: [assetId], references: [id], onDelete: Cascade)
+
+  /// Who shared it, for the audit trail. Cascades with the user like the rest.
+  linkedById String
+  linkedBy   User   @relation(fields: [linkedById], references: [id], onDelete: Cascade)
+
+  createdAt DateTime @default(now())
+
+  /// A document is shared with a campaign once or not at all.
+  @@unique([campaignId, assetId])
+  @@index([campaignId])
+  @@index([assetId])
+}
+
+
 
 model Session {
   id            String   @id @default(uuid())
@@ -471,6 +529,11 @@ model Asset {
   thumbnailPath String?
 
   createdAt DateTime @default(now())
+
+  /// Campaigns this document has been shared with. Only meaningful for
+  /// DOCUMENT assets; the link is what grants a campaign's members the right
+  /// to read a document that is otherwise private to its uploader.
+  campaignLinks CampaignDocument[]
 
   @@index([campaignId])
   @@index([type])

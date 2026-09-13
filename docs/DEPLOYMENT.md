@@ -351,6 +351,23 @@ docker compose up -d
 
 > One catch: this automatic pickup only happens when you run plain `docker compose` commands. If you pass `-f` yourself, list both files: `docker compose -f docker-compose.yml -f docker-compose.override.yml up -d`.
 
+### Can I run CozyVTT in a folder, like `example.com/cozyvtt/`?
+
+Not at the moment. Give CozyVTT its own web address instead — `cozyvtt.example.com`, or `example.com` itself.
+
+**Why:** the addresses of your maps and token pictures are saved starting with a `/`, which means "the top of this website". Put CozyVTT in a folder and those addresses point one level too high, so none of the pictures load. Changing the *domain* is free for the same reason — the domain was never part of the saved address — which is why moving from one hostname to another just works.
+
+**What to do instead:** add a DNS record for `cozyvtt.example.com` pointing at your server, then match on that hostname rather than a path. In Traefik that means a `Host()` rule instead of `PathPrefix()`:
+
+```yaml
+# instead of:  PathPrefix(`/cozyvtt`)
+- "traefik.http.routers.cozyvtt.rule=Host(`cozyvtt.example.com`)"
+```
+
+It takes about five minutes, and it is the setup CozyVTT is built and tested for.
+
+Running in a folder is on the backlog rather than ruled out. If it matters to you, say so on the issue tracker — how many people need it is what decides whether it gets built.
+
 ---
 
 ## SSL/TLS with Let's Encrypt
@@ -577,6 +594,7 @@ MAX_MAP_SIZE_MB=50
 MAX_TOKEN_SIZE_MB=5
 MAX_AUDIO_SIZE_MB=20
 MAX_AVATAR_SIZE_MB=2
+MAX_DOCUMENT_SIZE_MB=50
 
 # Request body cap for the bundled Nginx — must be >= the largest limit above
 # plus ~5 MB of multipart overhead
@@ -584,6 +602,8 @@ NGINX_MAX_BODY_SIZE=55M
 ```
 
 These take effect on `docker compose up -d` (no image rebuild needed): the backend enforces them, and the app fetches them at runtime for the admin panel and the upload dialog. Values that aren't a positive number are ignored, with a warning in the backend log.
+
+`MAX_DOCUMENT_SIZE_MB` covers the PDF, text and Markdown files in the document library. Core rulebooks often run past 50 MB; if your group's do, raise this one and `NGINX_MAX_BODY_SIZE` together.
 
 **If you raise a limit, raise the proxy limit too.** A file larger than the proxy's body cap is rejected with an HTTP 413 before it ever reaches CozyVTT:
 
@@ -598,7 +618,7 @@ These take effect on `docker compose up -d` (no image rebuild needed): the backe
 The backend logs its effective limits at startup and warns when they exceed the configured proxy cap:
 
 ```
-Upload limits: MAP 50MB, TOKEN 5MB, AUDIO 250MB, AVATAR 2MB
+Upload limits: MAP 50MB, TOKEN 5MB, AUDIO 250MB, AVATAR 2MB, DOCUMENT 50MB
 NGINX_MAX_BODY_SIZE=55M is smaller than the largest upload limit AUDIO (250 MB). ...
 ```
 

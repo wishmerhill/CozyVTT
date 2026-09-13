@@ -33,7 +33,8 @@ import type {
   TokenTemplate,
   CampaignImportPreview,
   CampaignImportResult,
-  Message,
+
+  MessageHistoryPage,
   DiceRolledEvent,
   Session,
   SessionSummary,
@@ -481,6 +482,18 @@ class ApiClient {
     return response.data;
   }
 
+  /**
+   * Hand the DM role to another member. The outgoing DM becomes a player in the
+   * same action, and campaign ownership does not move.
+   */
+  async transferDM(
+    campaignId: string,
+    userId: string,
+  ): Promise<{ message: string; memberships: import('@/types').CampaignMembership[] }> {
+    const response = await this.client.put(`/api/campaigns/${campaignId}/dm`, { userId });
+    return response.data;
+  }
+
   async updateVibeSettings(
     campaignId: string,
     vibeSettings: import('@/types').VibeSettings,
@@ -518,11 +531,102 @@ class ApiClient {
   // ============================================
 
   // ============================================
-  // Personal notes
+  // Documents
+  //
+  // Shared, not private: a campaign's members read what its DM shares. The
+  // server decides who may read, edit or share each one; these calls only ask.
+  // ============================================
+
+  /**
+   * The documents a campaign's members may read: shared in by the DM, or
+   * created for the campaign. Any member can list.
+   */
+  async listCampaignDocuments(
+    campaignId: string,
+  ): Promise<{ documents: import('@/types').CampaignDocument[] }> {
+    const response = await this.client.get(`/api/campaigns/${campaignId}/documents`);
+    return response.data;
+  }
+
+  /** Share a document with a campaign. DM only; the DM must already be able to read it. */
+  async linkCampaignDocument(campaignId: string, assetId: string): Promise<{ link: { id: string } }> {
+    const response = await this.client.post(`/api/campaigns/${campaignId}/documents`, { assetId });
+    return response.data;
+  }
+
+  /** Stop sharing a document with a campaign. The document itself is untouched. */
+  async unlinkCampaignDocument(campaignId: string, assetId: string): Promise<{ message: string }> {
+    const response = await this.client.delete(`/api/campaigns/${campaignId}/documents/${assetId}`);
+    return response.data;
+  }
+
+  /**
+   * Create a text or Markdown document from typed content. The same scope rules
+   * as an upload apply; the content is stored as typed and never interpreted.
+   */
+  async createDocument(body: {
+    name: string;
+    format: 'txt' | 'md';
+    content: string;
+    description?: string;
+    scope?: 'USER' | 'CAMPAIGN' | 'GLOBAL';
+    campaignId?: string;
+  }): Promise<{ asset: import('@/types').Asset }> {
+    const response = await this.client.post('/api/assets/documents', body);
+    return response.data;
+  }
+
+  /** Replace a text or Markdown document's content. Uploader or admin only. */
+  async updateDocumentContent(assetId: string, content: string): Promise<{ asset: import('@/types').Asset }> {
+    const response = await this.client.put(`/api/assets/documents/${assetId}/content`, { content });
+    return response.data;
+  }
+
+  /**
+   * The URL a document is read from. Same-origin, so a browser can show it in
+   * an iframe under the current Content Security Policy.
+   */
+  getDocumentUrl(assetId: string): string {
+    return this.getAssetUrl(assetId, 'documents');
+  }
+
+  // ============================================
+  // Personal notes and dice macros
   //
   // Private to the signed-in user; the server scopes every one of these by the
   // session's own id, so there is no user parameter to pass or to get wrong.
   // ============================================
+
+  /**
+   * Your own saved dice macros for this campaign, oldest first, the order they
+   * appear as buttons, which stays put when one is edited.
+   */
+  async listDiceMacros(campaignId: string): Promise<{ macros: import('@/types').DiceMacro[] }> {
+    const response = await this.client.get(`/api/campaigns/${campaignId}/macros`);
+    return response.data;
+  }
+
+  async createDiceMacro(
+    campaignId: string,
+    body: { name: string; expression: string },
+  ): Promise<{ macro: import('@/types').DiceMacro }> {
+    const response = await this.client.post(`/api/campaigns/${campaignId}/macros`, body);
+    return response.data;
+  }
+
+  async updateDiceMacro(
+    campaignId: string,
+    macroId: string,
+    body: { name?: string; expression?: string },
+  ): Promise<{ macro: import('@/types').DiceMacro }> {
+    const response = await this.client.put(`/api/campaigns/${campaignId}/macros/${macroId}`, body);
+    return response.data;
+  }
+
+  async deleteDiceMacro(campaignId: string, macroId: string): Promise<{ message: string }> {
+    const response = await this.client.delete(`/api/campaigns/${campaignId}/macros/${macroId}`);
+    return response.data;
+  }
 
   /** The caller's notes for a campaign, newest first. Titles only, no bodies. */
   async listNotes(campaignId: string): Promise<{ notes: PersonalNoteSummary[] }> {
@@ -691,7 +795,7 @@ class ApiClient {
     return response.data;
   }
 
-  getAssetUrl(id: string, type: 'maps' | 'tokens' | 'audio' | 'avatars'): string {
+  getAssetUrl(id: string, type: import('@/utils/assetUrl').AssetDirectory): string {
     return `${API_BASE_URL}/api/assets/${type}/${id}`;
   }
 
@@ -778,6 +882,27 @@ class ApiClient {
   // Server-wide starter sheets any user can publish and copy. Distinct from
   // GET /api/characters/templates/:system/:name, which serves the hardcoded
   // presets compiled into the backend.
+
+  /**
+   * One of the starter sheets compiled into the backend — the blank for a game
+   * system, or a named preset like the level 1 fighter.
+   *
+   * Here rather than fetched directly so it goes through the same base URL and
+   * credentials as everything else; two dialogs used to call `fetch` and so
+   * ignored `VITE_API_URL` entirely.
+   *
+   * @param gameSystem - A GameSystem value, or 'null' for the flexible sheet.
+   * @param templateName - 'blank', or a preset name such as 'fighter'.
+   */
+  async getStarterSheet(
+    gameSystem: string,
+    templateName: string
+  ): Promise<{ name: string; description: string; gameSystem: string | null; data: Record<string, unknown> }> {
+    const response = await this.client.get(
+      `/api/characters/templates/${gameSystem}/${templateName}`
+    );
+    return response.data;
+  }
 
   async listCharacterTemplates(params?: {
     search?: string;
@@ -951,8 +1076,14 @@ class ApiClient {
   // Messages
   // ============================================
 
-  async getMessages(campaignId: string, params?: { limit?: number; before?: string }): Promise<{ messages: Message[] }> {
-    const response = await this.client.get<{ messages: Message[] }>(`/api/campaigns/${campaignId}/messages`, { params });
+  async getMessages(
+    campaignId: string,
+    params?: { limit?: number; cursor?: string }
+  ): Promise<MessageHistoryPage> {
+    const response = await this.client.get<MessageHistoryPage>(
+      `/api/campaigns/${campaignId}/messages`,
+      { params }
+    );
     return response.data;
   }
 

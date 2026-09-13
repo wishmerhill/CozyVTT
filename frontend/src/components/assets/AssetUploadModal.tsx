@@ -462,6 +462,8 @@ export default function AssetUploadModal({ isOpen, onClose, onSuccess, defaultTy
                       ? 'image/*'
                       : assetType === AssetType.AUDIO
                       ? 'audio/*'
+                      : assetType === AssetType.DOCUMENT
+                      ? '.pdf,.txt,.md,application/pdf,text/plain,text/markdown'
                       : '*'
                   }
                 />

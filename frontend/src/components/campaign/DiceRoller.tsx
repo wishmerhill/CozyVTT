@@ -1,16 +1,18 @@
-import { useState, useEffect, useRef, useCallback, FormEvent, KeyboardEvent } from 'react';
+import { useState, useEffect, useRef, useCallback, useMemo, FormEvent, KeyboardEvent } from 'react';
 import { useTranslation } from 'react-i18next';
 import { motion, AnimatePresence } from 'framer-motion';
-import { Dices, Send, AlertCircle, RotateCcw, Trash2, EyeOff, Eye, X } from 'lucide-react';
+import { Dices, Send, AlertCircle, RotateCcw, Trash2, EyeOff, Eye, X, Plus } from 'lucide-react';
 import { useWebSocket } from '@/contexts/WebSocketContext';
 import { useAuth } from '@/contexts/AuthContext';
 import { useCampaign } from '@/contexts/CampaignContext';
 import { getDiceRolls } from '@/services/dice.service';
+import api from '@/services/api';
 import { mayDisplayRoll, visibleRolls } from '@/utils/secretRolls';
-import type { DiceRolledEvent, DiceRolledSecretEvent, DiceRollDetail } from '@/types';
+import type { DiceRolledEvent, DiceRolledSecretEvent, DiceRollDetail, DiceMacro } from '@/types';
 import { CampaignStatus } from '@/types';
 import DiceResult from './DiceResult';
 import ConfirmDialog from '@/components/common/ConfirmDialog';
+import DiceMacroManager from './DiceMacroManager';
 
 /**
  * Stable identity for a roll, used to dedupe the live socket stream against
@@ -141,6 +143,16 @@ export default function DiceRoller() {
   const { userRole, campaign } = useCampaign();
   const isPaused = campaign?.status === CampaignStatus.PAUSED && userRole !== 'DM';
 
+  /**
+   * Which campaign members are DMs, so a roll made on someone else's behalf can
+   * say so. Taken from the campaign's membership list rather than sent with the
+   * roll — the roller does not get to assert their own role.
+   */
+  const dmUserIds = useMemo(
+    () => new Set((campaign?.memberships ?? []).filter((m) => m.role === 'DM').map((m) => m.userId)),
+    [campaign?.memberships]
+  );
+
   // Form state
   const [expression, setExpression] = useState('');
   const [characterName, setCharacterName] = useState('');
@@ -201,6 +213,17 @@ export default function DiceRoller() {
   // Confirm clear history
   const [confirmClear, setConfirmClear] = useState(false);
 
+  /**
+   * Saved rolls, shown as a third row of buttons.
+   *
+   * Held in the order the server returns them — oldest first — because that is
+   * the order of the buttons, and people aim at these without looking. Loaded
+   * once when the campaign is known; the dice tab stays mounted, so this does
+   * not refetch on tab switches.
+   */
+  const [macros, setMacros] = useState<DiceMacro[]>([]);
+  const [isMacroManagerOpen, setIsMacroManagerOpen] = useState(false);
+
   // Secret roll popup state
   const [secretRollResult, setSecretRollResult] = useState<DiceRolledEvent | null>(null);
 
@@ -255,6 +278,25 @@ export default function DiceRoller() {
     loadHistory();
     return () => { cancelled = true; };
   }, [campaign?.id, userRole, reconnectCount]);
+
+  // Saved rolls for this campaign. Failure is quiet on purpose: macros are a
+  // convenience on top of a dice panel that works without them, and an error
+  // banner over the roll history would be louder than the problem.
+  useEffect(() => {
+    if (!campaign?.id) return;
+    let cancelled = false;
+    api
+      .listDiceMacros(campaign.id)
+      .then(({ macros: fetched }) => {
+        if (!cancelled) setMacros(fetched);
+      })
+      .catch(() => {
+        /* leave the row empty; the manager reports the error when opened */
+      });
+    return () => {
+      cancelled = true;
+    };
+  }, [campaign?.id]);
 
   useEffect(() => {
     if (!socket) return;
@@ -570,6 +612,16 @@ export default function DiceRoller() {
 
   return (
     <>
+    {campaign?.id && (
+      <DiceMacroManager
+        isOpen={isMacroManagerOpen}
+        onClose={() => setIsMacroManagerOpen(false)}
+        campaignId={campaign.id}
+        initialExpression={expression}
+        onMacrosChanged={setMacros}
+      />
+    )}
+
     <ConfirmDialog
       isOpen={confirmClear}
       title={t('dice.clearHistoryConfirmTitle')}
@@ -603,12 +655,12 @@ export default function DiceRoller() {
               }`}
               title={
                 showSecretRolls
-                  ? 'Hide secret rolls in this list (only affects your view)'
-                  : 'Show secret rolls in this list (only affects your view)'
+                  ? t('dice.hideSecretRollsTitle')
+                  : t('dice.showSecretRollsTitle')
               }
             >
               {showSecretRolls ? <Eye className="w-3 h-3" /> : <EyeOff className="w-3 h-3" />}
-              <span>Secret</span>
+              <span>{t('dice.secretToggleLabel')}</span>
             </button>
           )}
           {/* DM Only: Clear History Button */}
@@ -649,6 +701,7 @@ export default function DiceRoller() {
                 key={rollKey(roll)}
                 roll={roll}
                 isCurrentUser={user?.id === roll.userId}
+                rollerIsDM={dmUserIds.has(roll.userId)}
               />
             ))}
             {shownRolls.length === 0 && (
@@ -723,6 +776,41 @@ export default function DiceRoller() {
               </button>
             ))}
           </div>
+
+          {/* Saved rolls — the player's own, in the order they were saved so a
+              button does not move when one is edited. The row wraps; the panel
+              is a 300px rail at its narrowest and this block never scrolls. */}
+          <div className="flex flex-wrap items-center gap-1.5 mt-1.5">
+            {macros.map((macro) => (
+              <button
+                key={macro.id}
+                onClick={() => handleQuickRoll(macro.expression)}
+                disabled={isRolling}
+                title={`${macro.name} — ${macro.expression}`}
+                className="
+                  px-2 py-1 rounded-md border border-spirit-purple/30 text-xs font-medium
+                  bg-spirit-purple/10 hover:bg-spirit-purple/20 transition-all
+                  disabled:opacity-50 disabled:cursor-not-allowed
+                  text-ink max-w-[10rem] truncate
+                "
+              >
+                {macro.name}
+              </button>
+            ))}
+            <button
+              onClick={() => setIsMacroManagerOpen(true)}
+              title={t('dice.manageSavedRollsTitle')}
+              aria-label={t('dice.manageSavedRollsLabel')}
+              className="
+                px-2 py-1 rounded-md border border-dashed border-ink-muted/40 text-xs
+                hover:bg-surface transition-all text-ink-secondary
+                flex items-center gap-1
+              "
+            >
+              <Plus className="w-3 h-3" />
+              {t('dice.savedRollsButton')}
+            </button>
+          </div>
         </div>
 
         {/* Expression Input */}
@@ -734,7 +822,7 @@ export default function DiceRoller() {
               value={expression}
               onChange={(e) => setExpression(e.target.value)}
               onKeyDown={handleKeyDown}
-              placeholder="e.g., 2d6+3, 1d20+5, 4d6kh3"
+              placeholder={t('dice.expressionPlaceholderExample')}
               disabled={isRolling}
               className="input-cozy px-2 py-1.5 font-mono text-xs disabled:opacity-50 disabled:cursor-not-allowed"
             />

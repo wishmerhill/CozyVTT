@@ -1,6 +1,6 @@
 import { io, Socket } from 'socket.io-client';
+import { socketTarget } from '@/utils/socketTarget';
 import type {
-  MessageMetadata,
   Map as CampaignMap,
   TokenMoveStartEvent,
   TokenMoveEvent,
@@ -11,6 +11,7 @@ import type {
   DiceRolledSecretEvent,
   ChatMessageEvent,
   ChatMessageBroadcast,
+  ChatSystemBroadcast,
   SessionStartEvent,
   SessionStartedBroadcast,
   SessionPausedBroadcast,
@@ -25,6 +26,8 @@ import type {
   AtmosphereAudioUpdatedBroadcast,
   CharacterHpUpdateEvent,
   CharacterHpUpdatedBroadcast,
+  DmTransferredBroadcast,
+  HitDiceSpendEvent,
   CombatState,
   InitiativeAddEvent,
   InitiativeRemoveEvent,
@@ -39,11 +42,17 @@ import type {
 // WebSocket Client Configuration
 // ============================================
 
-// Use relative URL in development to leverage Vite's proxy (Docker support)
-// Use absolute URL in production
-// Empty string = relative URLs (Nginx proxies /socket.io/* to backend in production,
-// Vite dev server proxies in development)
-const SOCKET_URL = import.meta.env.VITE_SOCKET_URL || '';
+// Where the live connection lives.
+//
+// Empty means the page's own origin, which is the shipped default — nginx
+// proxies /socket.io/* in production, and the Vite dev server does in
+// development. A configured value is split into an origin and a path, because
+// socket.io reads a URL's pathname as a *namespace* rather than a location:
+// passing one straight to `io()` asks for a namespace the server never
+// registered. See utils/socketTarget.
+const { origin: SOCKET_ORIGIN, path: SOCKET_PATH } = socketTarget(
+  import.meta.env.VITE_SOCKET_URL
+);
 
 type EventCallback<T = unknown> = (data: T) => void;
 
@@ -155,7 +164,8 @@ class SocketClient {
         reject(new Error('Connection timeout - server did not respond'));
       }, 10000);
 
-      this.socket = io(SOCKET_URL, {
+      this.socket = io(SOCKET_ORIGIN, {
+        path: SOCKET_PATH,
         withCredentials: true,
         transports: ['websocket', 'polling'],
         reconnection: true,
@@ -376,7 +386,7 @@ class SocketClient {
     this.addListener('chat.message', callback);
   }
 
-  onChatSystem(callback: EventCallback<{ content: string; metadata?: MessageMetadata; timestamp: string }>) {
+  onChatSystem(callback: EventCallback<ChatSystemBroadcast>) {
     this.addListener('chat.system', callback);
   }
 
@@ -494,6 +504,23 @@ class SocketClient {
 
   onCharacterHpUpdated(callback: EventCallback<CharacterHpUpdatedBroadcast>) {
     this.addListener('character.hp.updated', callback);
+  }
+
+  /**
+   * The DM seat moved. Everyone in the campaign hears this, because everyone's
+   * view of who may do what changes with it — not just the two people involved.
+   */
+  onDmTransferred(callback: EventCallback<DmTransferredBroadcast>) {
+    this.addListener('campaign.dm.transferred', callback);
+  }
+
+  /**
+   * Spend one hit die. The roll goes through emitDiceRoll like any other; this
+   * is only the decrement, which the server applies so the count cannot be
+   * kept up by a client that declines to send it.
+   */
+  emitHitDiceSpend(data: HitDiceSpendEvent) {
+    this.socket?.emit('character.hitdice.spend', data);
   }
 
   // ============================================

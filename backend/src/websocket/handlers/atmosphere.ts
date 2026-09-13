@@ -7,6 +7,7 @@ import { AuthenticatedSocket } from '../auth';
 import { prisma } from '../../config/database';
 import logger from '../../utils/logger';
 import { readJsonObject, toJson } from '../../utils/prisma-json';
+import { canReadAsset } from '../../services/permissions';
 
 export function registerAtmosphereHandlers(io: Server, socket: AuthenticatedSocket): void {
   /**
@@ -55,15 +56,23 @@ export function registerAtmosphereHandlers(io: Server, socket: AuthenticatedSock
   /**
    * ATMOSPHERE.AUDIO.SET — DM queues or stops ambient audio for all players.
    * assetId: UUID of an AUDIO asset, or null to stop.
+   *
+   * Setting a track is what opens it to the campaign: the read rule lets a
+   * member fetch whatever their campaign is playing, because the sound is not
+   * relayed through here, each player's browser fetches the file itself. So
+   * this handler asks the same question the serving route asks, of the DM. A
+   * track the DM cannot read answers the same as one that does not exist, so
+   * the reply cannot be used to discover which ids are real.
    */
   socket.on('atmosphere.audio.set', async (data: { assetId: string | null; volume?: number; loop?: boolean }) => {
     try {
-      if (!socket.campaignId) return;
+      if (!socket.campaignId || !socket.userId) return;
 
       if (socket.role !== 'DM') {
         socket.emit('error', { message: 'Only the DM can control ambient audio' });
         return;
       }
+      const userId = socket.userId;
 
       let audioUrl: string | null = null;
 
@@ -80,6 +89,15 @@ export function registerAtmosphereHandlers(io: Server, socket: AuthenticatedSock
         // Verify asset is accessible to this campaign (global or belongs to this campaign)
         if (asset.scope === 'CAMPAIGN' && asset.campaignId !== socket.campaignId) {
           socket.emit('error', { message: 'Asset does not belong to this campaign' });
+          return;
+        }
+
+        // Never as an admin, whatever this DM's platform role. An admin may
+        // read any file, but setting one here is not reading it: it opens the
+        // file to everyone at the table. A track meant for a table belongs in
+        // the global library.
+        if (!(await canReadAsset(asset, userId, false))) {
+          socket.emit('error', { message: 'Audio asset not found' });
           return;
         }
 

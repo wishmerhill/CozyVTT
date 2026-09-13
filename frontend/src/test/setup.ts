@@ -11,6 +11,7 @@ import admin from '../../public/locales/it/admin.json';
 import errors from '../../public/locales/it/errors.json';
 import validation from '../../public/locales/it/validation.json';
 import setup from '../../public/locales/it/setup.json';
+import assets from '../../public/locales/it/assets.json';
 
 // Initialize i18n for all tests
 i18n.use(initReactI18next).init({
@@ -27,6 +28,7 @@ i18n.use(initReactI18next).init({
       errors,
       validation,
       setup,
+      assets,
     },
   },
   interpolation: {

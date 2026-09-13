@@ -100,6 +100,7 @@ Copy `backend/.env.example` to `backend/.env` and fill in the values.
 | `MAX_TOKEN_SIZE_MB` | No | `5` | Upload size limit for token images |
 | `MAX_AUDIO_SIZE_MB` | No | `20` | Upload size limit for audio files |
 | `MAX_AVATAR_SIZE_MB` | No | `2` | Upload size limit for avatar images |
+| `MAX_DOCUMENT_SIZE_MB` | No | `50` | Upload size limit for PDF, text and Markdown documents |
 | `NGINX_MAX_BODY_SIZE` | No | `55M` | Request body cap for the bundled Nginx (`client_max_body_size`); must cover the largest limit above |
 | `ASSET_UPLOAD_RATE_LIMIT` | No | `30` | Asset uploads per minute per user |
 
@@ -195,6 +196,19 @@ Services (all exposed on localhost for easy debugging):
 - PostgreSQL: `localhost:5432`
 
 The backend container runs `npm run dev` (nodemon with hot reload). The frontend container runs `vite` with hot module replacement. Migrations run automatically on first start via Prisma.
+
+**Each container has its own `node_modules` and its own generated Prisma client.** Source is bind-mounted, `node_modules` is not, so after adding a dependency or changing `schema.prisma` the running container does not see it until you tell it to. Vite answers a missing package with a 500 and the app shows "Something went wrong"; the backend throws on the first query that touches a new table:
+
+```bash
+# After `npm install <package>` on the host, in either project:
+docker compose -f docker-compose.dev.yml exec --user root frontend npm install
+docker compose -f docker-compose.dev.yml exec --user root backend npm install
+
+# After changing prisma/schema.prisma:
+docker compose -f docker-compose.dev.yml exec --user root backend npx prisma generate
+```
+
+`--user root` is needed because the images install `node_modules` as a different user from the one the process runs as; without it both commands fail with `EACCES: permission denied`. Rebuilding the image (`docker compose -f docker-compose.dev.yml up --build`) does the same thing more slowly.
 
 ### Production vs Development at a glance
 

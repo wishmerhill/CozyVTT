@@ -9,6 +9,7 @@ import { ZoomIn, ZoomOut, Maximize2, Grid3x3, Palette, Ghost, Ruler, Zap } from 
 import { useCampaign } from '@/contexts/CampaignContext';
 import { useWebSocket } from '@/contexts/WebSocketContext';
 import { useAuth } from '@/contexts/AuthContext';
+import { canRollAsCharacter } from '@/services/permissions';
 import { useGameStore, useTokenList, useCurrentTurnTokenId, useMapPeekTokenId, useTokenInitiative } from '@/stores/gameStore';
 import { useMapControls } from '@/hooks/useMapControls';
 import { useReducedMotion } from '@/hooks/useReducedMotion';
@@ -2770,6 +2771,21 @@ export default function MapCanvas({ onEditToken }: MapCanvasProps) {
    * ticks (see `useCurrentTurnTokenId`), and the answer is only needed at the
    * moment of a right-click.
    */
+  /**
+   * Whether this viewer may roll a token's character sheet.
+   *
+   * Keyed on who owns the *character*, not on token.controlledBy: the rolls
+   * come from the sheet, and the roster and sheet viewer offer the same menu
+   * with no token in hand. One rule, three callers — see services/permissions.
+   */
+  const canRollForToken = (token: Token): boolean => {
+    if (!user || !token.characterId) return false;
+    const character = campaign?.characters?.find((c) => c.id === token.characterId);
+    if (!character) return false;
+    const membership = campaign?.memberships?.find((m) => m.userId === user.id);
+    return canRollAsCharacter(user, character, membership);
+  };
+
   const canRollInitiativeFor = (token: Token): boolean => {
     const combat = useGameStore.getState().combat;
     if (!combat.combatants.some((c) => c.tokenId === token.id)) return false;
@@ -3702,23 +3718,25 @@ export default function MapCanvas({ onEditToken }: MapCanvasProps) {
               >
                 {t('roster.viewCharacterSheet')}
               </button>
-              <button
-                className="w-full px-4 py-2 text-left text-sm text-stone-gray hover:bg-moss-green/10 transition-colors"
-                onClick={() => {
-                  const token = contextMenu.token;
-                  const picker = {
-                    characterId: token.characterId!,
-                    tokenId: token.id,
-                    canRollInitiative: canRollInitiativeFor(token),
-                    x: contextMenu.x,
-                    y: contextMenu.y,
-                  };
-                  setContextMenu(null);
-                  setRollPicker(picker);
-                }}
-              >
-                {t('roster.rollEllipsis')}
-              </button>
+              {canRollForToken(contextMenu.token) && (
+                <button
+                  className="w-full px-4 py-2 text-left text-sm text-stone-gray hover:bg-moss-green/10 transition-colors"
+                  onClick={() => {
+                    const token = contextMenu.token;
+                    const picker = {
+                      characterId: token.characterId!,
+                      tokenId: token.id,
+                      canRollInitiative: canRollInitiativeFor(token),
+                      x: contextMenu.x,
+                      y: contextMenu.y,
+                    };
+                    setContextMenu(null);
+                    setRollPicker(picker);
+                  }}
+                >
+                  {t('roster.rollEllipsis')}
+                </button>
+              )}
             </>
           )}
 
@@ -4044,9 +4062,14 @@ export default function MapCanvas({ onEditToken }: MapCanvasProps) {
       {rollPicker && (
         <CharacterRollPicker
           characterId={rollPicker.characterId}
+          onSpendHitDie={(index) =>
+            socket?.emitHitDiceSpend({ characterId: rollPicker.characterId, index })
+          }
           anchorX={rollPicker.x}
           anchorY={rollPicker.y}
-          onRoll={(expression, purpose) => socket?.emitDiceRoll({ expression, purpose })}
+          onRoll={(expression, purpose, characterName) =>
+            socket?.emitDiceRoll({ expression, purpose, characterName })
+          }
           // Only offered when this token is already in the initiative order and
           // this viewer may roll for it — the DM for anyone, a player for a
           // token they control. The server checks the same thing.
@@ -4069,7 +4092,9 @@ export default function MapCanvas({ onEditToken }: MapCanvasProps) {
             gameSystem={campaign?.gameSystem ?? 'DND_5E'}
             anchorX={npcRollPicker.x}
             anchorY={npcRollPicker.y}
-            onRoll={(expression, purpose) => socket?.emitDiceRoll({ expression, purpose })}
+            onRoll={(expression, purpose, characterName) =>
+            socket?.emitDiceRoll({ expression, purpose, characterName })
+          }
             onClose={() => setNpcRollPicker(null)}
           />
         );

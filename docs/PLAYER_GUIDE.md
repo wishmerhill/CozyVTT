@@ -150,15 +150,42 @@ You can also drag the divider to resize the sidebar, or collapse it to give the 
 The top bar shows:
 - Campaign name and session status (Live / Paused / Inactive)
 - Connection indicator — a dot that goes green when you're connected
+- A **book icon** — the rulebooks and handouts your DM has shared with this campaign
 - Navigation controls
 
 *Screenshot pending — Campaign header with status indicators.*
+
+### Rulebooks and Handouts
+
+Press the **book icon** in the header to see what your DM has shared with the campaign: a rulebook, a page of house rules, a handout for the scene. **Read** opens it in a full-screen reader over the map, and the arrow beside it opens it in a new browser tab, handy for keeping the rules up on a second screen while you play.
+
+You can read everything on that list and nothing that is not on it. Sharing is the DM's to do, so if a rulebook you expected is missing, ask them. If your DM edits a shared document, you see the new text the next time you open it.
+
+You can keep documents of your own too, from **Documents** on your dashboard: upload a PDF, or write text or Markdown notes and edit them later. Those are yours alone unless a DM shares one with a campaign.
 
 ### Connection Status
 
 When you first load the campaign page, CozyVTT connects to the live session. Look for the **connection indicator** in the header — it turns green when you're successfully connected. If you see a loading spinner, just wait a moment.
 
 If you lose connection (WiFi hiccup, etc.), CozyVTT will automatically try to reconnect. If it can't, a message appears and you can refresh the page to reconnect manually.
+
+### If your DM hands you the game
+
+A campaign has one DM, but that can be passed on — when a DM steps back, hands
+over to a co-DM, or wants someone else to run a session. If it is passed to you,
+your screen changes on the spot: you do not need to reload, and nothing about
+your character changes. You keep it, and you can still play it.
+
+What you gain is the DM's side of the campaign — the map, token, creature and
+settings controls appear in the top bar, and the campaign's roster shows you as
+the Dungeon Master. The person who handed it over becomes an ordinary player.
+
+**Handing it back** is the same action in reverse: **Campaign Settings →
+Members**, then the crown beside their name. If the campaign was originally
+theirs they can also take it back themselves, so nobody is ever stranded.
+
+If this happens unexpectedly, it is worth asking your DM — it is a deliberate
+action somebody took, not something that happens on its own.
 
 ---
 
@@ -176,14 +203,14 @@ Chat is for everything: in-character dialogue, out-of-character coordination, qu
 
 **Chat tips:**
 - **System messages** (gray, slightly different style) announce session events like "Session started" or "Initiative started"
-- **Dice results** appear in chat automatically when you roll
+- **Dice results** appear in the **Dice** panel, the tab beside chat, not in the conversation itself
 - Scroll up to read the history — the full session log is preserved
 
 ### The Dice Roller
 
 *Screenshot pending — Dice roller panel.*
 
-Click any die icon to roll it. Your result appears in chat immediately.
+Click any die icon to roll it. Your result appears in the **Dice** panel immediately, where everyone at the table can see it.
 
 **Rolling custom expressions:**
 Type directly into the expression input. Supported notation:
@@ -198,9 +225,26 @@ Type directly into the expression input. Supported notation:
 | `4d6kh3` | Four d6s, keep highest three |
 | `4d6kl3` | Four d6s, keep lowest three |
 
-*GIF pending — Typing a dice expression and seeing the result in chat.*
+*GIF pending — Typing a dice expression and seeing the result in the Dice panel.*
 
-**Why my roll showed up in chat:** Dice results are public by default — everyone sees what you rolled unless you tick **Secret Roll** first (see *Secret rolls* below). When your DM rolls secretly you get a "DM rolled secretly" message rather than the result.
+**Saved rolls.** Some rolls aren't on your character sheet and never will be — a
+homebrew subsystem your table invented, a recurring `2d6+3` for a house rule,
+`4d6kh3` for rolling up a new character, an attack the sheet can't describe.
+Rather than retyping those every session, save them: press **Saved** under the
+dice buttons, give the roll a name and an expression, and it becomes a button of
+its own. Click it and it rolls exactly as if you had typed it.
+
+If you have just typed something into the expression box, opening **Saved**
+carries it across, so naming it is the only thing left to do.
+
+Saved rolls are **yours alone** — not even your DM can see them — and they stay
+with the campaign you made them in, so one table's homebrew doesn't clutter
+another game. You can rename, edit or delete them from the same **Saved** button,
+and you can keep up to 50 per campaign. If an expression can't be rolled, CozyVTT
+says so when you save it rather than letting you find out later with a button
+that never works.
+
+**Why everyone saw my roll:** Dice results are public by default — everyone sees what you rolled unless you tick **Secret Roll** first (see *Secret rolls* below). When your DM rolls secretly you get a "DM rolled secretly" message rather than the result.
 
 **Your roll history sticks around.** The panel reads like the chat beside it — a running list, oldest at the top, newest at the bottom — so you can see several rolls at once instead of stepping through them one at a time. It's kept on the server, so refreshing the page, closing the tab and coming back, or losing your connection for a minute won't wipe it. Only the DM can clear it.
 
@@ -272,6 +316,12 @@ Two things worth knowing:
 - **Creatures standing in hidden areas are invisible to you** — including their tokens, and including their turn marker during combat. If the initiative tracker shows a creature you can't find on the map, that's deliberate. Something is out there.
 - **You can't reveal fog yourself.** Only the DM can, so there's nothing you can accidentally break by moving around.
 
+### Sound and weather on the map
+
+Your DM can start an ambient track and lay weather over the map: rain, mist, drifting leaves, sparkles, snow or wind. Both arrive on their own when your DM sets them, and stop when your DM stops them; there is nothing for you to turn on.
+
+If you hear nothing, check your browser has not blocked sound for the tab. Most browsers refuse to play audio until you have clicked something on the page, so clicking anywhere in the campaign usually starts it.
+
 ---
 
 ## Measuring and Spell Areas
@@ -312,7 +362,7 @@ Once the DM has added your token to the tracker, you roll for yourself — you d
 - **In the tracker** — a dice icon 🎲 appears beside your own name. You'll only ever see it on your own row; you can't roll for other players or for the DM's monsters
 - **On the map** — right-click your token, choose **Roll...**, and pick **Roll Initiative** at the top of the menu
 
-Either way the result drops straight into the turn order and the roll appears in chat, so everyone can see what you got.
+Either way the result drops straight into the turn order and the roll appears in the **Dice** panel, so everyone can see what you got.
 
 **What you actually roll depends on your game system**, and it's worked out from your sheet:
 
@@ -334,6 +384,26 @@ Thieves' tools, a musical instrument, a vehicle, or whatever your table invented
 The bonus is worked out for you from that ability and your proficiency bonus, so it keeps up as your character grows — there's nothing to re-enter when you level. The **Other** box is for anything the maths can't know about, like a +1 set of tools.
 
 Your own skills show up with the rest on your sheet and in the right-click roll menu, so rolling them is one click.
+
+### Spending a hit die on a short rest (D&D 5e)
+
+At the end of a short rest you can spend hit dice to get hit points back. Your pool is on the **Combat** tab — `3/5 d10` means you have five d10 hit dice and three of them are unspent.
+
+**Click the pool to spend one.** It rolls a single die plus your Constitution modifier and puts the result in the roll history like any other roll, and the count goes down by one. You can also reach it by right-clicking your token and choosing **Roll...**, where it sits under **Hit Dice**.
+
+It rolls **one** die, not the whole pool — spending is one die at a time, and the rules let you decide whether to spend another after seeing each result. So click again if you want a second.
+
+**Setting your pool up.** In **Edit**, each row is labelled: **Class**, **Die**, **Left** and **Max**. Put a single die under Die — `d10` for a fighter, `d6` for a wizard — and how many you have at your level under Max. Left is how many are unspent, and it reads `Left / Max` the same way the sheet shows `3/5`. You don't repeat the count in the Die box; that's what Max is for.
+
+**A hit die that isn't a plain die.** If your game uses something else — a homebrew class whose hit die is `2d6`, or one with a flat bonus like `1d10+1` — type that in the die box and it rolls exactly as written, with your Constitution added on top. Anything the dice roller understands works here.
+
+**Add the hit points yourself.** CozyVTT rolls the die and keeps count of what you have left, but it doesn't change your HP for you — use the **+** button on your roster card for the amount you rolled. (If your Constitution modifier is negative and the total comes out below zero, you regain nothing rather than losing hit points.)
+
+Once the pool is empty the number stops being clickable. Your DM can also spend one on your behalf if you're not at the table, and it comes off your sheet the same way.
+
+**Getting them back.** A short rest is when you *spend* hit dice — it doesn't give any back. A **long rest** does: you regain all your lost hit points, plus spent hit dice up to **half your total, rounded down, and always at least one**. So a level 5 fighter with `5d10` gets two back, not five, and a level 1 character gets their single die back.
+
+CozyVTT doesn't apply that for you yet. After a long rest, click **Edit** on your sheet and set the remaining number for each pool yourself — **Max** is there so you can see what you're counting back up towards.
 
 ### Weapons that do more than one thing
 

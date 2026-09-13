@@ -97,31 +97,38 @@ const resources = {
 // Initialize synchronously — no async backend. LanguageDetector reads a cached
 // choice from localStorage (key 'i18nextLng'); with none cached, it falls back
 // to the browser's language when supported, otherwise fallbackLng ('it').
-i18n
-  .use(LanguageDetector)
-  .use(initReactI18next)
-  .init({
-    fallbackLng: 'it',
-    supportedLngs: SUPPORTED_LANGUAGES,
-    load: 'languageOnly',
-    returnNull: false,
-    returnEmptyString: false,
-    defaultNS: DEFAULT_NS,
-    ns: NAMESPACES,
-    resources: resources as Record<string, Record<string, object>>,
-    debug: import.meta.env.DEV,
-    interpolation: {
-      escapeValue: false,
-    },
-    detection: {
-      order: ['localStorage', 'navigator'],
-      caches: ['localStorage'],
-      lookupLocalStorage: LANGUAGE_STORAGE_KEY,
-    },
-    react: {
-      useSuspense: false,
-    },
-  });
+//
+// Guarded against double-init: this module is a singleton, but tests set up
+// their own minimal i18next instance before importing app code that reaches
+// this file (e.g. through assetUrl.ts), and re-running init() against the
+// same instance would stomp their configuration.
+if (!i18n.isInitialized) {
+  i18n
+    .use(LanguageDetector)
+    .use(initReactI18next)
+    .init({
+      fallbackLng: 'it',
+      supportedLngs: SUPPORTED_LANGUAGES,
+      load: 'languageOnly',
+      returnNull: false,
+      returnEmptyString: false,
+      defaultNS: DEFAULT_NS,
+      ns: NAMESPACES,
+      resources: resources as Record<string, Record<string, object>>,
+      debug: import.meta.env.DEV,
+      interpolation: {
+        escapeValue: false,
+      },
+      detection: {
+        order: ['localStorage', 'navigator'],
+        caches: ['localStorage'],
+        lookupLocalStorage: LANGUAGE_STORAGE_KEY,
+      },
+      react: {
+        useSuspense: false,
+      },
+    });
+}
 
 declare global {
   interface Window {

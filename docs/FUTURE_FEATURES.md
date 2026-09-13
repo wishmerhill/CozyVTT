@@ -24,11 +24,12 @@ _Nothing in progress._
 
 - **Sound effects** — dice-roll and notification audio. Needs: a small library of royalty-free sounds bundled in `frontend/public/sounds/`, a `useSound()` hook, and an opt-in toggle on the profile page. The toggle was removed on 2026-04-27 because no audio existed; restore it together with this feature.
 - **Browser notifications** — desktop alerts when it's a player's turn (initiative tracker), or when chat activity happens while the tab is backgrounded. Needs: `Notification.requestPermission()` flow, a per-user opt-in toggle, server-side hooks for turn change + chat broadcast events. Removed alongside sound effects on 2026-04-27.
-- **Per-user default dice color** — surface a color in the dice picker so a player's rolls visually stand apart in chat. Needs: pass the color into the dice renderer (`DicePanel`, roll display in chat, socket roll payload metadata), then re-add the color picker on the profile page. Removed on 2026-04-27 pending the renderer wiring.
+- **Per-user default dice color** — surface a color in the dice picker so a player's rolls visually stand apart in the dice panel. Needs: pass the color into the dice renderer (`DicePanel`, the roll list, socket roll payload metadata), then re-add the color picker on the profile page. Removed on 2026-04-27 pending the renderer wiring.
 - **Bulk character export as a ZIP** — exporting multiple characters currently downloads each one as a separate file. Bundling them into a single ZIP (e.g. via JSZip) would be tidier. See the multi-character export path in `frontend/src/utils/character-export.ts`.
 - **Merge the hardcoded starter templates into the character template library** — `backend/src/utils/character-templates/` holds four presets per system as source constants, served by `GET /api/characters/templates/:system/:name`, while user-published templates now live in the database. Two systems for one idea. Folding the presets in as seeded, admin-owned rows would leave one browsable list and one endpoint. Note `getTemplatesForGameSystem`, `getAllTemplates` and `getBlankTemplate` in that directory are already dead code with no callers; `getBlankCharacterTemplate` in `validators/game-systems/index.ts` is the one still in use.
 - **Shadowrun 6E character sheet** — the backend (types, validation, templates) is complete, but the frontend sheet is still a placeholder and the system is hidden from the creation dropdown until it's finished. See `docs/GAME_SYSTEMS.md`.
 - **NPC chatbot / asset generation (AI)** — No code yet. The `@anthropic-ai/sdk` dependency was removed before v1.0.0 launch (it was installed but unused, and shipping it left an open `npm audit` finding). When this feature work begins, re-add the current major of the SDK and introduce `ANTHROPIC_API_KEY` / `OPENAI_API_KEY` env vars at the same time so they enter the codebase together rather than sitting around as dead config.
+- **EPUB and other document formats in the library** — #39 asked for "PDF and standard e-reader formats"; the library shipped with PDF, plain text and Markdown, which a browser can show on its own. EPUB cannot: it is a zip of XHTML that needs a reader library (`epub.js` or similar), and every one of them renders the book's own HTML inside an iframe through `blob:` URLs, which means loosening the Content-Security-Policy the whole instance runs under, and trusting a third party to sanitise a file an anonymous user uploaded. That is the one genuinely risky part of the original request, and it is separable, so it waits. **Revisit if** people ask for it with real books in hand; the answer will hinge on finding a reader that renders into a sandboxed frame without `allow-same-origin`, and on measuring what the CSP change exposes.
 - **Admin upload UI for instance branding (logo / favicon / mascot)** — backend already accepts `customLogoUrl` / `customFaviconUrl` / `customMascotUrl` on `SystemSettings`, and `ThemeContext` reads them and dynamically swaps the favicon when set. What's missing is a file-upload form on the Admin → Appearance tab so an instance operator can swap branding at runtime without redeploy. Until then, operators replace the defaults at `frontend/public/default-logo.png` and `frontend/public/default-mascot.png` and rebuild.
 
 ### DM tools
@@ -37,6 +38,67 @@ _Nothing in progress._
 - **Auto-detection of walls from map images** — LLM, contour, and trace approaches all failed previously. Treat any future attempt as new R&D, not a continuation.
 
 ### Polish / tech debt
+
+- **One dice grammar for both sides.** The server owns the real parser
+  (`backend/src/utils/dice-parser.ts`); the frontend has two character-set checks
+  — `utils/diceExpression.ts` and a private one inside `DiceRoller` — which accept
+  things the server refuses, such as `2d6+` and `dddd`. That is survivable for a
+  roll about to be sent, because the server answers immediately and the person is
+  still looking at the box, and saved macros close the dangerous half by
+  validating server-side before anything is stored. But three implementations of
+  one grammar is two too many. The fix is extracting the parser into something
+  both sides import, which today means introducing a shared package where none
+  exists — the reason it has not been done yet. **Revisit** when a second thing
+  needs shared logic, or if the checks disagree in a way a user notices.
+
+- **The app page ships with no Content-Security-Policy in production.** The
+  CSP in `backend/src/server.ts` (helmet) applies to responses the backend
+  sends, which in the production stack is `/api/` and `/socket.io/` only. The
+  page itself, `index.html`, is served by the frontend's nginx through the
+  outer nginx, and neither adds a CSP, `X-Frame-Options` or the other helmet
+  headers. So `imgSrc`, `scriptSrc` and `frameAncestors` protect the JSON, not
+  the app. The dev stack (Vite) is the same. Found while reviewing the document
+  library, where it decides whether a Markdown image can point at an outside
+  host. The fix is a matching `add_header Content-Security-Policy` in
+  `frontend/nginx.conf`, written once and kept in step with `server.ts`, or a
+  build step that emits the header from one definition. Confirmed by serving
+  a page through `frontend/nginx.conf` in a stock nginx container: the page
+  arrives with no security headers at all, while `/api/config` from the
+  backend carries the full helmet set.
+
+- **`file-type` has no automated coverage.** The upload validator's first line
+  of defence is what that library says a file is, and it is ESM-only, which the
+  Jest setup here cannot load; every test that reaches it swaps in a stub
+  (`backend/src/__tests__/helpers/file-type-mock.ts`, or a per-suite mock). The
+  stubs were written to match what the real library was observed to do for the
+  same bytes, and the real library was exercised by hand against a running
+  instance, but nothing in CI would notice if an upgrade changed a verdict. The
+  fix is either a Jest ESM configuration that can load it, or one small
+  integration test that runs under `node --test` outside Jest. **Revisit** when
+  `file-type` is next upgraded, and before adding any format whose acceptance
+  depends on it.
+
+- **Dice macros shared by the DM.** #47 asked for personal saved rolls and got
+  them. A DM may well want a table-wide one — "Wild Magic Surge, d100" — that
+  everyone can click without each person saving it themselves. The storage would
+  take it: a nullable `userId` for campaign-wide, or an explicit `shared` flag on
+  `DiceMacro`. What it really adds is a visibility axis and the permission
+  question that comes with it, plus deciding what happens to a shared macro when
+  the DM seat moves. **Revisit if** people ask; the personal version covers the
+  cases in the original request.
+
+- **Two or more DMs in one campaign at the same time.** Raised alongside #33,
+  which asked to *move* the DM seat and got that; sharing it is a different and
+  much larger job. The schema already permits it — nothing enforces one DM but
+  route code — so the cheap part is removing a guard. The expensive part is that
+  "the DM" is assumed to be singular in roughly 32 socket checks and ~168
+  frontend branches, and in places where singular is load-bearing rather than
+  incidental: who controls initiative, who secret rolls are revealed to, who the
+  fog is drawn for, and which single person a "DM rolled" attribution names.
+  Ownership would need rethinking too, since `Campaign.ownerId` is what a
+  transfer deliberately leaves alone. **Revisit if** people actually ask to
+  co-run games — the handover added for #33 covers the cases reported so far
+  (handing off, stepping back, an agent DM narrating while the owner plays).
 
 - **Saving a flexible character discards every top-level field except
   `sections`.** `FlexibleCharacterSheetEdit.tsx:99` calls
@@ -50,7 +112,6 @@ _Nothing in progress._
   unnoticed — but a character imported from elsewhere, or one that gains a
   field later, loses it. The fix is `onSave({ ...data, sections }, ...)`, which
   needs a moment's thought about whether any field is meant to be dropped.
-
 
 - **Sign-in errors show a status label instead of the helpful sentence.** The
   API answers a failed login with
@@ -68,7 +129,6 @@ _Nothing in progress._
   something a user should read. Note the 429
   path is fine: the rate limiter replies with a bare string rather than JSON, so
   the status branch handles it and the wording is already correct.
-
 
 - **Map events still die on a reconnect.** `frontend/src/services/socket.ts` keeps
   a listener registry so subscriptions survive the socket being replaced, and the
@@ -104,17 +164,6 @@ _Nothing in progress._
   pools and limits for Shadowrun, plus their own stat block editors and viewers.
   Neither has SRD seed data to test against. See the "Creature and NPC stat
   blocks" section of `docs/GAME_SYSTEMS.md` for where the branch points are.
-
-- **Chat "load more" refetches the same 50 messages.** Two separate faults in one
-  path, found while adding roll-history persistence in 1.2.2. The client sends a
-  `before` cursor that `GET /api/campaigns/:campaignId/messages` never reads, so scrolling back
-  returns the newest page every time. And that route applies `take` *before*
-  filtering `DICE_ROLL` rows out, so a campaign with a lot of rolls returns fewer
-  than `limit` chat messages — occasionally none at all, which looks like empty
-  history. Fixing the cursor properly means keyset pagination on `createdAt`;
-  fixing the filter means excluding the type in the `where` clause rather than
-  afterwards. Neither is urgent while chat fits in one page, and both were left
-  alone in 1.2.2 to keep that change to its reported scope.
 
 - **A shared character-sheet header / action bar.** Each per-system editor
   copy-pastes its own header: the Save and Cancel cluster, the palette button,
@@ -155,7 +204,7 @@ _Nothing in progress._
   sorcerer. Only affects sheets that never set it, and the DM can correct it by
   hand, so it is a default worth improving rather than a miscalculation.
 
-- **`docs/API_REFERENCE.md` covers 75 of 141 routes.** Deliberate after the
+- **`docs/API_REFERENCE.md` covers 80 of 153 routes.** Deliberate after the
   2026-09-01 documentation pass: it is a hand-written guide to the endpoints
   people ask about, and `backend/docs/API_DOCUMENTATION.yaml` is the complete
   list. `scripts/spec-coverage.py` enforces the split — the spec must be
@@ -224,6 +273,26 @@ _Nothing in progress._
   failures. Making them binding needs branch protection with required status
   checks on `dev` and `main`, which is a repository setting rather than a file.
   Worth doing the first time the workflow actually runs.
+
+- **Serving the frontend from a folder, like `example.com/cozyvtt/`.** Asked for
+  in #36 by a Traefik user; a subdomain works today and is what the deployment
+  guide now points people at. The easy 10% is Vite's `base` and a router
+  `basename`. The other 90% is that asset addresses are *stored in the database*
+  as `/api/assets/{type}/{id}` (`backend/src/utils/asset-urls.ts`) and read raw at
+  roughly 35 render sites. Writing the prefix into storage puts deployment
+  configuration into user data — a backup restored onto a root-mounted instance
+  would have every picture broken — and it breaks `normalizeAssetUrl`'s
+  `startsWith('/api/assets/')` guard. Adding it at render time instead leaves a
+  rule spread across 35 places that can only be violated silently, on a layout
+  nobody here runs. Note also that `base` is **build-time**, so the runtime env
+  var the issue asked for cannot do it, and the path would end up recorded in
+  four or five places that fail as a blank page whenever two disagree. Roughly
+  4-6 days including a browser test harness the project does not have and would
+  then maintain. **Revisit if** more people ask, or if asset storage is reworked
+  for another reason — the prerequisite is storing bare UUIDs rather than URLs,
+  for which `extractAssetId` already exists on both sides and
+  `backend/src/scripts/migrate-asset-urls.ts` is the precedent, in the opposite
+  direction.
 
 ---
 
