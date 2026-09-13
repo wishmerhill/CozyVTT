@@ -303,10 +303,10 @@ export default function DashboardPage() {
                   </div>
                   <div>
                     <h2 className="text-xl font-semibold text-brand-ink font-heading">
-                      Documents
+                      {t('dashboard:documents')}
                     </h2>
                     <p className="text-sm text-warm-gray">
-                      Rulebooks and handouts
+                      {t('dashboard:documentsDesc')}
                     </p>
                   </div>
                 </div>
@@ -314,7 +314,7 @@ export default function DashboardPage() {
                   onClick={() => navigate('/documents')}
                   className="flex items-center gap-2"
                 >
-                  <span className="hidden sm:inline">View Documents</span>
+                  <span className="hidden sm:inline">{t('dashboard:viewDocuments')}</span>
                   <ArrowRight className="w-4 h-4" />
                 </Button>
               </div>
@@ -327,10 +327,10 @@ export default function DashboardPage() {
                 >
                   <BookOpen className="w-8 h-8 mx-auto mb-2 text-moss-green/60" />
                   <p className="text-sm font-medium text-brand-ink mb-1">
-                    Read Without Leaving the Table
+                    {t('dashboard:readWithoutLeaving')}
                   </p>
                   <p className="text-xs text-warm-gray">
-                    Upload a PDF, text or Markdown file and read it here or in any campaign a DM shares it with
+                    {t('dashboard:readWithoutLeavingDesc')}
                   </p>
                 </div>
               </div>

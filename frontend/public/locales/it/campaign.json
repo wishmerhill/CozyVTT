@@ -31,6 +31,7 @@
     "inactiveBadge": "Inattiva",
     "showPartyPanel": "Mostra pannello gruppo",
     "hidePartyPanel": "Nascondi pannello gruppo",
+    "campaignDocuments": "Documenti della campagna",
     "showSessionPanel": "Mostra pannello sessione",
     "hideSessionPanel": "Nascondi pannello sessione",
     "sessionPausedBanner": "Sessione in pausa. Il movimento dei token è disabilitato e i tiri di dado sono automaticamente segreti.",

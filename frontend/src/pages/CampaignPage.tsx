@@ -377,12 +377,12 @@ function CampaignPageContent() {
               DM: a rulebook the table is meant to read has to be reachable by
               the people reading it. */}
           <div className="h-6 w-px bg-moss-green/20" />
-          <Tooltip content="Campaign documents" side="bottom">
+          <Tooltip content={t('page.campaignDocuments')} side="bottom">
             <Button
               variant="ghost"
               iconOnly
               icon={BookOpen}
-              aria-label="Campaign documents"
+              aria-label={t('page.campaignDocuments')}
               onClick={() => setIsDocumentsOpen(true)}
             />
           </Tooltip>
