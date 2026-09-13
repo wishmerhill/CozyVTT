@@ -25,19 +25,14 @@ import { useAuth } from '@/contexts/AuthContext';
 import { useToast } from '@/contexts/ToastContext';
 import api from '@/services/api';
 import { apiErrorMessage } from '@/utils/errors';
-import { AssetType, AssetScope, PlatformRole, type Asset } from '@/types';
+import { AssetType, PlatformRole, type Asset } from '@/types';
+import { assetScopeLabel } from '@/utils/assetUrl';
 
 function formatSize(bytes: number): string {
   if (bytes < 1024) return `${bytes} B`;
   if (bytes < 1024 * 1024) return `${(bytes / 1024).toFixed(0)} KB`;
   return `${(bytes / (1024 * 1024)).toFixed(1)} MB`;
 }
-
-const SCOPE_LABEL: Record<AssetScope, string> = {
-  [AssetScope.USER]: 'Personal',
-  [AssetScope.CAMPAIGN]: 'Campaign',
-  [AssetScope.GLOBAL]: 'Global',
-};
 
 export default function DocumentsPage() {
   const navigate = useNavigate();
@@ -170,7 +165,7 @@ export default function DocumentsPage() {
                       {doc.name}
                     </button>
                     <p className="text-xs text-warm-gray truncate">
-                      {FORMAT_LABEL[format]} · {formatSize(doc.fileSize)} · {SCOPE_LABEL[doc.scope]}
+                      {FORMAT_LABEL[format]} · {formatSize(doc.fileSize)} · {assetScopeLabel(doc.scope)}
                       {doc.description ? ` · ${doc.description}` : ''}
                     </p>
                   </div>

@@ -78,6 +78,7 @@ import TableSkeleton from '@/components/skeletons/TableSkeleton';
 import ConfirmDialog from '@/components/common/ConfirmDialog';
 import Button from '@/components/ui/Button';
 import { apiErrorMessage } from '@/utils/errors';
+import { assetScopeLabel } from '@/utils/assetUrl';
 
 /** The four colours the appearance form edits. */
 interface AppearanceColors {
@@ -1701,7 +1702,7 @@ export default function AdminPage() {
                                   {asset.scope === AssetScope.GLOBAL && <Globe className="w-3 h-3" />}
                                   {asset.scope === AssetScope.USER && <UserIcon className="w-3 h-3" />}
                                   {asset.scope === AssetScope.CAMPAIGN && <Users className="w-3 h-3" />}
-                                  {asset.scope === AssetScope.GLOBAL ? 'Global' : asset.scope === AssetScope.USER ? 'Personal' : 'Campaign'}
+                                  {assetScopeLabel(asset.scope)}
                                 </span>
                               </td>
                               {/* Uploader */}
